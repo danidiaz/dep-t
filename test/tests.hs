@@ -29,6 +29,7 @@ instance HasLogger (Env m) m where
   getLogger = logger
 
 -- These two functions don't know the concrete envionment record.
+--
 -- This one because it only needs MonadIO.
 _logger :: MonadIO m => String -> m ()
 _logger msg = liftIO (putStrLn msg)
@@ -40,8 +41,8 @@ _logic x = do
   logger "I'm going to multiply a number by itself!"
   return $ x * x
 
---
--- This is the first time DepT is used in this module
+-- This is the first time DepT is used in this module.
+-- Note that it is only here where we settle for IO.
 env :: Env (DepT Env IO)
 env =
   Env
