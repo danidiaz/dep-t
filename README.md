@@ -52,8 +52,8 @@ Oops, this doesn't seem to work:
 
 Also, what type should `env'` have?
 
-However, using `DepT`, which is just a newtype wrapper over `ReaderT` to pacify
-the compiler, it works:
+If we turn to `DepT`—which is just a newtype wrapper over `ReaderT` to pacify
+the compiler—it works:
 
     env :: Env (DepT Env IO)
     env =
@@ -62,7 +62,6 @@ the compiler, it works:
           logic = _logic logger
         }
 
-    -- We select "logic" as the entrypoint and run it.
     result :: IO Int
     result = runDepT (logic env 7) env
 
@@ -70,8 +69,8 @@ Notice that the use of `DepT` was limited to the moment of assembling and
 running the concrete record. The record definition itself is independent of
 `DepT` (and of `ReaderT` for that matter). 
 
-As for the implementation functions, they use `MonadReader` to get hold of the
-environment, but they know nothing of `DepT`.
+As for the implementation functions, they might use `MonadReader` to get hold
+of the environment, but they know nothing of `DepT`.
 
 ## Links
 
