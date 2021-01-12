@@ -3,7 +3,7 @@
 `DepT` is Readerlike monad transformer for dependency injection.
 
 The difference with
-[`ReaderT`](http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html),
+[`ReaderT`](http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html)
 is that `DepT` takes an enviroment whose type is parameterized by a monad:
 itself. 
 
