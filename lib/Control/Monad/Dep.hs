@@ -9,8 +9,8 @@
 
 module Control.Monad.Dep
   ( DepT (DepT),
-    _runDepT,
     runDepT,
+    _runDepT,
   )
 where
 
