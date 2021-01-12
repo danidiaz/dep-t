@@ -1,22 +1,22 @@
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Control.Monad.Dep where
 
 import Control.Applicative
-import Control.Monad.Zip
+import Control.Monad.Cont.Class
+import Control.Monad.Error.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import Control.Monad.Trans.Class
 import Control.Monad.State.Class
+import Control.Monad.Trans.Class
 import Control.Monad.Writer.Class
-import Control.Monad.Error.Class
-import Control.Monad.Cont.Class
+import Control.Monad.Zip
 import Data.Kind (Type)
 
 type DepT ::
@@ -25,9 +25,20 @@ type DepT ::
   Type ->
   Type
 newtype DepT env m r = DepT {_runDepT :: ReaderT (env (DepT env m)) m r}
-  deriving (Functor, 
-                Applicative, 
-                Alternative, Monad, MonadFix, MonadFail, MonadZip, MonadPlus, MonadCont, MonadIO, MonadUnliftIO, MonadReader (env (DepT env m)))
+  deriving
+    ( Functor,
+      Applicative,
+      Alternative,
+      Monad,
+      MonadFix,
+      MonadFail,
+      MonadZip,
+      MonadPlus,
+      MonadCont,
+      MonadIO,
+      MonadUnliftIO,
+      MonadReader (env (DepT env m))
+    )
 
 instance MonadTrans (DepT env) where
   lift = DepT . lift
