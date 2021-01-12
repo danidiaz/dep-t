@@ -2,11 +2,17 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Control.Monad.Dep where
+module Control.Monad.Dep
+  ( DepT (DepT),
+    _runDepT,
+    runDepT,
+  )
+where
 
 import Control.Applicative
 import Control.Monad.Cont.Class
@@ -51,3 +57,6 @@ deriving instance MonadError e m => MonadError e (DepT env m)
 
 runDepT :: DepT env m r -> env (DepT env m) -> m r
 runDepT = runReaderT . _runDepT
+
+-- withDepT :: (forall n. env n -> env' n) -> DepT env m a -> DepT env' m a
+-- withDepT trans (DepT rm) = DepT (_ rm)
