@@ -1,6 +1,6 @@
 # dep-t
 
-`DepT` is Readerlike monad transformer for dependency injection.
+`DepT` is a ReaderT-like monad transformer for dependency injection.
 
 The difference with
 [`ReaderT`](http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html)
