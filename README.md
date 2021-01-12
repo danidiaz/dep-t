@@ -9,8 +9,8 @@ itself.
 
 ## Motivation
 
-To achieve dependency injection in Haskell, one common solution is having a
-record of functions, and passing it to the program logic using a `ReaderT`.
+To achieve dependency injection in Haskell, a common solution is building a
+record of functions and passing it to the program logic using a `ReaderT`.
 
 Sometimes the functions in the record work directly in the `IO` monad.
 
