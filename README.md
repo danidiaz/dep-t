@@ -1,15 +1,15 @@
 # dep-t
 
-Readerlike monad transformer for dependency injection.
+`DepT` is Readerlike monad transformer for dependency injection.
 
-Pretty similar to
+The difference with
 [`ReaderT`](http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html),
-except that it takes an enviroment whose type is parameterized by a monad:
+is that `DepT` takes an enviroment whose type is parameterized by a monad:
 itself. 
 
 ## Motivation
 
-To achieve dependency injection in haskell, one common solution is having a
+To achieve dependency injection in Haskell, one common solution is having a
 record of functions, and passing it to the program logic using a `ReaderT`.
 
 Sometimes the functions in the record work directly in the `IO` monad.
@@ -76,5 +76,5 @@ environment, but they know nothing of `DepT`.
 ## Links
 
 This library was extracted from my answer to
-[this](https://stackoverflow.com/a/61782258/1364288) Stack Overflow question.
+[this Stack Overflow question](https://stackoverflow.com/a/61782258/1364288).
 
