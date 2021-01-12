@@ -81,9 +81,9 @@ of the environment, but they know nothing of `DepT`.
   [Adventures assembling records of
   capabilities](https://discourse.haskell.org/t/adventures-assembling-records-of-capabilities/623). 
 
-  It seems that,  with `DepT`, functions in the environment obtain their
-  dependencies anew *each time they are invoked*. So, if during the program we
-  change a function in the environment record, all other functions which depend
-  on it will be affected. I don't think this happens with "Adventures..." at
+  It seems that, with `DepT`, functions in the environment obtain their
+  dependencies anew every time they are invoked. If we change a function in the
+  environment record, all other functions which depend on it will be affected
+  in subsequent invocations. I don't think this happens with "Adventures..." at
   least when changing an already "assembled" record.
 
