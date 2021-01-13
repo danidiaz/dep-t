@@ -2,7 +2,7 @@ cabal-version:       3.0
 
 name:                dep-t
 version:             0.1.0.0
-synopsis:            Readerlike monad transformer for dependency injection.
+synopsis:            Reader-like monad transformer for dependency injection.
 -- description:
 -- bug-reports:
 license:             BSD-3-Clause
