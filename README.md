@@ -22,7 +22,7 @@ parameterizing the record by the monad:
         logic :: Int -> m Int
       }
 
-Lets write some implementations for the functions in the record. Notice that
+Let's write some implementations for the functions in the record. Notice that
 some functions (like `_logic`) can depend on others (like `_logger`).
 
     _logger :: MonadIO m => String -> m ()
