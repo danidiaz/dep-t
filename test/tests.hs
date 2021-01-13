@@ -2,12 +2,16 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 
 module Main (main) where
 
 import Control.Monad.Dep
 import Control.Monad.Reader
 import Data.Kind
+import Rank2 qualified
+import Rank2.TH qualified
 
 -- The environment doesn't know about any concrete monad
 type Env :: (Type -> Type) -> Type
@@ -15,6 +19,8 @@ data Env m = Env
   { logger :: String -> m (),
     logic :: Int -> m Int
   }
+
+$(Rank2.TH.deriveFunctor ''Env)
 
 -- -- Has-style typeclasses can be provided to avoid depending on concrete
 -- -- environments.
@@ -58,13 +64,26 @@ result = runDepT (logic env 7) env
 -- An attempt with ReaderT which doesn't work
 -- env' =
 --   Env
---     { logger = _logger,
---       logic = _logic logger
+--     { logger = __logic logger
 --     }
 -- 
 -- result' :: IO Int
 -- result' = runReaderT (logic env' 7) env'
 
+
+-- The environment doesn't know about any concrete monad
+type BiggerEnv :: (Type -> Type) -> Type
+data BiggerEnv m = BiggerEnv
+  { inner :: Env m,
+    extra :: Int -> m Int
+  }
+
+biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
+biggerEnv = BiggerEnv 
+    {
+        inner = (Rank2.<$>) (withDepT (Rank2.<$>) inner) env,
+        extra = pure 
+    }
 
 main :: IO ()
 main = putStrLn "Test suite not yet implemented."

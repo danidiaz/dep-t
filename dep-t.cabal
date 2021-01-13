@@ -14,7 +14,7 @@ category:            Control
 extra-source-files:  CHANGELOG.md, README.md
 
 common common
-  build-depends:       base ^>=4.15.0.0,
+  build-depends:       base ^>=4.10.0.0,
                        transformers ^>= 0.5.0.0,
                        mtl ^>= 2.2,
                        unliftio-core ^>= 0.2.0.0,
@@ -30,5 +30,7 @@ test-suite dep-t-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             tests.hs
-  build-depends:
-    dep-t 
+  build-depends:       
+    dep-t, 
+    rank2classes   ^>= 1.4.1,
+    template-haskell,

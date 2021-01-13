@@ -15,6 +15,7 @@ module Control.Monad.Dep
   ( DepT (DepT),
     runDepT,
     toReaderT,
+    withDepT,
   )
 where
 
@@ -75,11 +76,11 @@ runDepT = runReaderT . toReaderT
 -}
 withDepT ::
   ( (forall x. DepT env m x -> DepT env' m x) ->
-    env' (DepT env' m) ->
-    env' (DepT env m)
+    env (DepT env' m) ->
+    env (DepT env m)
   ) ->
   (forall t. env' t -> env t) ->
   DepT env m a ->
   DepT env' m a
-withDepT transMonad enhanceEnv (DepT rm) = 
-    DepT (withReaderT (enhanceEnv . transMonad (withDepT transMonad enhanceEnv)) rm)
+withDepT transMonad diminishEnv (DepT rm) = 
+    DepT (withReaderT (transMonad (withDepT transMonad diminishEnv) . diminishEnv) rm)
