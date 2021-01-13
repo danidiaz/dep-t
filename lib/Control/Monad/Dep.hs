@@ -10,7 +10,7 @@
 module Control.Monad.Dep
   ( DepT (DepT),
     runDepT,
-    _runDepT,
+    toReaderT,
   )
 where
 
@@ -30,7 +30,7 @@ type DepT ::
   (Type -> Type) ->
   Type ->
   Type
-newtype DepT env m r = DepT {_runDepT :: ReaderT (env (DepT env m)) m r}
+newtype DepT env m r = DepT { toReaderT :: ReaderT (env (DepT env m)) m r}
   deriving
     ( Functor,
       Applicative,
@@ -56,7 +56,8 @@ deriving instance MonadWriter w m => MonadWriter w (DepT env m)
 deriving instance MonadError e m => MonadError e (DepT env m)
 
 runDepT :: DepT env m r -> env (DepT env m) -> m r
-runDepT = runReaderT . _runDepT
+runDepT = runReaderT . toReaderT
 
+-- not sure if it makes sense
 -- withDepT :: (forall n. env n -> env' n) -> DepT env m a -> DepT env' m a
 -- withDepT trans (DepT rm) = DepT (_ rm)
