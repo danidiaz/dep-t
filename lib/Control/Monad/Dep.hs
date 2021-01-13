@@ -75,12 +75,13 @@ runDepT = runReaderT . toReaderT
    I'm overcomplicating things, aren't I?
 -}
 withDepT ::
-  ( (forall x. DepT env m x -> DepT env' m x) ->
-    env (DepT env' m) ->
-    env (DepT env m)
+  ( (forall x. DepT small m x -> DepT big m x) ->
+    big (DepT big m) ->
+    big (DepT small m)
   ) ->
-  (forall t. env' t -> env t) ->
-  DepT env m a ->
-  DepT env' m a
+  (forall t. big t -> small t) ->
+  DepT small m a ->
+  DepT big m a
 withDepT transMonad diminishEnv (DepT rm) = 
-    DepT (withReaderT (transMonad (withDepT transMonad diminishEnv) . diminishEnv) rm)
+    DepT (withReaderT (diminishEnv . transMonad (withDepT transMonad diminishEnv)) rm)
+

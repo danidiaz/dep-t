@@ -4,6 +4,7 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Main (main) where
 
@@ -78,10 +79,15 @@ data BiggerEnv m = BiggerEnv
     extra :: Int -> m Int
   }
 
+$(Rank2.TH.deriveFunctor ''BiggerEnv)
+
 biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
 biggerEnv = BiggerEnv 
     {
-        inner = (Rank2.<$>) (withDepT (Rank2.<$>) inner) env,
+        inner = 
+            let mutate :: forall a. DepT Env IO a -> DepT BiggerEnv IO a
+                mutate z =  withDepT _ inner z
+             in (Rank2.<$>) mutate env, -- _ (withDepT (Rank2.<$>) inner) env,
         extra = pure 
     }
 
