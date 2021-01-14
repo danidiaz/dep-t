@@ -18,6 +18,7 @@ module Control.Monad.Dep
     runDepT,
     toReaderT,
     withDepT,
+--    mapDepT
   )
 where
 
@@ -88,7 +89,7 @@ withDepT ::
   (forall t. big t -> small t) ->
   DepT small m a ->
   DepT big m a
-withDepT trans inner (DepT (ReaderT f)) =
+withDepT mapEnv inner (DepT (ReaderT f)) =
   DepT
     ( ReaderT
         ( \big ->
@@ -98,10 +99,24 @@ withDepT trans inner (DepT (ReaderT f)) =
                 -- environment by supplying the big environment and, as a
                 -- finishing touch, lift from the base monad m so that it
                 -- matches the monad expected by f.
-                small = trans (lift . flip runDepT big) (inner big)
+                small = mapEnv (lift . flip runDepT big) (inner big)
              in f small
         )
     )
+
+--mapDepT ::
+--  forall env m n a.
+--  (Monad m, Monad n) =>
+--  (forall x. m x -> n x) ->
+--  DepT env m a ->
+--  DepT env n a
+-- mapDepT :: (m a -> n a) -> DepT env m a -> DepT env n a
+-- mapDepT trans (DepT r) = DepT (mapReaderT trans r)
+
+
+
+
+-- runFromEnv locator env = flip runDepT env (locator env)
 
 -- add runFromEnv
 -- add zoomEnv
