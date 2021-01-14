@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -26,6 +28,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Control.Monad.State.Class
 import Control.Monad.Trans.Class
+import Control.Monad.Trans.Identity
 import Control.Monad.Writer.Class
 import Control.Monad.Zip
 import Data.Kind (Type)
@@ -75,13 +78,31 @@ runDepT = runReaderT . toReaderT
    I'm overcomplicating things, aren't I?
 -}
 withDepT ::
-  ( (forall x. DepT small m x -> DepT big m x) ->
-    big (DepT big m) ->
-    big (DepT small m)
+  forall small big m a.
+  Monad m =>
+  ( forall p q.
+    (forall x. p x -> q x) ->
+    small p ->
+    small q
   ) ->
   (forall t. big t -> small t) ->
   DepT small m a ->
   DepT big m a
-withDepT transMonad diminishEnv (DepT rm) = 
-    DepT (withReaderT (diminishEnv . transMonad (withDepT transMonad diminishEnv)) rm)
+withDepT trans inner (DepT (ReaderT f)) =
+  DepT
+    ( ReaderT
+        ( \big ->
+            let small :: small (DepT small m)
+                -- we have a big environment at hand, so let's extract the
+                -- small environment, transform every function in the small
+                -- environment by supplying the big environment and, as a
+                -- finishing touch, lift from the base monad m so that it
+                -- matches the monad expected by f.
+                small = trans (lift . flip runDepT big) (inner big)
+             in f small
+        )
+    )
 
+-- add runFromEnv
+-- add zoomEnv
+--

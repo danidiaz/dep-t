@@ -84,12 +84,12 @@ $(Rank2.TH.deriveFunctor ''BiggerEnv)
 biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
 biggerEnv = BiggerEnv 
     {
-        inner = 
-            let mutate :: forall a. DepT Env IO a -> DepT BiggerEnv IO a
-                mutate z =  withDepT _ inner z
-             in (Rank2.<$>) mutate env, -- _ (withDepT (Rank2.<$>) inner) env,
+        inner = (Rank2.<$>) (withDepT (Rank2.<$>) inner) env,
         extra = pure 
     }
 
 main :: IO ()
-main = putStrLn "Test suite not yet implemented."
+main = do
+    r <- runDepT ((logic . inner $ biggerEnv) 7) biggerEnv
+    print r
+
