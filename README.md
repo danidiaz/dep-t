@@ -7,7 +7,7 @@ With `O0` compiles ok:
     $ ghc -O0 Main.hs
     Linking Main.exe ...
 
-With `O1` compiles fails:
+With `O1` fails:
 
     $ ghc -O1 Main.hs
     [1 of 1] Compiling Main             ( Main.hs, Main.o ) [Optimisation flags changed]
