@@ -1,10 +1,15 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE ImportQualifiedPost #-}
--- {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Main (main) where
 
@@ -20,6 +25,7 @@ data Env m = Env
   { logger :: String -> m (),
     logic :: Int -> m Int
   }
+
 $(Rank2.TH.deriveFunctor ''Env)
 
 -- These two functions don't know the concrete envionment record.
@@ -29,7 +35,7 @@ _logger :: MonadIO m => String -> m ()
 _logger msg = liftIO (putStrLn msg)
 
 -- This one because it receives a getter for the logger
--- A HasX-style typeclass would have been an alternative. 
+-- A HasX-style typeclass would have been an alternative.
 _logic :: MonadReader e m => (e -> String -> m ()) -> Int -> m Int
 _logic getLogger x = do
   logger <- reader getLogger
@@ -53,14 +59,13 @@ data BiggerEnv m = BiggerEnv
   }
 
 biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
-biggerEnv = BiggerEnv 
-    {
-        inner = (zoomEnv (Rank2.<$>) inner env),
-        extra = pure 
+biggerEnv =
+  BiggerEnv
+    { inner = (zoomEnv (Rank2.<$>) inner env),
+      extra = pure
     }
 
 main :: IO ()
 main = do
-    r <- runDepT ((logic . inner $ biggerEnv) 7) biggerEnv
-    print r
-
+  r <- runDepT ((logic . inner $ biggerEnv) 7) biggerEnv
+  print r

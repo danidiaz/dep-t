@@ -20,11 +20,8 @@ module Control.Monad.Dep
   )
 where
 
-import Control.Applicative
 import Control.Monad.Reader
 import Data.Kind
-import Rank2 qualified
-import Rank2.TH qualified
 
 type DepT ::
   ((Type -> Type) -> Type) ->
