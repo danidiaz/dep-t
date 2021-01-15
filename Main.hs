@@ -13,7 +13,9 @@
 
 module Main (main) where
 
-import Control.Monad.Reader
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Reader
 import Data.Kind
 import Rank2 qualified
 import Rank2.TH qualified
@@ -30,8 +32,7 @@ newtype DepT env m r = DepT {toReaderT :: ReaderT (env (DepT env m)) m r}
     ( Functor,
       Applicative,
       Monad,
-      MonadIO,
-      MonadReader (env (DepT env m))
+      MonadIO
     )
 
 instance MonadTrans (DepT env) where
