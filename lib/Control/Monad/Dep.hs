@@ -15,7 +15,7 @@
 --    The difference is that the environment of 'DepT' must be parameterized by
 --    @DepT@'s own monad stack.
 --
---    There's a function 'withDepT' which is analogous to 'withReaderT'. 
+--    There's a function 'withDepT' which is analogous to 'withReaderT'.
 --
 --    There's no analogue of 'mapReaderT' however. This means you can't tweak
 --    the monad below the 'DepT' with a natural transformation.
@@ -41,7 +41,7 @@ import Control.Monad.Zip
 import Data.Kind (Type)
 
 -- |
---    A monad transformer, which adds a read-only environment to the given monad.
+--    A monad transformer which adds a read-only environment to the given monad.
 --    The environment type must be parameterized with the transformer's stack.
 --
 --    The 'return' function ignores the environment, while @>>=@ passes the
@@ -81,17 +81,24 @@ deriving instance MonadError e m => MonadError e (DepT env m)
 runDepT :: DepT env m r -> env (DepT env m) -> m r
 runDepT = runReaderT . toReaderT
 
-{-
-   I'm overcomplicating things, aren't I?
--}
+-- |
+--    Changes the environment of a 'DepT', for example making the 'DepT' work in
+--    a "bigger" environment than the one in which was defined initially.
+--
+--    The scary first parameter is a function that, given a natural
+--    transformation of monads, changes the monad parameter of the environment
+--    record. This function can be defined manually for each environment record,
+--    or it can be generated using TH from the "rank2classes" package.
 withDepT ::
   forall small big m a.
   Monad m =>
+  -- | rank-2 map function
   ( forall p q.
     (forall x. p x -> q x) ->
     small p ->
     small q
   ) ->
+  -- | get a small environment from a big one
   (forall t. big t -> small t) ->
   DepT small m a ->
   DepT big m a
@@ -110,24 +117,30 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
         )
     )
 
-{-
-   Makes the functions inside a small environment require a bigger environment. 
+-- |
+--    Makes the functions inside a small environment require a bigger environment.
+--
+--    This can be useful if we are encasing the small environment as a field of
+--    the big environment, ir order to make the types match.
+--
+--    The scary first parameter is a function that, given a natural
+--    transformation of monads, changes the monad parameter of the environment
+--    record. This function can be defined manually for each environment record,
+--    or it can be generated using TH from the "rank2classes" package.
 
-   This can be useful if we are encasing the small environment as a field of
-   the big environment, ir order to make the types match.
- -}
--- For the reason of not inlining, see https://twitter.com/DiazCarrete/status/1350116413445439493
+-- For the reason for not inlining, see https://twitter.com/DiazCarrete/status/1350116413445439493
 {-# NOINLINE zoomEnv #-}
 zoomEnv ::
   forall small big m a.
   Monad m =>
+  -- | rank-2 map function
   ( forall p q.
     (forall x. p x -> q x) ->
     small p ->
     small q
   ) ->
+  -- | get a small environment from a big one
   (forall t. big t -> small t) ->
   small (DepT small m) ->
   small (DepT big m)
 zoomEnv mapEnv inner = mapEnv (withDepT mapEnv inner)
-

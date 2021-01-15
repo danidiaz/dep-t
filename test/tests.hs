@@ -144,9 +144,17 @@ $(Rank2.TH.deriveFunctor ''BiggerEnv)
 env :: Env (DepT Env (Writer TestTrace))
 env =
   let _logger = mkFakeLogger
-      _controller = mkController
       _repository = mkFakeRepository
-   in Env {_logger, _controller, _repository}
+      _controller = mkController
+   in Env {_logger,  _repository, _controller}
+
+-- An IO variant
+envIO :: Env (DepT Env IO)
+envIO =
+  let _logger = mkStdoutLogger
+      _repository = mkStdoutRepository
+      _controller = mkController
+   in Env {_logger,  _repository, _controller}
 
 biggerEnv :: BiggerEnv (DepT BiggerEnv (Writer TestTrace))
 biggerEnv =
@@ -156,6 +164,12 @@ biggerEnv =
       --
       -- _inner' = (Rank2.<$>) (withDepT (Rank2.<$>) inner) env,
       _inner' = zoomEnv (Rank2.<$>) _inner env
+      _extra = pure
+   in BiggerEnv {_inner = _inner', _extra}
+
+biggerEnvIO :: BiggerEnv (DepT BiggerEnv IO)
+biggerEnvIO =
+  let _inner' = zoomEnv (Rank2.<$>) _inner envIO
       _extra = pure
    in BiggerEnv {_inner = _inner', _extra}
 

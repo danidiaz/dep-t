@@ -10,93 +10,164 @@ parameterized by `DepT` itself.
 ## Rationale
 
 To achieve dependency injection in Haskell, a common solution is to build a
-record of functions and pass it to the program logic using a `ReaderT`.
+record of functions and pass it to the program logic some variant of `ReaderT`.
 
-Sometimes the functions in the record work directly in the `IO` monad.  But
-sometimes we want to abstract over the monad. This can be achieved by
-parameterizing the record by the monad:
+Let's start by defining some auxiliary typeclasses to extract functions from an
+environment record:
+
+    type HasLogger :: Type -> (Type -> Type) -> Constraint
+    class HasLogger r m | r -> m where
+      logger :: r -> String -> m ()
+
+    type HasRepository :: Type -> (Type -> Type) -> Constraint
+    class HasRepository r m | r -> m where
+      repository :: r -> Int -> m ()
+
+We see that the type of the record determines the monad in which the effects take place.
+
+Let's define a monomorphic record with effects in `IO`:
+
+    type EnvIO :: Type
+    data EnvIO = EnvIO
+      { _loggerIO :: String -> IO (),
+        _repositoryIO :: Int -> IO ()
+      }
+
+    instance HasLogger EnvIO IO where
+      logger = _loggerIO
+
+    instance HasRepository EnvIO IO where
+      repository = _repositoryIO
+
+Records-of-functions-in-IO is a simple technique which works well in many
+situations. There are even [specialized
+libraries](http://hackage.haskell.org/package/rio) to support it.
+
+Here's a function which obtains its dependencies from the environment record:
+
+    _mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO Int
+    _mkControllerIO x = do
+      doLog <- asks logger
+      liftIO $ doLog "I'm going to insert in the db!"
+      insert <- asks repository
+      liftIO $ insert x
+      return $ x * x
+
+That's all and well, but there are two issues that bug me:
+
+- What if the repository function needs access to the logger, too? The
+  repository lives in the environment record, but isn't aware of it. That means
+  it can't use the `HasLogger` typeclass for easy and convenient dependency
+  injection. Why privilege the controller in such a way?
+
+  In a sufficiently complex app, the diverse functions that comprise it will
+  form a complex [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) of
+  dependencies. So it would be nice if all the functions managed with
+  dependency injection were treated uniformly, if all had access to (some view
+  of) the environment record.
+
+- We might want to write code that is innocent of `IO` and polymorphic over the
+  monad, to ensure that the program logic can't do some unexpected missile
+  launch, or to allow testing our app in a "pure" way. 
+
+Let's start by parameterizing our environments by a monad: 
 
     type Env :: (Type -> Type) -> Type
     data Env m = Env
-      { logger :: String -> m (),
-        logic :: Int -> m Int
+      { _logger :: String -> m (),
+        _repository :: Int -> m (),
+        _controller :: Int -> m Int
       }
+    -- helper from the "rank2classes" package
+    $(Rank2.TH.deriveFunctor ''Env)
 
-Let's write some implementations for the functions in the record. Notice that
-some functions (like `_logic`) can depend on others (like `_logger`).
+    instance HasLogger (Env m) m where
+      logger = _logger
 
-    _logger :: MonadIO m => String -> m ()
-    _logger msg = liftIO (putStrLn msg)
+    instance HasRepository (Env m) m where
+      repository = _repository
 
-    -- To avoid depending on the record type, we extract the logger with a getter.
-    -- An axiliary HasLogger typeclass would also work.
-    _logic :: MonadReader e m => (e -> String -> m ()) -> Int -> m Int
-    _logic getLogger x = do
-      logger <- reader getLogger
-      logger "I'm going to multiply a number by itself!"
+Notice that the controller function is not part of the environment. No
+favorites here!
+
+This implementation of the controller function has no dependencies besides `MonadIO`:
+
+    mkStdoutLogger :: MonadIO m => String -> m ()
+    mkStdoutLogger msg = liftIO (putStrLn msg)
+
+But look at this impl of a repository function. It gets hold of the logger
+through `HasLogger`:
+
+    mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
+    mkStdoutRepository entity = do
+      doLog <- asks logger
+      doLog "I'm going to write the entity!"
+      liftIO $ print entity
+
+And the controller:
+
+    mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m Int
+    mkController x = do
+      doLog <- asks logger
+      doLog "I'm going to insert in the db!"
+      insert <- asks repository
+      insert x
       return $ x * x
 
-Now let's tie everything together using `ReaderT`:
+Now, lets choose `IO` as the monad and assemble and environment record:
 
-    env' =
-      Env
-        { logger = _logger,
-          logic = _logic logger
-        }
+    envIO :: Env (DepT Env IO)
+    envIO =
+      let _logger = mkStdoutLogger
+          _repository = mkStdoutRepository
+          _controller = mkController
+       in Env {_logger,  _repository, _controller}
 
-    result' :: IO Int
-    result' = runReaderT (logic env' 7) env'
+Not very complicated, except... what is that weird `DepT Env IO` doing there in the signature? 
 
-Oops, this doesn't seem to work:
+Well, that's the whole reason this library exists. Trying to use a `ReaderT
+(Env something) IO` to parameterize `Env` won't fly; you'll get weird "infinite
+type" kind of errors because the `Env` needs to be parameterized with the monad
+that provides the `Env` environment itself. So I created the `DepT` newtype
+over `ReaderT` to mollify the compiler.
 
-    * Couldn't match type `r0' with `Env (ReaderT r0 IO)'
+(If you find an easier workaround, I'm interested. Please open an issue in the
+repo.)
 
-What type should `env'` have? It seems to involve some weird infinite recursion
-on types.
 
-If we turn to `DepT`—which is just a newtype wrapper over `ReaderT` to pacify
-the compiler—it works:
+## How to embed environments into other environments?
 
-    env :: Env (DepT Env IO)
-    env =
-      Env
-        { logger = _logger,
-          logic = _logic logger
-        }
+Sometimes it might be convenient to nest some environment into another one,
+basically making it a field of the bigger environment:
 
-    result :: IO Int
-    result = runDepT (logic env 7) env
+    type BiggerEnv :: (Type -> Type) -> Type
+    data BiggerEnv m = BiggerEnv
+      { _inner :: Env m,
+        _extra :: Int -> m Int
+      }
+    $(Rank2.TH.deriveFunctor ''BiggerEnv)
 
-Notice that the use of `DepT` was limited to the moment of assembling the
-record value and running one of its functions. The declaration of the record
-type is independent of `DepT` (and of `ReaderT` for that matter). 
+When constructing the bigger environment, we have to tweak the monad parameter
+of the smaller one, to make the types match. This can be done with the
+`zoomEnv` function:
 
-As for the implementation functions, they might use `MonadReader` to get hold
-of the environment, but they know nothing of `DepT`, either.
+    biggerEnvIO :: BiggerEnv (DepT BiggerEnv IO)
+    biggerEnvIO =
+      let _inner' = zoomEnv (Rank2.<$>) _inner envIO
+          _extra = pure
+       in BiggerEnv {_inner = _inner', _extra}
 
-## How to write HasX typeclasses for parameterized environments?
+We need to pass as the first parameter of `zoomEnv` a function that tweaks the
+monad parameter of `Env` using a natural transformation. We can write such a
+function ourselves, but here we are using the function generated for us by the
+[rank2classes
+TH](http://hackage.haskell.org/package/rank2classes-1.4.1/docs/Rank2-TH.html#v:deriveFunctor).
 
-The `HasX` typeclass idiom is useful to avoid tying the program logic to concrete
-environments.
+## How to use "pure fakes" during testing?
 
-When the environments and the functions in the environment are parameterized by
-a monad, we need to add the monad as a parameter to the `HasX` typeclass as
-well. The environment will constrain the monad through a functional dependency.
-
-For example:
-
-    -- The environment e contains a logging function working in the m monad.
-    type HasLogger :: Type -> (Type -> Type) -> Constraint
-    class HasLogger e m | e -> m where
-      getLogger :: e -> String -> m ()
-
-    -- If the environment Env is parameterized by m, logging is done in m.
-    instance HasLogger (Env m) m where
-      getLogger = logger
-
-    -- Works also for monomorphic environments.
-    instance HasLogger MonomorphicEnv IO where
-      getLogger = logger
+The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
+collecting the outputs of functions working as ["test
+doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
 ## Caveats
 
