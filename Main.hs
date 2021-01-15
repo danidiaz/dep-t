@@ -10,6 +10,7 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Main (main) where
 
@@ -17,8 +18,6 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Reader
 import Data.Kind
-import Rank2 qualified
-import Rank2.TH qualified
 
 --
 -- GENERAL CODE
@@ -91,7 +90,6 @@ zoomEnv mapEnv inner = mapEnv (withDepT mapEnv inner)
 --
 --
 
-
 -- CONCRETE CODE THAT REPRODUCES THE BUG
 --
 type Env :: (Type -> Type) -> Type
@@ -100,7 +98,9 @@ data Env m = Env
     logic :: Int -> m Int
   }
 
-$(Rank2.TH.deriveFunctor ''Env)
+mapEnv :: (forall x. n x -> m x) -> Env n -> Env m
+mapEnv f (Env {logger,logic}) =
+    Env { logger = f . logger, logic = f . logic }
 
 env :: Env (DepT Env IO)
 env =
@@ -110,7 +110,7 @@ env =
     }
 
 env' :: Env (DepT Env IO)
-env' = zoomEnv (Rank2.<$>) id env
+env' = zoomEnv mapEnv id env
 
 main :: IO ()
 main = do
