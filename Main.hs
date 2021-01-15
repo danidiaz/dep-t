@@ -54,16 +54,13 @@ env =
 -- The environment doesn't know about any concrete monad
 type BiggerEnv :: (Type -> Type) -> Type
 data BiggerEnv m = BiggerEnv
-  { inner :: Env m,
-    extra :: Int -> m Int
+  { inner :: Env m
   }
 
 biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
 biggerEnv =
   BiggerEnv
-    { inner = (zoomEnv (Rank2.<$>) inner env),
-      extra = pure
-    }
+    { inner = zoomEnv (Rank2.<$>) inner env }
 
 main :: IO ()
 main = do
