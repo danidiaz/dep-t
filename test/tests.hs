@@ -98,8 +98,8 @@ instance HasRepository EnvIO IO where
 -- In a sufficiently complex app, the diverse functions will form a DAG of
 -- dependencies between each other. So it would be nice if the functions were
 -- treated uniformly, all having access to (views of) the environment record.
-_mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO Int
-_mkControllerIO x = do
+mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO Int
+mkControllerIO x = do
   doLog <- asks logger
   liftIO $ doLog "I'm going to insert in the db!"
   insert <- asks repository

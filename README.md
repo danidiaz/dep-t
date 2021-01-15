@@ -46,8 +46,8 @@ libraries](http://hackage.haskell.org/package/rio) that support it.
 
 Here's a function which obtains its dependencies from the environment record:
 
-    _mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO Int
-    _mkControllerIO x = do
+    mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO Int
+    mkControllerIO x = do
       doLog <- asks logger
       liftIO $ doLog "I'm going to insert in the db!"
       insert <- asks repository
