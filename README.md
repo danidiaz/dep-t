@@ -89,16 +89,17 @@ Let's parameterize our environment by a monad:
     instance HasRepository (Env m) m where
       repository = _repository
 
-Notice that the controller function is not part of the environment. No
+Notice that the controller function is now part of the environment. No
 favorites here!
 
-This implementation of the controller function has no dependencies besides `MonadIO`:
+The following implementation of the logger function has no dependencies besides
+`MonadIO`:
 
     mkStdoutLogger :: MonadIO m => String -> m ()
     mkStdoutLogger msg = liftIO (putStrLn msg)
 
-But look at this impl of a repository function. It gets hold of the logger
-through `HasLogger`:
+But look at this implementation of the repository function. It gets hold of the
+logger through `HasLogger`:
 
     mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
     mkStdoutRepository entity = do
@@ -106,7 +107,7 @@ through `HasLogger`:
       doLog "I'm going to write the entity!"
       liftIO $ print entity
 
-And the controller:
+And here's the controller:
 
     mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m Int
     mkController x = do
@@ -116,7 +117,7 @@ And the controller:
       insert x
       return $ x * x
 
-Now, lets choose `IO` as the monad and assemble and environment record:
+Now, lets choose `IO` as the base monad and assemble an environment record:
 
     envIO :: Env (DepT Env IO)
     envIO =
@@ -125,21 +126,18 @@ Now, lets choose `IO` as the monad and assemble and environment record:
           _controller = mkController
        in Env {_logger,  _repository, _controller}
 
-Not very complicated, except... what is that weird `DepT Env IO` doing there in the signature? 
+Not very complicated, except... what is that weird `DepT Env IO` doing there in
+the signature? 
 
 Well, that's the whole reason this library exists. Trying to use a `ReaderT
 (Env something) IO` to parameterize `Env` won't fly; you'll get weird "infinite
 type" kind of errors because the `Env` needs to be parameterized with the monad
-that provides the `Env` environment itself. So I created the `DepT` newtype
-over `ReaderT` to mollify the compiler.
-
-(If you find an easier workaround, I'm interested. Please open an issue in the
-repo.)
-
+that provides the `Env` environment. So I created the `DepT` newtype over
+`ReaderT` to mollify the compiler.
 
 ## How to embed environments into other environments?
 
-Sometimes it might be convenient to nest some environment into another one,
+Sometimes it might be convenient to nest an environment into another one,
 basically making it a field of the bigger environment:
 
     type BiggerEnv :: (Type -> Type) -> Type
