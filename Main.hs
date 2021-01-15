@@ -22,18 +22,6 @@ data Env m = Env
   }
 $(Rank2.TH.deriveFunctor ''Env)
 
--- Has-style typeclasses can be provided to avoid depending on concrete
--- environments.
--- Note that the environment determines the monad.
-type HasLogger :: Type -> (Type -> Type) -> Constraint
-class HasLogger r m | r -> m where
-  getLogger :: r -> String -> m ()
-
--- If our environment is parmeterized by the monad m, then logging is done in
--- m.
-instance HasLogger (Env m) m where
-  getLogger = logger
-
 -- These two functions don't know the concrete envionment record.
 --
 -- This one because it only needs MonadIO.
@@ -56,10 +44,6 @@ env =
     { logger = _logger,
       logic = _logic logger
     }
-
--- We select "logic" as the entrypoint and run it.
-result :: IO Int
-result = runDepT (logic env 7) env
 
 -- An attempt with ReaderT which doesn't work
 -- env' =
