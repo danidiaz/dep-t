@@ -74,6 +74,30 @@ type is independent of `DepT` (and of `ReaderT` for that matter).
 As for the implementation functions, they might use `MonadReader` to get hold
 of the environment, but they know nothing of `DepT`, either.
 
+## How to write HasX typeclasses for parameterized environments?
+
+The `HasX` typeclass idiom is useful to avoid tying the program logic to concrete
+environments.
+
+When the environments and the functions in the environment are parameterized by
+a monad, we need to add the monad as a parameter to the `HasX` typeclass as
+well. The environment will constrain the monad through a functional dependency.
+
+For example:
+
+    -- The environment e contains a logging function working in the m monad.
+    type HasLogger :: Type -> (Type -> Type) -> Constraint
+    class HasLogger e m | e -> m where
+      getLogger :: e -> String -> m ()
+
+    -- If the environment Env is parameterized by m, logging is done in m.
+    instance HasLogger (Env m) m where
+      getLogger = logger
+
+    -- Works also for monomorphic environments.
+    instance HasLogger MonomorphicEnv IO where
+      getLogger = logger
+
 ## Links
 
 - This library was extracted from my answer to [this Stack Overflow
