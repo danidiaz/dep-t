@@ -121,7 +121,7 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
 --    Makes the functions inside a small environment require a bigger environment.
 --
 --    This can be useful if we are encasing the small environment as a field of
---    the big environment, ir order to make the types match.
+--    the big environment, in order to make the types match.
 --
 --    The scary first parameter is a function that, given a natural
 --    transformation of monads, changes the monad parameter of the environment
