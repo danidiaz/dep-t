@@ -51,18 +51,10 @@ env =
       logic = _logic logger
     }
 
--- The environment doesn't know about any concrete monad
-type BiggerEnv :: (Type -> Type) -> Type
-data BiggerEnv m = BiggerEnv
-  { inner :: Env m
-  }
-
-biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
-biggerEnv =
-  BiggerEnv
-    { inner = zoomEnv (Rank2.<$>) inner env }
+env' :: Env (DepT Env IO)
+env' = zoomEnv (Rank2.<$>) id env
 
 main :: IO ()
 main = do
-  r <- runDepT ((logic . inner $ biggerEnv) 7) biggerEnv
+  r <- runDepT (logic env' 7) env'
   print r
