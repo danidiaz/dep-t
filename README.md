@@ -10,7 +10,7 @@ parameterized by `DepT` itself.
 ## Rationale
 
 To achieve dependency injection in Haskell, a common solution is to build a
-record of functions and pass it to the program logic some variant of
+record of functions and pass it to the program logic using some variant of
 [`ReaderT`](http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html).
 
 Let's start by defining some auxiliary typeclasses to extract functions from an
