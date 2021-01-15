@@ -27,4 +27,5 @@ With `O1` fails:
       To see detailed counts use -ddump-simpl-stats
       Total ticks: 35843
 
-
+For some reason, removing all references to the `logger` field in the `Env`
+type makes it compile ok.
