@@ -12,13 +12,18 @@
 -- |
 --    This package provides 'DepT', a monad transformer similar to 'ReaderT'.
 --
---    The difference is that the environment of 'DepT' must be parameterized by @DepT@'s own monad stack.
+--    The difference is that the environment of 'DepT' must be parameterized by
+--    @DepT@'s own monad stack.
+--
+--    There's a function 'withDepT' which is analogous to 'withReaderT'. 
+--
+--    There's no analogue of 'mapReaderT' however. This means you can't tweak
+--    the monad below the 'DepT' with a natural transformation.
 module Control.Monad.Dep
   ( DepT (DepT),
     runDepT,
     toReaderT,
     withDepT,
---    mapDepT
   )
 where
 
@@ -104,20 +109,3 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
         )
     )
 
---mapDepT ::
---  forall env m n a.
---  (Monad m, Monad n) =>
---  (forall x. m x -> n x) ->
---  DepT env m a ->
---  DepT env n a
--- mapDepT :: (m a -> n a) -> DepT env m a -> DepT env n a
--- mapDepT trans (DepT r) = DepT (mapReaderT trans r)
-
-
-
-
--- runFromEnv locator env = flip runDepT env (locator env)
-
--- add runFromEnv
--- add zoomEnv
---

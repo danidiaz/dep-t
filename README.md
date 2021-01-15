@@ -7,7 +7,7 @@ monad transformer for dependency injection.
 The difference with `ReaderT` is that `DepT` takes an enviroment whose type is
 parameterized by `DepT` itself.
 
-## Motivation
+## Rationale
 
 To achieve dependency injection in Haskell, a common solution is to build a
 record of functions and pass it to the program logic using a `ReaderT`.
@@ -78,6 +78,8 @@ of the environment, but they know nothing of `DepT`, either.
 
 - This library was extracted from my answer to [this Stack Overflow
   question](https://stackoverflow.com/a/61782258/1364288).
+
+- The implementation of `mapDepT` was teased out in [this other SO question](https://stackoverflow.com/questions/65710657/writing-a-zooming-function-for-a-readert-like-monad-transformer).
 
 - I'm unsure of the relationship between `DepT` and the technique described in
   [Adventures assembling records of
