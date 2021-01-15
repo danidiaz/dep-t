@@ -98,6 +98,12 @@ For example:
     instance HasLogger MonomorphicEnv IO where
       getLogger = logger
 
+## Caveats
+
+The structure of the `DepT` type might be prone to trigger a [known infelicity
+of the GHC
+simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
+
 ## Links
 
 - This library was extracted from my answer to [this Stack Overflow

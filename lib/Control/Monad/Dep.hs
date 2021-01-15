@@ -116,6 +116,8 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
    This can be useful if we are encasing the small environment as a field of
    the big environment, ir order to make the types match.
  -}
+-- For the reason of not inlining, see https://twitter.com/DiazCarrete/status/1350116413445439493
+{-# NOINLINE zoomEnv #-}
 zoomEnv ::
   forall small big m a.
   Monad m =>
@@ -128,5 +130,4 @@ zoomEnv ::
   small (DepT small m) ->
   small (DepT big m)
 zoomEnv mapEnv inner = mapEnv (withDepT mapEnv inner)
-
 
