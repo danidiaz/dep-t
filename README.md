@@ -1,11 +1,15 @@
+
+    $ ghc --version
+    The Glorious Glasgow Haskell Compilation System, version 8.10.3
+
 With `O0` compiles ok:
 
-    PS C:\Users\ESDPC\hs\dep-t> ghc -O0 Main.hs
+    $ ghc -O0 Main.hs
     Linking Main.exe ...
 
 With `O1` compiles fails:
 
-    PS> ghc -O1 Main.hs
+    $ ghc -O1 Main.hs
     [1 of 1] Compiling Main             ( Main.hs, Main.o ) [Optimisation flags changed]
     Simplifier ticks exhausted
       When trying UnfoldingDone ds_s1ze
