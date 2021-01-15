@@ -46,9 +46,16 @@ mkController x = do
   insert x
   return $ x * x
 
--- A "real" implementation that interacts with the external world.
+-- A "real" logger implementation that interacts with the external world.
 mkStdoutLogger :: MonadIO m => String -> m ()
 mkStdoutLogger msg = liftIO (putStrLn msg)
+
+-- A "real" repository implementation 
+mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
+mkStdoutRepository entity = do
+  doLog <- asks logger
+  doLog "I'm going to write the entity!"
+  liftIO $ print entity
 
 -- The traces we accumulate from the fakes during tests
 type TestTrace = ([String], [Int])
@@ -64,16 +71,51 @@ mkFakeRepository entity = do
   doLog "I'm going to write the entity!"
   tell ([], [entity])
 
--- Here we define some environments, which are basically records-of-functions
--- parameterized by an effect monad.
+
 --
+--
+-- Here we define a monomorphic environment working on IO
+type EnvIO :: Type
+data EnvIO = EnvIO
+  { _loggerIO :: String -> IO (),
+    _repositoryIO :: Int -> IO ()
+  }
+
+instance HasLogger EnvIO IO where
+  logger = _loggerIO
+
+instance HasRepository EnvIO IO where
+  repository = _repositoryIO
+
+-- In the monomorphic environment, the controller function lives "separate",
+-- having access to the logger and the repository through the ReaderT
+-- environment.
+--
+-- The question is: the repository function *also* needs to know about the
+-- logger!  Shouldn't it be aware of the ReaderT environment as well? Why
+-- privilege the controller function in such a manner?
+--
+-- In a sufficiently complex app, the diverse functions will form a DAG of
+-- dependencies between each other. So it would be nice if the functions were
+-- treated uniformly, all having access to (views of) the environment record.
+_mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO Int
+_mkControllerIO x = do
+  doLog <- asks logger
+  liftIO $ doLog "I'm going to insert in the db!"
+  insert <- asks repository
+  liftIO $ insert x
+  return $ x * x
+
+--
+--
+-- Here we define some polymorphic environments, which are basically
+-- records-of-functions parameterized by an effect monad.
 type Env :: (Type -> Type) -> Type
 data Env m = Env
   { _logger :: String -> m (),
     _repository :: Int -> m (),
     _controller :: Int -> m Int
   }
-
 $(Rank2.TH.deriveFunctor ''Env)
 
 -- If our environment is parmeterized by the monad m, then logging is done in
@@ -90,7 +132,6 @@ data BiggerEnv m = BiggerEnv
   { _inner :: Env m,
     _extra :: Int -> m Int
   }
-
 $(Rank2.TH.deriveFunctor ''BiggerEnv)
 
 --
@@ -98,7 +139,8 @@ $(Rank2.TH.deriveFunctor ''BiggerEnv)
 -- Creating environment values and commiting to a concrete monad.
 --
 -- This is the first time DepT is used in this module.
--- Note that it is only here where we settle for a concrete monad.
+-- Note that it is only here where we settle for a concrete monad for the
+-- polymorphic environments.
 env :: Env (DepT Env (Writer TestTrace))
 env =
   let _logger = mkFakeLogger
