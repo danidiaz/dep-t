@@ -84,7 +84,9 @@ $(Rank2.TH.deriveFunctor ''BiggerEnv)
 biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
 biggerEnv = BiggerEnv 
     {
-        inner = (Rank2.<$>) (withDepT (Rank2.<$>) inner) env,
+        -- inner = (Rank2.<$>) (withDepT (Rank2.<$>) inner) env,
+        -- Weird GHC bug? The simplifier goes tizzy with the line below, works with the line above.
+        inner = zoomEnv (Rank2.<$>) inner env,
         extra = pure 
     }
 

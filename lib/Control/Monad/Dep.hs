@@ -24,6 +24,7 @@ module Control.Monad.Dep
     runDepT,
     toReaderT,
     withDepT,
+    zoomEnv,
   )
 where
 
@@ -108,4 +109,24 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
              in f small
         )
     )
+
+{-
+   Makes the functions inside a small environment require a bigger environment. 
+
+   This can be useful if we are encasing the small environment as a field of
+   the big environment, ir order to make the types match.
+ -}
+zoomEnv ::
+  forall small big m a.
+  Monad m =>
+  ( forall p q.
+    (forall x. p x -> q x) ->
+    small p ->
+    small q
+  ) ->
+  (forall t. big t -> small t) ->
+  small (DepT small m) ->
+  small (DepT big m)
+zoomEnv mapEnv inner = mapEnv (withDepT mapEnv inner)
+
 
