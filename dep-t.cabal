@@ -3,15 +3,19 @@ cabal-version:       3.0
 name:                dep-t
 version:             0.1.0.0
 synopsis:            Reader-like monad transformer for dependency injection.
--- description:
+description:         Put all your functions in the environment record! Let all
+                     your functions read from the environment record! No favorites!
 -- bug-reports:
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Daniel Diaz
 maintainer:          diaz_carrete@yahoo.com
--- copyright:
 category:            Control
 extra-source-files:  CHANGELOG.md, README.md
+
+source-repository    head
+  type:     git
+  location: https://github.com/danidiaz/dep-t.git
 
 common common
   build-depends:       base >=4.10.0.0,
