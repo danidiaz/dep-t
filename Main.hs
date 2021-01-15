@@ -28,27 +28,11 @@ data Env m = Env
 
 $(Rank2.TH.deriveFunctor ''Env)
 
--- These two functions don't know the concrete envionment record.
---
--- This one because it only needs MonadIO.
-_logger :: MonadIO m => String -> m ()
-_logger msg = liftIO (putStrLn msg)
-
--- This one because it receives a getter for the logger
--- A HasX-style typeclass would have been an alternative.
-_logic :: MonadReader e m => (e -> String -> m ()) -> Int -> m Int
-_logic getLogger x = do
-  logger <- reader getLogger
-  logger "I'm going to multiply a number by itself!"
-  return $ x * x
-
--- This is the first time DepT is used in this module.
--- Note that it is only here where we settle for IO.
 env :: Env (DepT Env IO)
 env =
   Env
-    { logger = _logger,
-      logic = _logic logger
+    { logger = \msg -> liftIO (putStrLn msg),
+      logic = \x -> return $ x*x
     }
 
 env' :: Env (DepT Env IO)
