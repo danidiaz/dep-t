@@ -45,16 +45,6 @@ env =
       logic = _logic logger
     }
 
--- An attempt with ReaderT which doesn't work
--- env' =
---   Env
---     { logger = __logic logger
---     }
--- 
--- result' :: IO Int
--- result' = runReaderT (logic env' 7) env'
-
-
 -- The environment doesn't know about any concrete monad
 type BiggerEnv :: (Type -> Type) -> Type
 data BiggerEnv m = BiggerEnv
