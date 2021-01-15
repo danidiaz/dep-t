@@ -10,7 +10,8 @@ parameterized by `DepT` itself.
 ## Rationale
 
 To achieve dependency injection in Haskell, a common solution is to build a
-record of functions and pass it to the program logic some variant of `ReaderT`.
+record of functions and pass it to the program logic some variant of
+[`ReaderT`](http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html).
 
 Let's start by defining some auxiliary typeclasses to extract functions from an
 environment record:
@@ -39,9 +40,9 @@ Let's define a monomorphic record with effects in `IO`:
     instance HasRepository EnvIO IO where
       repository = _repositoryIO
 
-Records-of-functions-in-IO is a simple technique which works well in many
+Record-of-functions-in-IO is a simple technique which works well in many
 situations. There are even [specialized
-libraries](http://hackage.haskell.org/package/rio) to support it.
+libraries](http://hackage.haskell.org/package/rio) that support it.
 
 Here's a function which obtains its dependencies from the environment record:
 
@@ -60,17 +61,18 @@ That's all and well, but there are two issues that bug me:
   it can't use the `HasLogger` typeclass for easy and convenient dependency
   injection. Why privilege the controller in such a way?
 
-  In a sufficiently complex app, the diverse functions that comprise it will
-  form a complex [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) of
-  dependencies. So it would be nice if all the functions managed with
-  dependency injection were treated uniformly, if all had access to (some view
-  of) the environment record.
+  In a sufficiently complex app, the diverse functions that comprise it will be
+  organized in a big
+  [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) of dependencies.
+  And it would be nice if all the functions taking part in dependency injection
+  were treated uniformly; if all of them had access to (some view of) the
+  environment record.
 
 - We might want to write code that is innocent of `IO` and polymorphic over the
   monad, to ensure that the program logic can't do some unexpected missile
   launch, or to allow testing our app in a "pure" way. 
 
-Let's start by parameterizing our environments by a monad: 
+Let's parameterize our environment by a monad: 
 
     type Env :: (Type -> Type) -> Type
     data Env m = Env
