@@ -1,10 +1,14 @@
-{-# language MultiParamTypeClasses, TypeFamilies, FlexibleInstances #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 module Control.Monad.Dep.Class where
 
-import Data.Kind
 import Control.Monad.Reader
+import Data.Kind
 
 -- Code taken and modified from these SO answers from Li-yao Xia and dfeuer:
 -- https://stackoverflow.com/a/61648924/1364288
