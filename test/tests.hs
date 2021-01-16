@@ -29,6 +29,8 @@ type HasLogger :: Type -> (Type -> Type) -> Constraint
 class HasLogger r m | r -> m where
   logger :: r -> String -> m ()
 
+-- Possible convenience function to avoid having to use ask before logging
+-- Worth the extra boilerplate, or not?
 logger' :: (MonadReader e m, HasLogger e m) => String -> m ()
 logger' msg = asks logger >>= \f -> f msg
 
@@ -41,13 +43,12 @@ class HasRepository r m | r -> m where
 -- An implementation of the controller, done programming against interfaces
 -- (well, against typeclasses).
 -- Polymorphic on the monad.
-mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m Int
+mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m String
 mkController x = do
-  doLog <- asks logger
-  doLog "I'm going to insert in the db!"
-  insert <- asks repository
-  insert x
-  return $ x * x
+  e <- ask
+  logger e "I'm going to insert in the db!"
+  repository e x
+  return "view"
 
 -- A "real" logger implementation that interacts with the external world.
 mkStdoutLogger :: MonadIO m => String -> m ()
@@ -56,8 +57,8 @@ mkStdoutLogger msg = liftIO (putStrLn msg)
 -- A "real" repository implementation 
 mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
 mkStdoutRepository entity = do
-  doLog <- asks logger
-  doLog "I'm going to write the entity!"
+  e <- ask
+  logger e "I'm going to write the entity!"
   liftIO $ print entity
 
 -- The traces we accumulate from the fakes during tests
@@ -70,8 +71,8 @@ mkFakeLogger msg = tell ([msg], [])
 -- Ditto.
 mkFakeRepository :: (MonadReader e m, HasLogger e m, MonadWriter TestTrace m) => Int -> m ()
 mkFakeRepository entity = do
-  doLog <- asks logger
-  doLog "I'm going to write the entity!"
+  e <- ask
+  logger e "I'm going to write the entity!"
   tell ([], [entity])
 
 
@@ -101,13 +102,12 @@ instance HasRepository EnvIO IO where
 -- In a sufficiently complex app, the diverse functions will form a DAG of
 -- dependencies between each other. So it would be nice if the functions were
 -- treated uniformly, all having access to (views of) the environment record.
-mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO Int
+mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
 mkControllerIO x = do
-  doLog <- asks logger
-  liftIO $ doLog "I'm going to insert in the db!"
-  insert <- asks repository
-  liftIO $ insert x
-  return $ x * x
+  e <- ask
+  liftIO $ logger e "I'm going to insert in the db!"
+  liftIO $ repository e x
+  return "view"
 
 --
 --
@@ -117,7 +117,7 @@ type Env :: (Type -> Type) -> Type
 data Env m = Env
   { _logger :: String -> m (),
     _repository :: Int -> m (),
-    _controller :: Int -> m Int
+    _controller :: Int -> m String
   }
 $(Rank2.TH.deriveFunctor ''Env)
 

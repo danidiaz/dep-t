@@ -46,13 +46,12 @@ libraries](http://hackage.haskell.org/package/rio) that support it.
 
 Here's a function which obtains its dependencies from the environment record:
 
-    mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO Int
+    mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
     mkControllerIO x = do
-      doLog <- asks logger
-      liftIO $ doLog "I'm going to insert in the db!"
-      insert <- asks repository
-      liftIO $ insert x
-      return $ x * x
+      e <- ask
+      liftIO $ logger e "I'm going to insert in the db!"
+      liftIO $ repository e x
+      return "view"
 
 That's all and well, but there are two issues that bug me:
 
@@ -78,7 +77,7 @@ Let's parameterize our environment by a monad:
     data Env m = Env
       { _logger :: String -> m (),
         _repository :: Int -> m (),
-        _controller :: Int -> m Int
+        _controller :: Int -> m String
       }
     -- helper from the "rank2classes" package
     $(Rank2.TH.deriveFunctor ''Env)
@@ -103,19 +102,18 @@ logger through `HasLogger`:
 
     mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
     mkStdoutRepository entity = do
-      doLog <- asks logger
-      doLog "I'm going to write the entity!"
+      e <- ask
+      logger e "I'm going to write the entity!"
       liftIO $ print entity
 
 And here's the controller:
 
-    mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m Int
+    mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m String
     mkController x = do
-      doLog <- asks logger
-      doLog "I'm going to insert in the db!"
-      insert <- asks repository
-      insert x
-      return $ x * x
+      e <- ask
+      logger e "I'm going to insert in the db!"
+      repository e x
+      return "view"
 
 Now, lets choose `IO` as the base monad and assemble an environment record:
 
@@ -169,15 +167,10 @@ The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
 collecting the outputs of functions working as ["test
 doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
-## Invoking the functions in the environment is cumbersome
+## How to avoid using "ask" or "asks" before invoking a dependency?
 
-Yeah, it's annoying to perform the "ask for function, invoke function" dance each time:
-
-    mkController x = do
-      doLog <- asks logger
-      doLog "I'm going to insert in the db!"
-
-One workaround (at the cost of more boilerplate) is to define helper functions like:  
+One possible workaround (at the cost of more boilerplate) is to define helper
+functions like:  
 
     logger' :: (MonadReader e m, HasLogger e m) => String -> m ()
     logger' msg = asks logger >>= \f -> f msg
@@ -186,6 +179,8 @@ Which you can invoke like this:
 
     mkController x = do
       logger' "I'm going to insert in the db!"
+
+I'm not sure it's worth the hassle.
 
 ## Caveats
 
