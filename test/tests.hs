@@ -184,15 +184,6 @@ biggerEnvIO =
 expected :: TestTrace
 expected = (["I'm going to insert in the db!", "I'm going to write the entity!"], [7])
 
-tests :: TestTree
-tests =
-  testGroup
-    "All"
-    [ testCase "hopeThisWorks" $
-        assertEqual "" expected $
-          execWriter $ runDepT ((_controller . _inner $ biggerEnv) 7) biggerEnv
-    ]
-
 --
 --
 -- Experiment about adding instrumetation
@@ -223,9 +214,27 @@ instrumentedEnv =
             r <- action
             logger e $ "aop after"
             pure r
-       _contry = _controller env
-       thisInstrument = instrument extraLogs
-    in env { _controller = thisInstrument (_controller env) }
+    in env { _controller = instrument extraLogs (_controller env) }
+
+expectedInstrumented :: TestTrace
+expectedInstrumented = (["aop before 7","I'm going to insert in the db!","I'm going to write the entity!","aop after"], [7])
+--
+--
+--
+
+tests :: TestTree
+tests =
+  testGroup
+    "All"
+    [ 
+      testCase "hopeThisWorks" $
+        assertEqual "" expected $
+          execWriter $ runDepT ((_controller . _inner $ biggerEnv) 7) biggerEnv,
+      testCase "hopeAOPWorks" $
+        assertEqual "" expectedInstrumented $
+          execWriter $ runDepT ((_controller $ instrumentedEnv) 7) instrumentedEnv
+    ]
+
 
 main :: IO ()
 main = defaultMain tests
