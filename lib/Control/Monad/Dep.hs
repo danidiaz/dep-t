@@ -41,7 +41,7 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
 import Control.Monad.Writer.Class
 import Control.Monad.Zip
-import Data.Kind (Type)
+import Data.Kind
 import Control.Monad.Dep.Class
 
 -- |
@@ -149,9 +149,26 @@ zoomEnv ::
   small (DepT big m)
 zoomEnv mapEnv inner = mapEnv (withDepT mapEnv inner)
 
-instance (Monad m, e ~ e', m ~ m') => MonadDep (DepT e' m x) (e (DepT e m)) (DepT e m) where
-  call f = ask >>= f
+-- instance (Monad m, e ~ e', m ~ m') => MonadDep (DepT e' m x) (e (DepT e m)) (DepT e m) where
+--   call f = ask >>= f
+-- 
+-- instance (MonadDep rest (e (DepT e m)) (DepT e m)) => MonadDep (a -> rest) (e (DepT e m)) (DepT e m) where
+--   call f x = call @rest @(e (DepT e m)) @(DepT e m) (\z -> f z x)
 
-instance (MonadDep rest (e (DepT e m)) (DepT e m)) => MonadDep (a -> rest) (e (DepT e m)) (DepT e m) where
-  call f x = call @rest @(e (DepT e m)) @(DepT e m) (\z -> f z x)
+instance Monad m => MonadDep (e (DepT e m)) (DepT e m) where
+    type WhatConstraintToUse (e (DepT e m)) (DepT e m) = CallX
+    callx = call @(e (DepT e m))
+
+type CallX :: Type -> Type -> Constraint
+class e ~ TheEnvX r => CallX e r where
+  type TheEnvX r
+  call :: (e -> r) -> r
+
+instance CallX e r => CallX e (a -> r) where
+  type TheEnvX (a -> r) = TheEnvX r
+  call f x = call (\env -> f env x)
+
+instance (Monad m', e ~ e', m ~ m') => CallX (e (DepT e m)) (DepT e' m' r) where
+  type TheEnvX (DepT e' m' r) = e' (DepT e' m')
+  call f = ask >>= f
 

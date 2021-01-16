@@ -17,15 +17,33 @@ import Data.Kind
 -- Code taken and modified from these SO answers from Li-yao Xia and dfeuer:
 -- https://stackoverflow.com/a/61648924/1364288
 
-class MonadReader e m => MonadDep function e m where
-    call :: (e -> function) -> function
+class MonadReader e m => MonadDep e m where
+    type WhatConstraintToUse e m :: Type -> Type -> Constraint
+    callx :: WhatConstraintToUse e m e function => (e -> function) -> function
 
--- As a warm-up, MonadDep instance for ReaderT.
-instance (Monad m, e ~ e', m ~ m') => MonadDep (ReaderT e' m' x) e (ReaderT e m) where
+instance Monad m => MonadDep e (ReaderT e m) where
+    type WhatConstraintToUse e (ReaderT e m) = Call
+    callx = call @e
+
+type Call :: Type -> Type -> Constraint
+class e ~ TheEnv r => Call e r where
+  type TheEnv r
+  call :: (e -> r) -> r
+
+instance Call e r => Call e (a -> r) where
+  type TheEnv (a -> r) = TheEnv r
+  call f x = call (\env -> f env x)
+
+instance (Monad m', e ~ e') => Call e (ReaderT e' m' r) where
+  type TheEnv (ReaderT e' m' r) = e'
   call f = ask >>= f
 
-instance (MonadDep rest e (ReaderT e m)) => MonadDep (a -> rest) e (ReaderT e m) where
-  call f x = call @rest @e @(ReaderT e m) (\z -> f z x)
+-- -- As a warm-up, MonadDep instance for ReaderT.
+-- instance (Monad m, e ~ e', m ~ m') => MonadDep (ReaderT e' m' x) e (ReaderT e m) where
+--   call f = ask >>= f
+-- 
+-- instance (MonadDep rest e (ReaderT e m)) => MonadDep (a -> rest) e (ReaderT e m) where
+--   call f x = call @rest @e @(ReaderT e m) (\z -> f z x)
 
 -- class (MonadReader e m, m ~ TheMonad r) => Call e m r where
 --   type TheMonad r :: Type -> Type
