@@ -1,19 +1,26 @@
 {-# language MultiParamTypeClasses, TypeFamilies, FlexibleInstances #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Control.Monad.Dep.Class where
 
+import Data.Kind
 import Control.Monad.Reader
 
 -- Code taken and modified from these SO answers from Li-yao Xia and dfeuer:
 -- https://stackoverflow.com/a/61648924/1364288
 
-class e ~ TheEnv r => Call e r where
-  type TheEnv r
+class (MonadReader e m, m ~ TheMonad r) => Call e m r where
+  type TheMonad r :: Type -> Type
   call :: (e -> r) -> r
 
-instance Call e r => Call e (a -> r) where
-  type TheEnv (a -> r) = TheEnv r
+-- class (MonadReader e m, e ~ TheEnv r, m ~ TheMonad r) => Call e m e' r | r -> e' where
+--   type TheMonad r :: Type -> Type
+--   call :: (e -> r) -> r
+
+instance Call e m r => Call e m (a -> r) where
+  type TheMonad (a -> r) = TheMonad r
   call f x = call (\env -> f env x)
 
-instance (Monad m, e ~ e') => Call e (ReaderT e' m r) where
-  type TheEnv (ReaderT e' m r) = e'
+instance (e ~ e', m ~ m', MonadReader e' m') => Call e m (m' x) where
+  type TheMonad (m' x) = m'
   call f = ask >>= f
