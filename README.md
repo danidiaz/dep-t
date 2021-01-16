@@ -182,6 +182,10 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 
 - The implementation of `mapDepT` was teased out in [this other SO question](https://stackoverflow.com/questions/65710657/writing-a-zooming-function-for-a-readert-like-monad-transformer).
 
+- An [SO
+  answer](https://stackoverflow.com/questions/57703898/how-to-call-impure-functions-from-pure-ones/57714058#57714058)
+  about records-of-functions and the "veil of polymorphism".
+
 - I'm unsure of the relationship between `DepT` and the technique described in
   [Adventures assembling records of
   capabilities](https://discourse.haskell.org/t/adventures-assembling-records-of-capabilities/623). 
