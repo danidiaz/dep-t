@@ -25,6 +25,7 @@ module Control.Monad.Dep
     toReaderT,
     withDepT,
     zoomEnv,
+    module Control.Monad.Dep.Class
   )
 where
 
@@ -39,6 +40,7 @@ import Control.Monad.Trans.Identity
 import Control.Monad.Writer.Class
 import Control.Monad.Zip
 import Data.Kind (Type)
+import Control.Monad.Dep.Class
 
 -- |
 --    A monad transformer which adds a read-only environment to the given monad.
