@@ -8,6 +8,8 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- |
 --    This package provides 'DepT', a monad transformer similar to 'ReaderT'.
@@ -146,3 +148,10 @@ zoomEnv ::
   small (DepT small m) ->
   small (DepT big m)
 zoomEnv mapEnv inner = mapEnv (withDepT mapEnv inner)
+
+instance (Monad m, e ~ e', m ~ m') => MonadDep (DepT e' m x) (e (DepT e m)) (DepT e m) where
+  call f = ask >>= f
+
+instance (MonadDep rest (e (DepT e m)) (DepT e m)) => MonadDep (a -> rest) (e (DepT e m)) (DepT e m) where
+  call f x = call @rest @(e (DepT e m)) @(DepT e m) (\z -> f z x)
+

@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Control.Monad.Dep.Class where
+module Control.Monad.Dep.Class (MonadDep(..)) where
 
 import Control.Monad.Reader
 import Data.Kind
@@ -21,13 +21,11 @@ class MonadReader e m => MonadDep function e m where
     call :: (e -> function) -> function
 
 -- As a warm-up, MonadDep instance for ReaderT.
-instance (Monad m, e ~ e') => MonadDep (ReaderT e' m x) e (ReaderT e m) where
+instance (Monad m, e ~ e', m ~ m') => MonadDep (ReaderT e' m' x) e (ReaderT e m) where
   call f = ask >>= f
 
 instance (MonadDep rest e (ReaderT e m)) => MonadDep (a -> rest) e (ReaderT e m) where
   call f x = call @rest @e @(ReaderT e m) (\z -> f z x)
-
-
 
 -- class (MonadReader e m, m ~ TheMonad r) => Call e m r where
 --   type TheMonad r :: Type -> Type
