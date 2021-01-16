@@ -5,8 +5,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Main (main) where
 
@@ -19,6 +22,7 @@ import Rank2.TH qualified
 import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
+import Data.List (intercalate)
 
 -- Some helper typeclasses.
 --
@@ -54,7 +58,7 @@ mkController x = do
 mkStdoutLogger :: MonadIO m => String -> m ()
 mkStdoutLogger msg = liftIO (putStrLn msg)
 
--- A "real" repository implementation 
+-- A "real" repository implementation
 mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
 mkStdoutRepository entity = do
   e <- ask
@@ -74,7 +78,6 @@ mkFakeRepository entity = do
   e <- ask
   logger e "I'm going to write the entity!"
   tell ([], [entity])
-
 
 --
 --
@@ -119,6 +122,7 @@ data Env m = Env
     _repository :: Int -> m (),
     _controller :: Int -> m String
   }
+
 $(Rank2.TH.deriveFunctor ''Env)
 
 -- If our environment is parmeterized by the monad m, then logging is done in
@@ -135,6 +139,7 @@ data BiggerEnv m = BiggerEnv
   { _inner :: Env m,
     _extra :: Int -> m Int
   }
+
 $(Rank2.TH.deriveFunctor ''BiggerEnv)
 
 --
@@ -149,7 +154,7 @@ env =
   let _logger = mkFakeLogger
       _repository = mkFakeRepository
       _controller = mkController
-   in Env {_logger,  _repository, _controller}
+   in Env {_logger, _repository, _controller}
 
 -- An IO variant
 envIO :: Env (DepT Env IO)
@@ -157,7 +162,7 @@ envIO =
   let _logger = mkStdoutLogger
       _repository = mkStdoutRepository
       _controller = mkController
-   in Env {_logger,  _repository, _controller}
+   in Env {_logger, _repository, _controller}
 
 biggerEnv :: BiggerEnv (DepT BiggerEnv (Writer TestTrace))
 biggerEnv =
@@ -187,6 +192,40 @@ tests =
         assertEqual "" expected $
           execWriter $ runDepT ((_controller . _inner $ biggerEnv) 7) biggerEnv
     ]
+
+--
+--
+-- Experiment about adding instrumetation
+class Instrumentable e m r where
+  instrument ::
+    ( forall x.
+      HasLogger (e (DepT e m)) (DepT e m) =>
+      [String] ->
+      DepT e m x ->
+      DepT e m x
+    ) ->
+    r ->
+    r
+
+instance HasLogger (e (DepT e m)) (DepT e m) => Instrumentable e m (DepT e m x) where
+  instrument f d = f [] d
+
+instance (Instrumentable e m r, Show a) => Instrumentable e m (a -> r) where
+  instrument f ar =
+    let instrument' = instrument @e @m @r
+     in \a -> instrument' (\names d -> f (show a : names) d) (ar a)
+
+instrumentedEnv :: Env (DepT Env (Writer TestTrace))
+instrumentedEnv =
+   let extraLogs args action = do
+            e <- ask
+            logger e $ "aop before " ++ intercalate "," args
+            r <- action
+            logger e $ "aop after"
+            pure r
+       _contry = _controller env
+       thisInstrument = instrument @Env @(Writer TestTrace) @(Int -> DepT Env (Writer TestTrace) String) extraLogs
+    in env { _controller = thisInstrument (_controller env) }
 
 main :: IO ()
 main = defaultMain tests
