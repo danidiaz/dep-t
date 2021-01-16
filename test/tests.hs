@@ -224,7 +224,7 @@ instrumentedEnv =
             logger e $ "aop after"
             pure r
        _contry = _controller env
-       thisInstrument = instrument @Env @(Writer TestTrace) @(Int -> DepT Env (Writer TestTrace) String) extraLogs
+       thisInstrument = instrument @Env @(Writer TestTrace) extraLogs
     in env { _controller = thisInstrument (_controller env) }
 
 main :: IO ()
