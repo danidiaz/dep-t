@@ -18,7 +18,7 @@ source-repository    head
   location: https://github.com/danidiaz/dep-t.git
 
 common common
-  build-depends:       base >=4.10.0.0,
+  build-depends:       base >=4.10.0.0 && < 5,
                        transformers ^>= 0.5.0.0,
                        mtl ^>= 2.2,
                        unliftio-core ^>= 0.2.0.0,
