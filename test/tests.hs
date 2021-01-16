@@ -29,6 +29,9 @@ type HasLogger :: Type -> (Type -> Type) -> Constraint
 class HasLogger r m | r -> m where
   logger :: r -> String -> m ()
 
+logger' :: (MonadReader e m, HasLogger e m) => String -> m ()
+logger' msg = asks logger >>= \f -> f msg
+
 type HasRepository :: Type -> (Type -> Type) -> Constraint
 class HasRepository r m | r -> m where
   repository :: r -> Int -> m ()

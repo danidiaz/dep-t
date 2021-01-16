@@ -169,6 +169,24 @@ The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
 collecting the outputs of functions working as ["test
 doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
+## Invoking the functions in the environment is cumbersome
+
+Yeah, it's annoying to perform the "ask for function, invoke function" dance each time:
+
+    mkController x = do
+      doLog <- asks logger
+      doLog "I'm going to insert in the db!"
+
+One workaround (at the cost of more boilerplate) is to define helper functions like:  
+
+    logger' :: (MonadReader e m, HasLogger e m) => String -> m ()
+    logger' msg = asks logger >>= \f -> f msg
+
+Which you can invoke like this:
+
+    mkController x = do
+      logger' "I'm going to insert in the db!"
+
 ## Caveats
 
 The structure of the `DepT` type might be prone to trigger a [known infelicity
