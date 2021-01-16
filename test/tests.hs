@@ -196,7 +196,7 @@ tests =
 --
 --
 -- Experiment about adding instrumetation
-class Instrumentable e m r where
+class Instrumentable e m r | r -> e m where
   instrument ::
     ( forall x.
       HasLogger (e (DepT e m)) (DepT e m) =>
@@ -224,7 +224,7 @@ instrumentedEnv =
             logger e $ "aop after"
             pure r
        _contry = _controller env
-       thisInstrument = instrument @Env @(Writer TestTrace) extraLogs
+       thisInstrument = instrument extraLogs
     in env { _controller = thisInstrument (_controller env) }
 
 main :: IO ()
