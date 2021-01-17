@@ -16,6 +16,34 @@ module Control.Monad.Dep.Advice where
 import Control.Monad.Dep
 import Data.Kind
 
+--
+--
+--
+type Advisee ::
+  (Type -> (Type -> Type) -> Constraint) ->
+  ((Type -> Type) -> Type) ->
+  (Type -> Type) ->
+  Type ->
+  Constraint
+class Advisee c e m r | r -> e m where
+  advise ::
+    ( forall x.
+      (c (e (DepT e m)) (DepT e m), Monad m) =>
+      DepT e m x ->
+      DepT e m x
+    ) ->
+    r ->
+    r
+
+instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee c e m (DepT e m x) where
+  advise advice d = advice d
+
+instance (Advisee c e m r) => Advisee c e m (a -> r) where
+  advise advice f a = advise @c @e @m @r advice (f a)
+
+--
+--
+--
 type ArgAwareAdvisee ::
   (Type -> Constraint) ->
   Type ->
@@ -46,4 +74,5 @@ instance (c (e (DepT e m)) (DepT e m), Monad m) => ArgAwareAdvisee ac u c e m (D
 instance (ArgAwareAdvisee ac u c e m r, ac a) => ArgAwareAdvisee ac u c e m (a -> r) where
   adviseWithArgs argAdaptor advice ar =
     let adviseWithArgs' = adviseWithArgs @ac @u @c @e @m @r argAdaptor
-     in \a -> adviseWithArgs' (\names d -> advice (argAdaptor a : names) d) (ar a)
+     in \a -> adviseWithArgs' (\args d -> advice (argAdaptor a : args) d) (ar a)
+
