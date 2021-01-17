@@ -266,6 +266,9 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   in subsequent invocations. I don't think this happens with "Adventures..." at
   least when changing an already "assembled" record.
 
+- [RIO](http://hackage.haskell.org/package/rio) is a featureful ReaderT-like /
+  prelude replacement library which favors monomorphic environments.
+
 - Another exploration of dependency injection with `ReaderT`:
   [ReaderT-OpenProduct-Environment](https://github.com/keksnicoh/ReaderT-OpenProduct-Environment).
 
