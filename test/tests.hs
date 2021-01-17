@@ -197,7 +197,7 @@ advicedEnv =
         r <- action
         logger e $ "advice after"
         pure r
-   in env {_controller = advise @Show @String @HasLogger show loggingAdvice (_controller env)}
+   in env {_controller = adviseWithArgs @Show @String @HasLogger show loggingAdvice (_controller env)}
 
 expectedAdviced :: TestTrace
 expectedAdviced = (["advice before: 7", "I'm going to insert in the db!", "I'm going to write the entity!", "advice after"], [7])
