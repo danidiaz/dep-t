@@ -27,6 +27,7 @@ common common
 library
   import: common
   exposed-modules:     Control.Monad.Dep
+                       Control.Monad.Dep.Advice
   hs-source-dirs:      lib 
 
 test-suite dep-t-test
