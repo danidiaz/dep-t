@@ -1,21 +1,32 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Control.Monad.Dep.Advice where
 
 import Control.Monad.Dep
+import Data.Kind
 
+type Advisee ::
+  (Type -> Constraint) ->
+  Type ->
+  (Type -> (Type -> Type) -> Constraint) ->
+  ((Type -> Type) -> Type) -> 
+  (Type -> Type) ->
+  Type ->
+  Constraint
 class Advisee ac u c e m r | r -> e m where
   advise ::
-    ( forall a . ac a => a -> u ) ->  
+    (forall a. ac a => a -> u) ->
     ( forall x.
       (c (e (DepT e m)) (DepT e m), Monad m) =>
       [u] ->
