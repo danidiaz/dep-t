@@ -188,27 +188,9 @@ expected = (["I'm going to insert in the db!", "I'm going to write the entity!"]
 --
 --
 -- Experiment about adding instrumetation
-class Instrumentable e m r | r -> e m where
-  instrument ::
-    ( forall x.
-      HasLogger (e (DepT e m)) (DepT e m) =>
-      [String] ->
-      DepT e m x ->
-      DepT e m x
-    ) ->
-    r ->
-    r
 
-instance HasLogger (e (DepT e m)) (DepT e m) => Instrumentable e m (DepT e m x) where
-  instrument f d = f [] d
-
-instance (Instrumentable e m r, Show a) => Instrumentable e m (a -> r) where
-  instrument f ar =
-    let instrument' = instrument @e @m @r
-     in \a -> instrument' (\names d -> f (show a : names) d) (ar a)
-
-instrumentedEnv :: Env (DepT Env (Writer TestTrace))
-instrumentedEnv =
+advicedEnv :: Env (DepT Env (Writer TestTrace))
+advicedEnv =
   let loggingAdvice args action = do
         e <- ask
         logger e $ "advice before: " ++ intercalate "," args
@@ -217,8 +199,8 @@ instrumentedEnv =
         pure r
    in env {_controller = advise @Show @String @HasLogger show loggingAdvice (_controller env)}
 
-expectedInstrumented :: TestTrace
-expectedInstrumented = (["advice before: 7", "I'm going to insert in the db!", "I'm going to write the entity!", "advice after"], [7])
+expectedAdviced :: TestTrace
+expectedAdviced = (["advice before: 7", "I'm going to insert in the db!", "I'm going to write the entity!", "advice after"], [7])
 
 --
 --
@@ -232,8 +214,8 @@ tests =
         assertEqual "" expected $
           execWriter $ runDepT (do e <- ask; (_controller . _inner) e 7) biggerEnv,
       testCase "hopeAOPWorks" $
-        assertEqual "" expectedInstrumented $
-          execWriter $ runDepT (do e <- ask; _controller e 7) instrumentedEnv
+        assertEqual "" expectedAdviced $
+          execWriter $ runDepT (do e <- ask; _controller e 7) advicedEnv
     ]
 
 main :: IO ()
