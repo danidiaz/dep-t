@@ -39,7 +39,7 @@ class Advisee ac u c e m r | r -> e m where
 instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee ac u c e m (DepT e m x) where
   advise _ f d = f [] d
 
-instance (Advisee ac u c e m r, ac a, Monad m) => Advisee ac u c e m (a -> r) where
+instance (Advisee ac u c e m r, ac a) => Advisee ac u c e m (a -> r) where
   advise argAdaptor f ar =
     let advise' = advise @ac @u @c @e @m @r argAdaptor
      in \a -> advise' (\names d -> f (argAdaptor a : names) d) (ar a)
