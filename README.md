@@ -266,6 +266,9 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   in subsequent invocations. I don't think this happens with "Adventures..." at
   least when changing an already "assembled" record.
 
+- Another exploration of dependency injection with `ReaderT`:
+  [ReaderT-OpenProduct-Environment](https://github.com/keksnicoh/ReaderT-OpenProduct-Environment).
+
 - [registry](http://hackage.haskell.org/package/registry) is a package that
   implements an alternative approach to dependency injection, one different
   from the `ReaderT`-based one. 
