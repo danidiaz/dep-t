@@ -30,6 +30,8 @@ import Data.Kind
 --
 --
 --
+newtype Advice c e m = Advice { runAdvice :: forall x. (c (e (DepT e m)) (DepT e m), Monad m) => DepT e m x -> DepT e m x }
+
 type Advisee ::
   (Type -> (Type -> Type) -> Constraint) ->
   ((Type -> Type) -> Type) ->
@@ -38,16 +40,12 @@ type Advisee ::
   Constraint
 class Advisee c e m r | r -> e m where
   advise ::
-    ( forall x.
-      (c (e (DepT e m)) (DepT e m), Monad m) =>
-      DepT e m x ->
-      DepT e m x
-    ) ->
+    Advice c e m ->
     r ->
     r
 
 instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee c e m (DepT e m x) where
-  advise advice d = advice d
+  advise (Advice advice) d = advice d
 
 instance (Advisee c e m r) => Advisee c e m (a -> r) where
   advise advice f a = advise @c @e @m @r advice (f a)
@@ -114,7 +112,7 @@ infixl 7 `EnvAnd`
     Useful when whe don't want to instrument some generic environment, but a
     concrete one, with direct access to all fields and all that.
  -}
-type EnvEq :: Type -> (Type -> Type) -> Type -> (Type -> Type) -> Constraints
+type EnvEq :: Type -> (Type -> Type) -> Type -> (Type -> Type) -> Constraint
 class (c' ~ c, m' ~ m) => EnvEq c' m' c m
 instance (c' ~ c, m' ~ m) => EnvEq c' m' c m
 
