@@ -10,6 +10,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Main (main) where
 
@@ -197,10 +198,35 @@ advicedEnv =
         r <- action
         logger e $ "advice after"
         pure r
-   in env {_controller = adviseWithArgs @Show @_ @HasLogger show loggingAdvice (_controller env)}
+   in env {
+            _controller = adviseWithArgs @Show @_ @HasLogger show loggingAdvice (_controller env)
+          }
 
 expectedAdviced :: TestTrace
 expectedAdviced = (["advice before: 7", "I'm going to insert in the db!", "I'm going to write the entity!", "advice after"], [7])
+
+-- a small test of constraint composition
+weirdAdvicedEnv :: Env (DepT Env (Writer TestTrace))
+weirdAdvicedEnv =
+  let loggingAdvice args action = do
+        e <- ask
+        logger e $ "advice before: " ++ intercalate "," args
+        r <- action
+        logger e $ "advice after"
+        pure r
+   in env {
+            _controller = adviseWithArgs @Show @_ @(HasLogger `EnvAnd` MonadConstraint (MonadWriter TestTrace)) show loggingAdvice (_controller env),
+            _logger = adviseWithArgs @(Show `ArgAnd` Eq) @_ @EnvTop show (\_ -> id) (_logger env)
+          }
+
+-- isolatedAdvice :: (ArgAwareAdvisee
+--                                   Show
+--                                   String
+--                                   (EnvAnd HasLogger (MonadConstraint (MonadWriter TestTrace)))
+--                                   e
+--                                   m
+--                                   r => 
+-- isolatedAdvice = adviseWithArgs @Show @_ @(HasLogger `EnvAnd` MonadConstraint (MonadWriter TestTrace)) show (\args action -> tell ([],[]) *> action)
 
 --
 --
