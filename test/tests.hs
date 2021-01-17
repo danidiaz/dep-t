@@ -14,6 +14,7 @@
 module Main (main) where
 
 import Control.Monad.Dep
+import Control.Monad.Dep.Advice
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Data.Kind
@@ -214,7 +215,7 @@ instrumentedEnv =
         r <- action
         logger e $ "advice after"
         pure r
-   in env {_controller = instrument loggingAdvice (_controller env)}
+   in env {_controller = advise @Show @String @HasLogger show loggingAdvice (_controller env)}
 
 expectedInstrumented :: TestTrace
 expectedInstrumented = (["advice before: 7", "I'm going to insert in the db!", "I'm going to write the entity!", "advice after"], [7])
