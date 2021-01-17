@@ -182,6 +182,57 @@ Which you can invoke like this:
 
 I'm not sure it's worth the hassle.
 
+## How to instrument functions in the environment?
+
+Once we have commited to a concrete monad and constructed our
+record-of-functions, we might indulge in a bit of low-calorie
+aspect-oriented-programming.
+
+For example, imagine we want a generic way of adding logging of function
+parameters to any function in the environment, provided the environment already
+contains a logging function.
+
+We can write the following typeclass:
+
+    class Instrumentable e m r | r -> e m where
+      instrument ::
+        ( forall x.
+          HasLogger (e (DepT e m)) (DepT e m) =>
+          [String] ->
+          DepT e m x ->
+          DepT e m x
+        ) ->
+        r ->
+        r
+
+Which means "if you tell me how to transform a terminal `DepT` action, using
+the list of preceding arguments, in an environment that has as logger, then
+I'll be able to transform any function which ends in `DepT`".
+
+The terminal case is a `DepT` without preceding parameters:
+
+    instance HasLogger (e (DepT e m)) (DepT e m) => Instrumentable e m (DepT e m x) where
+      instrument f d = f [] d
+
+The recursive case handles functions argument by argument:
+
+    instance (Instrumentable e m r, Show a) => Instrumentable e m (a -> r) where
+      instrument f ar =
+        let instrument' = instrument @e @m @r
+         in \a -> instrument' (\names d -> f (show a : names) d) (ar a)
+
+Here's how to add logging advice to the controller function:
+
+    instrumentedEnv :: Env (DepT Env (Writer TestTrace))
+    instrumentedEnv =
+       let loggingAdvice args action = do
+                e <- ask
+                logger e $ "advice before " ++ intercalate "," args
+                r <- action
+                logger e $ "advice after"
+                pure r
+        in env { _controller = instrument loggingAdvice (_controller env) }
+
 ## Caveats
 
 The structure of the `DepT` type might be prone to trigger a [known infelicity

@@ -208,16 +208,16 @@ instance (Instrumentable e m r, Show a) => Instrumentable e m (a -> r) where
 
 instrumentedEnv :: Env (DepT Env (Writer TestTrace))
 instrumentedEnv =
-   let extraLogs args action = do
+   let loggingAdvice args action = do
             e <- ask
-            logger e $ "aop before " ++ intercalate "," args
+            logger e $ "advice before: " ++ intercalate "," args
             r <- action
-            logger e $ "aop after"
+            logger e $ "advice after"
             pure r
-    in env { _controller = instrument extraLogs (_controller env) }
+    in env { _controller = instrument loggingAdvice (_controller env) }
 
 expectedInstrumented :: TestTrace
-expectedInstrumented = (["aop before 7","I'm going to insert in the db!","I'm going to write the entity!","aop after"], [7])
+expectedInstrumented = (["advice before: 7","I'm going to insert in the db!","I'm going to write the entity!","advice after"], [7])
 --
 --
 --
