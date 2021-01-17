@@ -17,12 +17,12 @@ import Control.Monad.Dep
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Data.Kind
+import Data.List (intercalate)
 import Rank2 qualified
 import Rank2.TH qualified
 import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
-import Data.List (intercalate)
 
 -- Some helper typeclasses.
 --
@@ -208,16 +208,17 @@ instance (Instrumentable e m r, Show a) => Instrumentable e m (a -> r) where
 
 instrumentedEnv :: Env (DepT Env (Writer TestTrace))
 instrumentedEnv =
-   let loggingAdvice args action = do
-            e <- ask
-            logger e $ "advice before: " ++ intercalate "," args
-            r <- action
-            logger e $ "advice after"
-            pure r
-    in env { _controller = instrument loggingAdvice (_controller env) }
+  let loggingAdvice args action = do
+        e <- ask
+        logger e $ "advice before: " ++ intercalate "," args
+        r <- action
+        logger e $ "advice after"
+        pure r
+   in env {_controller = instrument loggingAdvice (_controller env)}
 
 expectedInstrumented :: TestTrace
-expectedInstrumented = (["advice before: 7","I'm going to insert in the db!","I'm going to write the entity!","advice after"], [7])
+expectedInstrumented = (["advice before: 7", "I'm going to insert in the db!", "I'm going to write the entity!", "advice after"], [7])
+
 --
 --
 --
@@ -226,15 +227,13 @@ tests :: TestTree
 tests =
   testGroup
     "All"
-    [ 
-      testCase "hopeThisWorks" $
+    [ testCase "hopeThisWorks" $
         assertEqual "" expected $
-          execWriter $ runDepT ((_controller . _inner $ biggerEnv) 7) biggerEnv,
+          execWriter $ runDepT (do e <- ask; (_controller . _inner) e 7) biggerEnv,
       testCase "hopeAOPWorks" $
         assertEqual "" expectedInstrumented $
-          execWriter $ runDepT ((_controller $ instrumentedEnv) 7) instrumentedEnv
+          execWriter $ runDepT (do e <- ask; _controller e 7) instrumentedEnv
     ]
-
 
 main :: IO ()
 main = defaultMain tests
