@@ -135,7 +135,8 @@ that provides the `Env` environment. So I created the `DepT` newtype over
 
 ## How to embed environments into other environments?
 
-Sometimes it might be convenient to nest an environment into another one,
+Sometimes it might be convenient to [nest an environment into another
+one](https://stackoverflow.com/questions/43452644/what-is-the-difference-between-spring-parent-context-and-child-context),
 basically making it a field of the bigger environment:
 
     type BiggerEnv :: (Type -> Type) -> Type
@@ -250,6 +251,11 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   answer](https://stackoverflow.com/questions/57703898/how-to-call-impure-functions-from-pure-ones/57714058#57714058)
   about records-of-functions and the "veil of polymorphism".
 
+- The answers to [this SO
+  question](https://stackoverflow.com/questions/61642492/simplifying-the-invocation-of-functions-stored-inside-an-readert-environment)
+  gave me the idea for how to "instrument" monadic functions (although the
+  original motive of the question was different).
+
 - I'm unsure of the relationship between `DepT` and the technique described in
   [Adventures assembling records of
   capabilities](https://discourse.haskell.org/t/adventures-assembling-records-of-capabilities/623). 
@@ -259,4 +265,8 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   environment record, all other functions which depend on it will be affected
   in subsequent invocations. I don't think this happens with "Adventures..." at
   least when changing an already "assembled" record.
+
+- [registry](http://hackage.haskell.org/package/registry) is a package that
+  implements an alternative approach to dependency injection, one different
+  from the `ReaderT`-based one. 
 
