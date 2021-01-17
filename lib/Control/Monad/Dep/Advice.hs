@@ -30,6 +30,7 @@ import Data.Kind
 --
 --
 --
+type Advice :: (Type -> (Type -> Type) -> Constraint) -> ((Type -> Type) -> Type) -> (Type -> Type) -> Type
 newtype Advice c e m = Advice { runAdvice :: forall x. (c (e (DepT e m)) (DepT e m), Monad m) => DepT e m x -> DepT e m x }
 
 type Advisee ::
