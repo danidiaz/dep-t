@@ -30,18 +30,29 @@ import Data.SOP
 --
 --
 --
+type Capable ::
+  (Type -> (Type -> Type) -> Constraint) ->
+  ((Type -> Type) -> Type) ->
+  (Type -> Type) ->
+  Constraint
+type Capable c e m = (c (e (DepT e m)) (DepT e m), Monad m)
+
 type Advice ::
   (Type -> Constraint) ->
   (Type -> (Type -> Type) -> Constraint) ->
   ((Type -> Type) -> Type) ->
   (Type -> Type) ->
   Type
-newtype Advice ac c e m = Advice
-    ( forall as x.
-      (All ac as, c (e (DepT e m)) (DepT e m), Monad m) =>
-      NP I as ->
-      DepT e m x ->
-      DepT e m x)
+data Advice ac c e m = Advice {
+    tweakArgs :: forall as . (All ac as, Capable c e m) => 
+        NP I as -> DepT e m (NP I as),
+    tweakExecution :: 
+        forall x.
+        Capable c e m =>
+        DepT e m x ->
+        DepT e m x
+    }
+
 
 type Advisee ::
   (Type -> Constraint) ->
@@ -53,12 +64,12 @@ type Advisee ::
 class Advisee ac c e m r | r -> e m where
   give :: Advice ac c e m -> r -> r
 
-instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee ac c e m (DepT e m x) where
-  give (Advice advice) d = advice Nil d
+-- instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee ac c e m (DepT e m x) where
+--   give (Advice advice) d = advice Nil d
 
-instance (Advisee ac c e m r, ac a) => Advisee ac c e m (a -> r) where
-  give (Advice advice) (f :: a -> r) a =
-    give @ac @c @e @m @r (Advice (\args d -> advice (I a :* args) d)) (f a)
+-- instance (Advisee ac c e m r, ac a) => Advisee ac c e m (a -> r) where
+--   give (Advice advice) (f :: a -> r) a =
+--     give @ac @c @e @m @r (Advice (\args d -> advice (I a :* args) d)) (f a)
 
 -- |
 --    A constraint which requires nothing of the environment and the associated monad.
