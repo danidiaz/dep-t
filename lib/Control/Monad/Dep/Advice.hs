@@ -12,6 +12,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Control.Monad.Dep.Advice
   ( Advisee (..),
@@ -53,7 +54,6 @@ data Advice ac c e m = Advice {
         DepT e m x
     }
 
-
 type Advisee ::
   (Type -> Constraint) ->
   (Type -> (Type -> Type) -> Constraint) ->
@@ -64,8 +64,10 @@ type Advisee ::
 class Advisee ac c e m r | r -> e m where
   give :: Advice ac c e m -> r -> r
 
--- instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee ac c e m (DepT e m x) where
---   give (Advice advice) d = advice Nil d
+instance (Capable c e m) => Advisee ac c e m (DepT e m x) where
+  give (Advice {tweakArgs,tweakExecution}) advisee = 
+    do _ <- tweakArgs Nil
+       tweakExecution advisee 
 
 -- instance (Advisee ac c e m r, ac a) => Advisee ac c e m (a -> r) where
 --   give (Advice advice) (f :: a -> r) a =
