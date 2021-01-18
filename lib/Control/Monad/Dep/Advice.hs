@@ -25,6 +25,7 @@ module Control.Monad.Dep.Advice (
 
 import Control.Monad.Dep
 import Data.Kind
+import Data.SOP.NP
 
 
 --
