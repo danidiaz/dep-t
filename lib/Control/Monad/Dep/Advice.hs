@@ -13,6 +13,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DataKinds #-}
 
 module Control.Monad.Dep.Advice
   ( Advisee (..),
@@ -54,6 +55,8 @@ data Advice ac c e m = Advice {
         DepT e m x
     }
 
+-- A function can be an advisee if it's multicurryable, 
+-- and the list of arguments, the return type, and the environment, satisfy some requisites.
 type Advisee ::
   (Type -> Constraint) ->
   (Type -> (Type -> Type) -> Constraint) ->
@@ -64,14 +67,36 @@ type Advisee ::
 class Advisee ac c e m r | r -> e m where
   give :: Advice ac c e m -> r -> r
 
-instance (Capable c e m) => Advisee ac c e m (DepT e m x) where
-  give (Advice {tweakArgs,tweakExecution}) advisee = 
-    do _ <- tweakArgs Nil
-       tweakExecution advisee 
+-- this class is for decomposing I think. It should ignore all constraints.
+-- do we need to include e and m here?
+class Multicurryable as terminal r | r -> as terminal where
+    multiuncurry :: r -> NP I as -> terminal
+    multicurry :: (NP I as -> terminal) -> r
+    
+instance Multicurryable '[] (DepT e m x) (DepT e m x) where
+    multiuncurry action Nil = action
+    multicurry f = f Nil 
+
+instance Multicurryable as terminal r => Multicurryable (a ': as) terminal (a -> r) where
+    multiuncurry f (I a :* as) = multiuncurry @as @terminal @r (f a) as
+    multicurry f a = multicurry @as @terminal @r (f . (:*) (I a))
+
+-- instance (Capable c e m) => Advisee ac c e m (DepT e m x) where
+--   give (Advice {tweakArgs,tweakExecution}) advisee = 
+--     do _ <- tweakArgs Nil
+--        tweakExecution advisee 
+
+-- The advice shouldn't care about the as! At least in the definition.
+-- But the advisee typeclass *should care*
+-- One typeclass to go backwards and forwards?
+-- Uncurry typeclass?
+-- The terminal case *doesn't know* how many previous parameters there have been.
+-- extra parameter, start with '[] to signify "this is the beginning of the function" ?
 
 -- instance (Advisee ac c e m r, ac a) => Advisee ac c e m (a -> r) where
---   give (Advice advice) (f :: a -> r) a =
---     give @ac @c @e @m @r (Advice (\args d -> advice (I a :* args) d)) (f a)
+--   give (Advice {tweakArgs,tweakExecution}) (f :: a -> r) a =
+--     give @ac @c @e @m @r (Advice (\args -> tweakArgs (args)) tweakExecution) (f a)
+--     -- give @ac @c @e @m @r (Advice (\args d -> advice (I a :* args) d)) (f a)
 
 -- |
 --    A constraint which requires nothing of the environment and the associated monad.
