@@ -24,43 +24,35 @@ module Control.Monad.Dep.Advice (
 
 import Control.Monad.Dep
 import Data.Kind
-import Data.SOP.NP
-
+import Data.SOP
 
 --
 --
 --
 type Advisee ::
   (Type -> Constraint) ->
-  Type ->
   (Type -> (Type -> Type) -> Constraint) ->
   ((Type -> Type) -> Type) ->
   (Type -> Type) ->
   Type ->
   Constraint
-class Advisee ac u c e m r | r -> e m where
+class Advisee ac c e m r | r -> e m where
   advise ::
-    ( forall a.
-      ac a =>
-      a ->
-      u
-    ) ->
-    ( forall x.
-      (c (e (DepT e m)) (DepT e m), Monad m) =>
-      [u] ->
+    ( forall as x.
+      (All ac as , c (e (DepT e m)) (DepT e m), Monad m) =>
+      NP I as ->
       DepT e m x ->
       DepT e m x
     ) ->
     r ->
     r
 
-instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee ac u c e m (DepT e m x) where
-  advise _ advice d = advice [] d
+instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee ac c e m (DepT e m x) where
+  advise advice d = advice Nil d
 
-instance (Advisee ac u c e m r, ac a) => Advisee ac u c e m (a -> r) where
-  advise argAdaptor advice ar =
-    let advise' = advise @ac @u @c @e @m @r argAdaptor
-     in \a -> advise' (\args d -> advice (argAdaptor a : args) d) (ar a)
+instance (Advisee ac c e m r, ac a) => Advisee ac c e m (a -> r) where
+  advise advice (f :: a -> r) a =
+     advise @ac @c @e @m @r (\args d -> advice (I a :* args) d) (f a)
 
 
 {-| 
