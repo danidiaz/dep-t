@@ -15,7 +15,6 @@
 
 module Control.Monad.Dep.Advice (
         Advisee(..),
-        ArgAwareAdvisee(..),
         EnvTop,
         EnvAnd,
         EnvEq,
@@ -31,31 +30,7 @@ import Data.SOP.NP
 --
 --
 --
-type Advice :: (Type -> (Type -> Type) -> Constraint) -> ((Type -> Type) -> Type) -> (Type -> Type) -> Type
-newtype Advice c e m = Advice { runAdvice :: forall x. (c (e (DepT e m)) (DepT e m), Monad m) => DepT e m x -> DepT e m x }
-
 type Advisee ::
-  (Type -> (Type -> Type) -> Constraint) ->
-  ((Type -> Type) -> Type) ->
-  (Type -> Type) ->
-  Type ->
-  Constraint
-class Advisee c e m r | r -> e m where
-  advise ::
-    Advice c e m ->
-    r ->
-    r
-
-instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee c e m (DepT e m x) where
-  advise (Advice advice) d = advice d
-
-instance (Advisee c e m r) => Advisee c e m (a -> r) where
-  advise advice f a = advise @c @e @m @r advice (f a)
-
---
---
---
-type ArgAwareAdvisee ::
   (Type -> Constraint) ->
   Type ->
   (Type -> (Type -> Type) -> Constraint) ->
@@ -63,8 +38,8 @@ type ArgAwareAdvisee ::
   (Type -> Type) ->
   Type ->
   Constraint
-class ArgAwareAdvisee ac u c e m r | r -> e m where
-  adviseWithArgs ::
+class Advisee ac u c e m r | r -> e m where
+  advise ::
     ( forall a.
       ac a =>
       a ->
@@ -79,19 +54,19 @@ class ArgAwareAdvisee ac u c e m r | r -> e m where
     r ->
     r
 
-instance (c (e (DepT e m)) (DepT e m), Monad m) => ArgAwareAdvisee ac u c e m (DepT e m x) where
-  adviseWithArgs _ advice d = advice [] d
+instance (c (e (DepT e m)) (DepT e m), Monad m) => Advisee ac u c e m (DepT e m x) where
+  advise _ advice d = advice [] d
 
-instance (ArgAwareAdvisee ac u c e m r, ac a) => ArgAwareAdvisee ac u c e m (a -> r) where
-  adviseWithArgs argAdaptor advice ar =
-    let adviseWithArgs' = adviseWithArgs @ac @u @c @e @m @r argAdaptor
-     in \a -> adviseWithArgs' (\args d -> advice (argAdaptor a : args) d) (ar a)
+instance (Advisee ac u c e m r, ac a) => Advisee ac u c e m (a -> r) where
+  advise argAdaptor advice ar =
+    let advise' = advise @ac @u @c @e @m @r argAdaptor
+     in \a -> advise' (\args d -> advice (argAdaptor a : args) d) (ar a)
 
 
 {-| 
     A constraint which requires nothing of the environment and the associated monad.
 
-    Pass this with a type application to 'advise' and 'adviseWithArgs' when no constraint is needed.
+    Pass this with a type application to 'advise' and 'advise' when no constraint is needed.
 
     The @-Top@ and @-And@ constraints have been lifted from the @Top@ and @And@ constraints from sop-core.
 -}
@@ -126,7 +101,7 @@ class c m => MonadConstraint c e m
 instance c m => MonadConstraint c e m
 
 {-|
-    For use in the—likely very rare—case in which `adviseWithArgs` needs two
+    For use in the—likely very rare—case in which `advise` needs two
     constraints on the advisee's arguments.
  -}
 class (f x, g x) => (f `ArgAnd` g) x

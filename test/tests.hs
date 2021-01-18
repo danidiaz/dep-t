@@ -199,7 +199,7 @@ advicedEnv =
         logger e $ "advice after"
         pure r
    in env {
-            _controller = adviseWithArgs @Show @_ @HasLogger show loggingAdvice (_controller env)
+            _controller = advise @Show @_ @HasLogger show loggingAdvice (_controller env)
           }
 
 expectedAdviced :: TestTrace
@@ -215,8 +215,8 @@ weirdAdvicedEnv =
         logger e $ "advice after"
         pure r
    in env {
-            _controller = adviseWithArgs @Show @_ @(HasLogger `EnvAnd` MonadConstraint (MonadWriter TestTrace)) show loggingAdvice (_controller env),
-            _logger = adviseWithArgs @(Show `ArgAnd` Eq) @_ @EnvTop show (\_ -> id) (_logger env)
+            _controller = advise @Show @_ @(HasLogger `EnvAnd` MonadConstraint (MonadWriter TestTrace)) show loggingAdvice (_controller env),
+            _logger = advise @(Show `ArgAnd` Eq) @_ @EnvTop show (\_ -> id) (_logger env)
           }
 
 -- isolatedAdvice :: (ArgAwareAdvisee
@@ -226,7 +226,7 @@ weirdAdvicedEnv =
 --                                   e
 --                                   m
 --                                   r => 
--- isolatedAdvice = adviseWithArgs @Show @_ @(HasLogger `EnvAnd` MonadConstraint (MonadWriter TestTrace)) show (\args action -> tell ([],[]) *> action)
+-- isolatedAdvice = advise @Show @_ @(HasLogger `EnvAnd` MonadConstraint (MonadWriter TestTrace)) show (\args action -> tell ([],[]) *> action)
 
 --
 --
