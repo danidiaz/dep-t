@@ -19,16 +19,20 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 module Control.Monad.Dep.Advice
-  ( -- Advisee (..),
+  ( Advice (..),
+    advise,
+    Capable,
     EnvTop,
     EnvAnd,
     EnvEq,
     MonadConstraint,
-    ArgAnd,
+    ArgTop,
+    ResTop,
   )
 where
 
 import Control.Monad.Dep
+import Data.Constraint
 import Data.Kind
 import Data.SOP
 
@@ -244,8 +248,22 @@ instance c m => MonadConstraint c e m
 -- |
 --    For use in the—likely very rare—case in which `advise` needs two
 --    constraints on the advisee's arguments.
-class (f x, g x) => (f `ArgAnd` g) x
+-- class (f x, g x) => (f `ArgAnd` g) x
+-- instance (f x, g x) => (f `ArgAnd` g) x
 
-instance (f x, g x) => (f `ArgAnd` g) x
+-- infixl 7 `ArgAnd`
 
-infixl 7 `ArgAnd`
+type ArgTop x = Top x
+
+-- type ArgAnd f g = And f g
+-- infixl 7 `ArgAnd`
+
+type ResTop x = Top x
+
+-- type ResAnd f g = And f g
+-- infixl 7 `ResAnd`
+
+-- restrictRes :: forall more less ca cem . (forall r . less r :- more r) -> Advice ca cem less -> Advice ca cem more
+-- restrictRes (Sub Dict) (Advice proxy tweakArgsOuter tweakExecutionOuter) = Advice proxy tweakArgsOuter tweakExecutionOuter
+    
+
