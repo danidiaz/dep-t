@@ -16,7 +16,7 @@
 {-# LANGUAGE DataKinds #-}
 
 module Control.Monad.Dep.Advice
-  ( Advisee (..),
+  ( -- Advisee (..),
     EnvTop,
     EnvAnd,
     EnvEq,
@@ -57,18 +57,28 @@ data Advice ca cem cr = Advice {
 
 -- A function can be an advisee if it's multicurryable, 
 -- and the list of arguments, the return type, and the environment, satisfy some requisites.
-type Advisee ::
-  (Type -> Constraint) ->
-  (Type -> (Type -> Type) -> Constraint) ->
-  (Type -> Constraint) ->
-  [Type] -> 
-  ((Type -> Type) -> Type) ->
-  (Type -> Type) ->
-  Type ->
-  Type ->
-  Constraint
-class (Multicurryable as e m r advisee, All ca as, Capable cem e m, cr r) => Advisee ca cem cr as e m r advisee where
-  advise :: Advice ac cem cr -> advisee -> advisee
+-- type Advisee ::
+--   (Type -> Constraint) ->
+--   (Type -> (Type -> Type) -> Constraint) ->
+--   (Type -> Constraint) ->
+--   [Type] -> 
+--   ((Type -> Type) -> Type) ->
+--   (Type -> Type) ->
+--   Type ->
+--   Type ->
+--   Constraint
+-- -- do we really need as e m r here, or could we go with the constraints only?
+-- -- Perhaps using a type family? Would that be bad for inference?
+-- class (Multicurryable as e m r advisee, All ca as, Capable cem e m, cr r) => Advisee ca cem cr as e m r advisee where
+--   advise :: Advice ac cem cr -> advisee -> advisee
+
+advise :: forall ca cem cr as e m r advisee. (Multicurryable as e m r advisee, All ca as, Capable cem e m, cr r) => Advice ca cem cr -> advisee -> advisee
+advise Advice { tweakArgs, tweakExecution } advisee = do
+    let uncurried = multiuncurry @as @e @m @r advisee
+        uncurried' args = do 
+            args' <- tweakArgs args
+            tweakExecution (uncurried args')
+     in multicurry @as @e @m @r uncurried'
 
 -- this class is for decomposing I think. It should ignore all constraints.
 -- do we need to include e and m here?
@@ -80,10 +90,10 @@ type Multicurryable ::
       Type ->
       Constraint
 class Multicurryable as e m r curried | curried -> as e m r where
-    multiuncurry :: curried -> NP I as -> r
-    multicurry :: (NP I as -> r) -> curried
+    multiuncurry :: curried -> NP I as -> DepT e m r
+    multicurry :: (NP I as -> DepT e m r) -> curried
     
-instance Multicurryable '[] e m (DepT e m x) (DepT e m x) where
+instance Multicurryable '[] e m r (DepT e m r) where
     multiuncurry action Nil = action
     multicurry f = f Nil 
 
@@ -91,10 +101,10 @@ instance Multicurryable as e m r curried => Multicurryable (a ': as) e m r (a ->
     multiuncurry f (I a :* as) = multiuncurry @as @e @m @r @curried (f a) as
     multicurry f a = multicurry @as @ e @m @r @curried (f . (:*) (I a))
 
--- instance (Capable c e m) => Advisee ac c e m (DepT e m x) where
---   give (Advice {tweakArgs,tweakExecution}) advisee = 
---     do _ <- tweakArgs Nil
---        tweakExecution advisee 
+-- instance (Capable cem e m, cr r) => Advisee ca cem cr '[] e m r (DepT e m r) where
+--     advise (Advice {tweakArgs,tweakExecution}) advisee = 
+--       do _ <- tweakArgs Nil
+--          tweakExecution advisee 
 
 -- The advice shouldn't care about the as! At least in the definition.
 -- But the advisee typeclass *should care*
