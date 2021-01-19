@@ -39,20 +39,20 @@ type Capable ::
   Constraint
 type Capable c e m = (c (e (DepT e m)) (DepT e m), Monad m)
 
-type Advice ::
-  (Type -> Constraint) ->
-  (Type -> (Type -> Type) -> Constraint) ->
-  ((Type -> Type) -> Type) ->
-  (Type -> Type) ->
-  Type
-data Advice ac c e m = Advice {
-    tweakArgs :: forall as . (All ac as, Capable c e m) => 
+-- type Advice ::
+--   (Type -> Constraint) ->
+--   (Type -> (Type -> Type) -> Constraint) ->
+--   ((Type -> Type) -> Type) ->
+--   (Type -> Type) ->
+--   Type
+data Advice ca cem cr = Advice {
+    tweakArgs :: forall as e m. (All ca as, Capable cem e m) => 
         NP I as -> DepT e m (NP I as),
     tweakExecution :: 
-        forall x.
-        Capable c e m =>
-        DepT e m x ->
-        DepT e m x
+        forall e m r.
+        (Capable cem e m,cr r) =>
+        DepT e m r ->
+        DepT e m r
     }
 
 -- A function can be an advisee if it's multicurryable, 
@@ -60,26 +60,36 @@ data Advice ac c e m = Advice {
 type Advisee ::
   (Type -> Constraint) ->
   (Type -> (Type -> Type) -> Constraint) ->
+  (Type -> Constraint) ->
+  [Type] -> 
   ((Type -> Type) -> Type) ->
   (Type -> Type) ->
   Type ->
+  Type ->
   Constraint
-class Advisee ac c e m r | r -> e m where
-  give :: Advice ac c e m -> r -> r
+class (Multicurryable as e m r advisee, All ca as, Capable cem e m, cr r) => Advisee ca cem cr as e m r advisee where
+  advise :: Advice ac cem cr -> advisee -> advisee
 
 -- this class is for decomposing I think. It should ignore all constraints.
 -- do we need to include e and m here?
-class Multicurryable as terminal r | r -> as terminal where
-    multiuncurry :: r -> NP I as -> terminal
-    multicurry :: (NP I as -> terminal) -> r
+type Multicurryable ::
+      [Type] ->
+      ((Type -> Type) -> Type) ->
+      (Type -> Type) ->
+      Type ->
+      Type ->
+      Constraint
+class Multicurryable as e m r curried | curried -> as e m r where
+    multiuncurry :: curried -> NP I as -> r
+    multicurry :: (NP I as -> r) -> curried
     
-instance Multicurryable '[] (DepT e m x) (DepT e m x) where
+instance Multicurryable '[] e m (DepT e m x) (DepT e m x) where
     multiuncurry action Nil = action
     multicurry f = f Nil 
 
-instance Multicurryable as terminal r => Multicurryable (a ': as) terminal (a -> r) where
-    multiuncurry f (I a :* as) = multiuncurry @as @terminal @r (f a) as
-    multicurry f a = multicurry @as @terminal @r (f . (:*) (I a))
+instance Multicurryable as e m r curried => Multicurryable (a ': as) e m r (a -> curried) where
+    multiuncurry f (I a :* as) = multiuncurry @as @e @m @r @curried (f a) as
+    multicurry f a = multicurry @as @ e @m @r @curried (f . (:*) (I a))
 
 -- instance (Capable c e m) => Advisee ac c e m (DepT e m x) where
 --   give (Advice {tweakArgs,tweakExecution}) advisee = 
