@@ -8,6 +8,7 @@
 {-# LANGUAGE GADTSyntax #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
@@ -16,7 +17,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 
 module Control.Monad.Dep.Advice
   ( -- Advisee (..),
@@ -50,7 +50,8 @@ type Capable c e m = (c (e (DepT e m)) (DepT e m), Monad m)
 --   (Type -> Type) ->
 --   Type
 data Advice ca cem cr where
-  Advice :: forall u ca cem cr.
+  Advice ::
+    forall u ca cem cr.
     Proxy u ->
     ( forall as e m.
       (All ca as, Capable cem e m) =>
@@ -67,56 +68,68 @@ data Advice ca cem cr where
 
 data Pair a b = Pair !a !b
 
-{-|
-    The first advice is the "outer" one. It gets executed first on the way of
-    calling the advised function, and last on the way out of the function.
+-- |
+--    The first advice is the "outer" one. It gets executed first on the way of
+--    calling the advised function, and last on the way out of the function.
 
- -}
 -- But what about the order of argument manipulation? I'm not sure...
 instance Semigroup (Advice ca cem cr) where
-    Advice outer tweakArgsOuter tweakExecutionOuter <> Advice inner tweakArgsInner tweakExecutionInner = 
-        let notProudOfThis :: forall ca cem cr outer inner .
-                              Proxy outer ->
-                            ( forall as e m.
-                              (All ca as, Capable cem e m) =>
-                              NP I as ->
-                              DepT e m (NP I as, outer))
-                              ->
-                            ( forall e m r.
-                              (Capable cem e m, cr r) =>
-                              outer ->
-                              DepT e m r ->
-                              DepT e m r
-                            ) ->
-                              Proxy inner ->
-                            ( forall as e m.
-                              (All ca as, Capable cem e m) =>
-                              NP I as ->
-                              DepT e m (NP I as, inner))
-                              ->
-                            ( forall e m r.
-                              (Capable cem e m, cr r) =>
-                              inner ->
-                              DepT e m r ->
-                              DepT e m r
-                            ) ->
-                         Advice ca cem cr
-            notProudOfThis _ tweakArgsOuter' tweakExecutionOuter' _ tweakArgsInner' tweakExecutionInner' = 
-               Advice @(Pair outer inner) @ca @cem @cr 
-                   (Proxy @(Pair outer inner)) 
-                   (let tweakArgs :: forall as e m. (All ca as, Capable cem e m) => NP I as -> DepT e m (NP I as, Pair outer inner)
-                        tweakArgs args = 
-                           do
-                            (argsOuter,uOuter) <- tweakArgsOuter' @as @e @m args
-                            (argsInner,uInner) <- tweakArgsInner' @as @e @m argsOuter
-                            pure (argsInner, Pair uOuter uInner)
-                     in tweakArgs)
-                   (let tweakExecution :: forall e m r. (Capable cem e m, cr r) => Pair outer inner -> DepT e m r -> DepT e m r
-                        tweakExecution =
-                            (\(Pair uOuter uInner) action -> 
-                                tweakExecutionOuter' @e @m @r uOuter (tweakExecutionInner' @e @m @r uInner action))
-                     in tweakExecution)
-        in notProudOfThis @ca @cem @cr outer tweakArgsOuter tweakExecutionOuter inner tweakArgsInner tweakExecutionInner
+  Advice outer tweakArgsOuter tweakExecutionOuter <> Advice inner tweakArgsInner tweakExecutionInner =
+    let captureExistentials ::
+          forall ca cem cr outer inner.
+          Proxy outer ->
+          ( forall as e m.
+            (All ca as, Capable cem e m) =>
+            NP I as ->
+            DepT e m (NP I as, outer)
+          ) ->
+          ( forall e m r.
+            (Capable cem e m, cr r) =>
+            outer ->
+            DepT e m r ->
+            DepT e m r
+          ) ->
+          Proxy inner ->
+          ( forall as e m.
+            (All ca as, Capable cem e m) =>
+            NP I as ->
+            DepT e m (NP I as, inner)
+          ) ->
+          ( forall e m r.
+            (Capable cem e m, cr r) =>
+            inner ->
+            DepT e m r ->
+            DepT e m r
+          ) ->
+          Advice ca cem cr
+        captureExistentials _ tweakArgsOuter' tweakExecutionOuter' _ tweakArgsInner' tweakExecutionInner' =
+          Advice @(Pair outer inner) @ca @cem @cr
+            (Proxy @(Pair outer inner))
+            ( let tweakArgs ::
+                    forall as e m.
+                    (All ca as, Capable cem e m) =>
+                    NP I as ->
+                    DepT e m (NP I as, Pair outer inner)
+                  tweakArgs args =
+                    do
+                      (argsOuter, uOuter) <- tweakArgsOuter' @as @e @m args
+                      (argsInner, uInner) <- tweakArgsInner' @as @e @m argsOuter
+                      pure (argsInner, Pair uOuter uInner)
+               in tweakArgs
+            )
+            ( let tweakExecution ::
+                    forall e m r.
+                    (Capable cem e m, cr r) =>
+                    Pair outer inner ->
+                    DepT e m r ->
+                    DepT e m r
+                  tweakExecution =
+                    ( \(Pair uOuter uInner) action ->
+                        tweakExecutionOuter' @e @m @r uOuter (tweakExecutionInner' @e @m @r uInner action)
+                    )
+               in tweakExecution
+            )
+     in captureExistentials @ca @cem @cr outer tweakArgsOuter tweakExecutionOuter inner tweakArgsInner tweakExecutionInner
 
 -- A function can be an advisee if it's multicurryable,
 -- and the list of arguments, the return type, and the environment, satisfy some requisites.
