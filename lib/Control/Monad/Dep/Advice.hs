@@ -131,6 +131,10 @@ instance Semigroup (Advice ca cem cr) where
             )
      in captureExistentials @ca @cem @cr outer tweakArgsOuter tweakExecutionOuter inner tweakArgsInner tweakExecutionInner
 
+instance Monoid (Advice ca cem cr) where
+  mappend = (<>)
+  mempty = Advice (Proxy @()) (\args -> pure (args, ())) (\() -> id)
+
 -- A function can be an advisee if it's multicurryable,
 -- and the list of arguments, the return type, and the environment, satisfy some requisites.
 -- type Advisee ::
