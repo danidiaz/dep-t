@@ -28,6 +28,13 @@ module Control.Monad.Dep.Advice
     MonadConstraint,
     ArgTop,
     ResTop,
+    -- * sop-core re-exports
+    Top,
+    All,
+    And,
+    NP(..),
+    I(..),
+    cfoldMap_NP,
   )
 where
 
@@ -35,6 +42,7 @@ import Control.Monad.Dep
 import Data.Constraint
 import Data.Kind
 import Data.SOP
+import Data.SOP.NP
 
 --
 --
@@ -60,7 +68,7 @@ data Advice ca cem cr where
     ( forall as e m.
       (All ca as, Capable cem e m) =>
       NP I as ->
-      DepT e m (NP I as, u)
+      DepT e m (u,NP I as)
     ) ->
     ( forall e m r.
       (Capable cem e m, cr r) =>
@@ -85,7 +93,7 @@ instance Semigroup (Advice ca cem cr) where
           ( forall as e m.
             (All ca as, Capable cem e m) =>
             NP I as ->
-            DepT e m (NP I as, outer)
+            DepT e m (outer,NP I as)
           ) ->
           ( forall e m r.
             (Capable cem e m, cr r) =>
@@ -97,7 +105,7 @@ instance Semigroup (Advice ca cem cr) where
           ( forall as e m.
             (All ca as, Capable cem e m) =>
             NP I as ->
-            DepT e m (NP I as, inner)
+            DepT e m (inner,NP I as)
           ) ->
           ( forall e m r.
             (Capable cem e m, cr r) =>
@@ -113,12 +121,12 @@ instance Semigroup (Advice ca cem cr) where
                     forall as e m.
                     (All ca as, Capable cem e m) =>
                     NP I as ->
-                    DepT e m (NP I as, Pair outer inner)
+                    DepT e m (Pair outer inner,NP I as)
                   tweakArgs args =
                     do
-                      (argsOuter, uOuter) <- tweakArgsOuter' @as @e @m args
-                      (argsInner, uInner) <- tweakArgsInner' @as @e @m argsOuter
-                      pure (argsInner, Pair uOuter uInner)
+                      (uOuter, argsOuter) <- tweakArgsOuter' @as @e @m args
+                      (uInner, argsInner) <- tweakArgsInner' @as @e @m argsOuter
+                      pure (Pair uOuter uInner, argsInner)
                in tweakArgs
             )
             ( let tweakExecution ::
@@ -137,7 +145,7 @@ instance Semigroup (Advice ca cem cr) where
 
 instance Monoid (Advice ca cem cr) where
   mappend = (<>)
-  mempty = Advice (Proxy @()) (\args -> pure (args, ())) (\() -> id)
+  mempty = Advice (Proxy @()) (\args -> pure (pure args)) (const id)
 
 -- A function can be an advisee if it's multicurryable,
 -- and the list of arguments, the return type, and the environment, satisfy some requisites.
@@ -165,7 +173,7 @@ advise ::
 advise (Advice _ tweakArgs tweakExecution) advisee = do
   let uncurried = multiuncurry @as @e @m @r advisee
       uncurried' args = do
-        (args', u) <- tweakArgs args
+        (u,args') <- tweakArgs args
         tweakExecution u (uncurried args')
    in multicurry @as @e @m @r uncurried'
 

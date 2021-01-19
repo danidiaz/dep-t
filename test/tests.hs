@@ -208,15 +208,18 @@ expectedAdviced = (["advice before: 7", "I'm going to insert in the db!", "I'm g
 -- a small test of constraint composition
 weirdAdvicedEnv :: Env (DepT Env (Writer TestTrace))
 weirdAdvicedEnv =
-  let loggingAdvice args action = do
-        e <- ask
-        logger e $ "advice before: " ++ intercalate "," args
-        r <- action
-        logger e $ "advice after"
-        pure r
+  let loggingAdvice = Advice 
+        (Proxy [String])
+        (\args -> pure (args, cfoldMap_NP @Show (\(I a) -> show a)))
+        (\strArgs action -> do 
+            e <- ask
+            logger e $ "advice before: " ++ intercalate "," args
+            r <- action
+            logger e $ "advice after"
+            pure r)
    in env {
-            _controller = advise @Show @_ @(HasLogger `EnvAnd` MonadConstraint (MonadWriter TestTrace)) show loggingAdvice (_controller env),
-            _logger = advise @(Show `ArgAnd` Eq) @_ @EnvTop show (\_ -> id) (_logger env)
+            _controller = advise @Show @(HasLogger `EnvAnd` MonadConstraint (MonadWriter TestTrace)) @Top loggingAdvice (_controller env) --,
+            -- _logger = advise @(Show `And` Eq) @_ @EnvTop show (\_ -> id) (_logger env)
           }
 
 -- isolatedAdvice :: (ArgAwareAdvisee

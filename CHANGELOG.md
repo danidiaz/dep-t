@@ -1,12 +1,4 @@
-# Revision history for dep-t
-
-## 0.1.0.2 
-
-* Minor documentation changes.
-
-## 0.1.0.1 
-
-* Minor documentation changes.
+# Revision history for dep-t-advice
 
 ## 0.1.0.0 -- YYYY-mm-dd
 
