@@ -74,15 +74,44 @@ data Pair a b = Pair !a !b
 -- But what about the order of argument manipulation? I'm not sure...
 instance Semigroup (Advice ca cem cr) where
     Advice tweakArgsOuter tweakExecutionOuter <> Advice tweakArgsInner tweakExecutionInner = 
-        let tweakArgs :: forall as e m. (All ca as, Capable cem e m) => NP I as -> DepT e m (NP I as, Pair _ _)
-            tweakArgs args = do
-                (argsOuter,uOuter) <- tweakArgsOuter @as @e @m args
-                (argsInner,uInner) <- tweakArgsInner @as @e @m argsOuter
-                pure (argsInner, Pair uOuter uInner)
-            tweakExecution :: forall e m r.  (Capable cem e m, cr r) => Pair _ _ -> DepT e m r -> DepT e m r 
-            tweakExecution (Pair uOuter uInner) action =
-                tweakExecutionOuter @e @m @r uOuter (tweakExecutionInner @e @m @r uInner action)
-        in Advice tweakArgs tweakExecution
+        let notProudOfThis :: forall ca cem cr uOuter uInner.
+                            ( forall as e m.
+                              (All ca as, Capable cem e m) =>
+                              NP I as ->
+                              DepT e m (NP I as, uOuter))
+                              ->
+                            ( forall e m r.
+                              (Capable cem e m, cr r) =>
+                              uOuter ->
+                              DepT e m r ->
+                              DepT e m r
+                            ) ->
+                            ( forall as e m.
+                              (All ca as, Capable cem e m) =>
+                              NP I as ->
+                              DepT e m (NP I as, uInner))
+                              ->
+                            ( forall e m r.
+                              (Capable cem e m, cr r) =>
+                              uInner ->
+                              DepT e m r ->
+                              DepT e m r
+                            ) ->
+                         Advice ca cem cr
+            notProudOfThis outerTweakArgs outerTweakExecution innerTweakArgs innerTweakExecution = Advice 
+               (let tweakArgs :: forall as e m. (All ca as, Capable cem e m) => NP I as -> DepT e m (NP I as, Pair uOuter uInner)
+                    tweakArgs args = 
+                       do
+                        (argsOuter,uOuter :: uOuter) <- outerTweakArgs @as @e @m args
+                        (argsInner,uInner :: uInner) <- innerTweakArgs @as @e @m argsOuter
+                        pure (argsInner, Pair uOuter uInner)
+                 in tweakArgs)
+               (let tweakExecution :: forall e m r. (Capable cem e m, cr r) => Pair uOuter uInner -> DepT e m r -> DepT e m r
+                    tweakExecution =
+                        (\(Pair uOuter uInner) action -> 
+                            tweakExecutionOuter @e @m @r uOuter (tweakExecutionInner @e @m @r uInner action))
+                 in tweakExecution)
+        in notProudOfThis @ca @cem @cr tweakArgsOuter tweakExecutionOuter tweakArgsInner tweakExecutionInner
 
 -- A function can be an advisee if it's multicurryable,
 -- and the list of arguments, the return type, and the environment, satisfy some requisites.
