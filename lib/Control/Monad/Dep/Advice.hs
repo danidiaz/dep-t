@@ -50,7 +50,8 @@ type Capable c e m = (c (e (DepT e m)) (DepT e m), Monad m)
 --   (Type -> Type) ->
 --   Type
 data Advice ca cem cr where
-  Advice :: forall ca cem cr u.
+  Advice :: forall u ca cem cr.
+    Proxy u ->
     ( forall as e m.
       (All ca as, Capable cem e m) =>
       NP I as ->
@@ -73,45 +74,49 @@ data Pair a b = Pair !a !b
  -}
 -- But what about the order of argument manipulation? I'm not sure...
 instance Semigroup (Advice ca cem cr) where
-    Advice tweakArgsOuter tweakExecutionOuter <> Advice tweakArgsInner tweakExecutionInner = 
-        let notProudOfThis :: forall ca cem cr uOuter uInner.
+    Advice outer tweakArgsOuter tweakExecutionOuter <> Advice inner tweakArgsInner tweakExecutionInner = 
+        let notProudOfThis :: forall ca cem cr outer inner .
+                              Proxy outer ->
                             ( forall as e m.
                               (All ca as, Capable cem e m) =>
                               NP I as ->
-                              DepT e m (NP I as, uOuter))
+                              DepT e m (NP I as, outer))
                               ->
                             ( forall e m r.
                               (Capable cem e m, cr r) =>
-                              uOuter ->
+                              outer ->
                               DepT e m r ->
                               DepT e m r
                             ) ->
+                              Proxy inner ->
                             ( forall as e m.
                               (All ca as, Capable cem e m) =>
                               NP I as ->
-                              DepT e m (NP I as, uInner))
+                              DepT e m (NP I as, inner))
                               ->
                             ( forall e m r.
                               (Capable cem e m, cr r) =>
-                              uInner ->
+                              inner ->
                               DepT e m r ->
                               DepT e m r
                             ) ->
                          Advice ca cem cr
-            notProudOfThis tweakArgsOuter' tweakExecutionOuter' tweakArgsInner' tweakExecutionInner' = Advice @ca @cem @cr @(Pair uOuter uInner)
-               (let tweakArgs :: forall as e m. (All ca as, Capable cem e m) => NP I as -> DepT e m (NP I as, Pair uOuter uInner)
-                    tweakArgs args = 
-                       do
-                        (argsOuter,uOuter :: uOuter) <- tweakArgsOuter' @as @e @m args
-                        (argsInner,uInner :: uInner) <- tweakArgsInner' @as @e @m argsOuter
-                        pure (argsInner, Pair (uOuter :: uOuter) (uInner :: uInner))
-                 in tweakArgs)
-               (let tweakExecution :: forall e m r. (Capable cem e m, cr r) => Pair uOuter uInner -> DepT e m r -> DepT e m r
-                    tweakExecution =
-                        (\(Pair (uOuter :: uOuter) (uInner :: uInner)) action -> 
-                            tweakExecutionOuter' @e @m @r uOuter (tweakExecutionInner' @e @m @r uInner action))
-                 in tweakExecution)
-        in notProudOfThis @ca @cem @cr tweakArgsOuter tweakExecutionOuter tweakArgsInner tweakExecutionInner
+            notProudOfThis _ tweakArgsOuter' tweakExecutionOuter' _ tweakArgsInner' tweakExecutionInner' = 
+               Advice @(Pair outer inner) @ca @cem @cr 
+                   (Proxy @(Pair outer inner)) 
+                   (let tweakArgs :: forall as e m. (All ca as, Capable cem e m) => NP I as -> DepT e m (NP I as, Pair outer inner)
+                        tweakArgs args = 
+                           do
+                            (argsOuter,uOuter) <- tweakArgsOuter' @as @e @m args
+                            (argsInner,uInner) <- tweakArgsInner' @as @e @m argsOuter
+                            pure (argsInner, Pair uOuter uInner)
+                     in tweakArgs)
+                   (let tweakExecution :: forall e m r. (Capable cem e m, cr r) => Pair outer inner -> DepT e m r -> DepT e m r
+                        tweakExecution =
+                            (\(Pair uOuter uInner) action -> 
+                                tweakExecutionOuter' @e @m @r uOuter (tweakExecutionInner' @e @m @r uInner action))
+                     in tweakExecution)
+        in notProudOfThis @ca @cem @cr outer tweakArgsOuter tweakExecutionOuter inner tweakArgsInner tweakExecutionInner
 
 -- A function can be an advisee if it's multicurryable,
 -- and the list of arguments, the return type, and the environment, satisfy some requisites.
@@ -136,7 +141,7 @@ advise ::
   Advice ca cem cr ->
   advisee ->
   advisee
-advise (Advice tweakArgs tweakExecution) advisee = do
+advise (Advice _ tweakArgs tweakExecution) advisee = do
   let uncurried = multiuncurry @as @e @m @r advisee
       uncurried' args = do
         (args', u) <- tweakArgs args
