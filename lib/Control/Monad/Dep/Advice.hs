@@ -1,11 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTSyntax #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
@@ -16,6 +16,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 
 module Control.Monad.Dep.Advice
   ( -- Advisee (..),
@@ -63,6 +64,26 @@ data Advice ca cem cr where
     ) ->
     Advice ca cem cr
 
+data Pair a b = Pair !a !b
+
+{-|
+    The first advice is the "outer" one. It gets executed first on the way of
+    calling the advised function, and last on the way out of the function.
+
+ -}
+-- But what about the order of argument manipulation? I'm not sure...
+instance Semigroup (Advice ca cem cr) where
+    Advice tweakArgsOuter tweakExecutionOuter <> Advice tweakArgsInner tweakExecutionInner = 
+        let tweakArgs :: forall as e m. (All ca as, Capable cem e m) => NP I as -> DepT e m (NP I as, Pair _ _)
+            tweakArgs args = do
+                (argsOuter,uOuter) <- tweakArgsOuter @as @e @m args
+                (argsInner,uInner) <- tweakArgsInner @as @e @m argsOuter
+                pure (argsInner, Pair uOuter uInner)
+            tweakExecution :: forall e m r.  (Capable cem e m, cr r) => Pair _ _ -> DepT e m r -> DepT e m r 
+            tweakExecution (Pair uOuter uInner) action =
+                tweakExecutionOuter @e @m @r uOuter (tweakExecutionInner @e @m @r uInner action)
+        in Advice tweakArgs tweakExecution
+
 -- A function can be an advisee if it's multicurryable,
 -- and the list of arguments, the return type, and the environment, satisfy some requisites.
 -- type Advisee ::
@@ -80,7 +101,12 @@ data Advice ca cem cr where
 -- class (Multicurryable as e m r advisee, All ca as, Capable cem e m, cr r) => Advisee ca cem cr as e m r advisee where
 --   advise :: Advice ac cem cr -> advisee -> advisee
 
-advise :: forall ca cem cr as e m r advisee. (Multicurryable as e m r advisee, All ca as, Capable cem e m, cr r) => Advice ca cem cr -> advisee -> advisee
+advise ::
+  forall ca cem cr as e m r advisee.
+  (Multicurryable as e m r advisee, All ca as, Capable cem e m, cr r) =>
+  Advice ca cem cr ->
+  advisee ->
+  advisee
 advise (Advice tweakArgs tweakExecution) advisee = do
   let uncurried = multiuncurry @as @e @m @r advisee
       uncurried' args = do
