@@ -25,6 +25,7 @@ import Rank2.TH qualified
 import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
+import Data.Proxy
 
 -- Some helper typeclasses.
 --
@@ -210,10 +211,13 @@ weirdAdvicedEnv :: Env (DepT Env (Writer TestTrace))
 weirdAdvicedEnv =
   let loggingAdvice = Advice 
         (Proxy [String])
-        (\args -> pure (args, cfoldMap_NP @Show (\(I a) -> show a)))
+        (\args -> do
+            e <- ask
+            let args' = cfoldMap_NP @Show (\(I a) -> show a) args
+            logger e $ "advice before: " ++ intercalate "," args'
+            pure (pure args))
         (\strArgs action -> do 
             e <- ask
-            logger e $ "advice before: " ++ intercalate "," args
             r <- action
             logger e $ "advice after"
             pure r)
