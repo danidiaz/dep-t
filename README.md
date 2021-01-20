@@ -133,6 +133,12 @@ type" kind of errors because the `Env` needs to be parameterized with the monad
 that provides the `Env` environment. So I created the `DepT` newtype over
 `ReaderT` to mollify the compiler.
 
+## So how do we invoke the controller now?
+
+I suggest something like
+
+    runDepT (do e <- ask; _controller e 7) envIO 
+
 ## How to embed environments into other environments?
 
 Sometimes it might be convenient to [nest an environment into another
