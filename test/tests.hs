@@ -9,6 +9,7 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Main (main) where
@@ -29,25 +30,29 @@ import Prelude hiding (log)
 -- Has-style typeclasses can be provided to avoid depending on concrete
 -- environments.
 -- Note that the environment determines the monad.
-type HasLogger :: Type -> (Type -> Type) -> Constraint
-class HasLogger r m | r -> m where
-  logger :: r -> String -> m ()
+type HasLogger :: Type -> Constraint
+class HasLogger r where
+  type LoggerMonad r :: Type -> Type
+  type LoggerMonad r = IO -- the default value, for monomorphic environments
+  logger :: r -> String -> LoggerMonad r ()
 
 -- Possible convenience function to avoid having to use ask before logging
 -- Worth the extra boilerplate, or not?
-logger' :: (MonadReader e m, HasLogger e m) => String -> m ()
+logger' :: (MonadReader e m, HasLogger e) => String -> m ()
 logger' msg = asks logger >>= \f -> f msg
 
-type HasRepository :: Type -> (Type -> Type) -> Constraint
-class HasRepository r m | r -> m where
-  repository :: r -> Int -> m ()
+type HasRepository :: Type -> Constraint
+class HasRepository r where
+  type RepositoryMonad r :: Type -> Type
+  type RepositoryMonad r = IO -- the default value, for monomorphic environments
+  repository :: r -> Int -> RepositoryMonad r ()
 
 -- Some possible implementations.
 --
 -- An implementation of the controller, done programming against interfaces
 -- (well, against typeclasses).
 -- Polymorphic on the monad.
-mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m String
+mkController :: (MonadReader e m, HasLogger e, HasRepository e) => Int -> m String
 mkController x = do
   e <- ask
   logger e "I'm going to insert in the db!"
@@ -59,7 +64,7 @@ mkStdoutLogger :: MonadIO m => String -> m ()
 mkStdoutLogger msg = liftIO (putStrLn msg)
 
 -- A "real" repository implementation
-mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
+mkStdoutRepository :: (MonadReader e m, HasLogger e, MonadIO m) => Int -> m ()
 mkStdoutRepository entity = do
   e <- ask
   logger e "I'm going to write the entity!"
@@ -73,7 +78,7 @@ mkFakeLogger :: MonadWriter TestTrace m => String -> m ()
 mkFakeLogger msg = tell ([msg], [])
 
 -- Ditto.
-mkFakeRepository :: (MonadReader e m, HasLogger e m, MonadWriter TestTrace m) => Int -> m ()
+mkFakeRepository :: (MonadReader e m, HasLogger e, MonadWriter TestTrace m) => Int -> m ()
 mkFakeRepository entity = do
   e <- ask
   logger e "I'm going to write the entity!"
@@ -88,10 +93,10 @@ data EnvIO = EnvIO
     _repositoryIO :: Int -> IO ()
   }
 
-instance HasLogger EnvIO IO where
+instance HasLogger EnvIO where
   logger = _loggerIO
 
-instance HasRepository EnvIO IO where
+instance HasRepository EnvIO where
   repository = _repositoryIO
 
 -- In the monomorphic environment, the controller function lives "separate",
@@ -105,7 +110,7 @@ instance HasRepository EnvIO IO where
 -- In a sufficiently complex app, the diverse functions will form a DAG of
 -- dependencies between each other. So it would be nice if the functions were
 -- treated uniformly, all having access to (views of) the environment record.
-mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
+mkControllerIO :: (HasLogger e, HasRepository e) => Int -> ReaderT e IO String
 mkControllerIO x = do
   e <- ask
   liftIO $ logger e "I'm going to insert in the db!"
@@ -127,10 +132,12 @@ $(Rank2.TH.deriveFunctor ''Env)
 
 -- If our environment is parmeterized by the monad m, then logging is done in
 -- m.
-instance HasLogger (Env m) m where
+instance HasLogger (Env m) where
+  type LoggerMonad (Env m) = m
   logger = _logger
 
-instance HasRepository (Env m) m where
+instance HasRepository (Env m) where
+  type RepositoryMonad (Env m) = m
   repository = _repository
 
 -- This bigger environment is for demonstrating how to "nest" environments.
@@ -190,7 +197,7 @@ expected = (["I'm going to insert in the db!", "I'm going to write the entity!"]
 class Instrumentable e m r | r -> e m where
   instrument ::
     ( forall x.
-      HasLogger (e (DepT e m)) (DepT e m) =>
+      HasLogger (e (DepT e m)) =>
       [String] ->
       DepT e m x ->
       DepT e m x
@@ -198,7 +205,7 @@ class Instrumentable e m r | r -> e m where
     r ->
     r
 
-instance HasLogger (e (DepT e m)) (DepT e m) => Instrumentable e m (DepT e m x) where
+instance HasLogger (e (DepT e m)) => Instrumentable e m (DepT e m x) where
   instrument f d = f [] d
 
 instance (Instrumentable e m r, Show a) => Instrumentable e m (a -> r) where
