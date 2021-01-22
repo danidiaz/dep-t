@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+## 0.1.2.0
+
+* re-exported Control.Monad.Reader.Class
+
 ## 0.1.1.0
 
 * Added NilEnv.

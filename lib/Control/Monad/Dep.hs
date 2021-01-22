@@ -20,12 +20,16 @@
 --    There's no analogue of 'mapReaderT' however. This means you can't tweak
 --    the monad below the 'DepT' with a natural transformation.
 module Control.Monad.Dep
-  ( DepT (DepT),
+  ( 
+    -- * The DepT transformer
+    DepT (DepT),
     runDepT,
     toReaderT,
     withDepT,
     zoomEnv,
-    NilEnv(NilEnv)
+    NilEnv(NilEnv),
+    -- * MonadReader re-exports
+    module Control.Monad.Reader.Class
   )
 where
 
@@ -34,6 +38,7 @@ import Control.Monad.Cont.Class
 import Control.Monad.Error.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Control.Monad.Reader.Class
 import Control.Monad.State.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
