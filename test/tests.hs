@@ -222,7 +222,11 @@ expectedInstrumented = (["advice before: 7", "I'm going to insert in the db!", "
 --
 --
 --
-
+boringAction :: DepT NilEnv IO ()
+boringAction = lift (putStrLn "")
+--
+--
+--
 tests :: TestTree
 tests =
   testGroup

@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+## 0.1.1.0
+
+* Added NilEnv.
+
 ## 0.1.0.2 
 
 * Minor documentation changes.

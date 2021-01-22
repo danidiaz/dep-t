@@ -25,6 +25,7 @@ module Control.Monad.Dep
     toReaderT,
     withDepT,
     zoomEnv,
+    NilEnv(NilEnv)
   )
 where
 
@@ -144,3 +145,8 @@ zoomEnv ::
   small (DepT small m) ->
   small (DepT big m)
 zoomEnv mapEnv inner = mapEnv (withDepT mapEnv inner)
+
+-- | An empty environment that carries no functions, analogous to `()` for `ReaderT`.
+type NilEnv :: (Type -> Type) -> Type
+data NilEnv m = NilEnv
+

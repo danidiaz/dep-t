@@ -240,6 +240,9 @@ Here's how to add logging advice to the controller function:
                 pure r
         in env { _controller = instrument loggingAdvice (_controller env) }
 
+More complete advice support can be found in the
+[dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) package.
+
 ## Caveats
 
 The structure of the `DepT` type might be prone to trigger a [known infelicity
