@@ -28,12 +28,14 @@ module Control.Monad.Dep
     withDepT,
     zoomEnv,
     NilEnv(NilEnv),
-    -- * MonadReader re-exports
+    -- * Re-exports
+    module Control.Monad.Trans,
     module Control.Monad.Reader.Class
   )
 where
 
 import Control.Applicative
+import Control.Monad.Trans
 import Control.Monad.Cont.Class
 import Control.Monad.Error.Class
 import Control.Monad.IO.Unlift

@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+## 0.1.3.0
+
+* re-exported Control.Monad.Trans
+
 ## 0.1.2.0
 
 * re-exported Control.Monad.Reader.Class
