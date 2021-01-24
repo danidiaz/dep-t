@@ -17,6 +17,7 @@ import Control.Monad.Dep
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Data.Kind
+import Data.Coerce
 import Data.List (intercalate)
 import Rank2 qualified
 import Rank2.TH qualified
@@ -219,6 +220,7 @@ instrumentedEnv =
 expectedInstrumented :: TestTrace
 expectedInstrumented = (["advice before: 7", "I'm going to insert in the db!", "I'm going to write the entity!", "advice after"], [7])
 
+
 --
 --
 --
@@ -227,6 +229,25 @@ boringAction = lift (putStrLn "")
 --
 --
 --
+
+--
+--
+-- checking that coerce works on environments...
+newtype NilEnv' m = NilEnv' (NilEnv m)
+
+toBeCoerced :: DepT NilEnv IO ()
+toBeCoerced = pure ()
+
+toBeCoerced' :: DepT NilEnv' IO ()
+toBeCoerced' = coerce toBeCoerced
+
+toBeCoerced'' :: DepT NilEnv IO ()
+toBeCoerced'' = coerce toBeCoerced'
+--
+--
+--
+
+
 tests :: TestTree
 tests =
   testGroup
