@@ -86,6 +86,8 @@ deriving instance MonadError e m => MonadError e (DepT env m)
 
 -- |
 --    Runs a 'DepT' action in an environment.
+--
+--    For more sophisticated invocation functions, see @runFinalDepT@ and @runFromEnv@ from <http://hackage.haskell.org/package/dep-t-advice dep-t-advice>.
 runDepT :: DepT env m r -> env (DepT env m) -> m r
 runDepT = runReaderT . toReaderT
 
