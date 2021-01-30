@@ -165,6 +165,24 @@ envIO =
       _controller = mkController
    in Env {_logger, _repository, _controller}
 
+-- What happens if we build the env but still don't commit to `DepT`? What
+-- signature do we get? Would it be useful to have these "fluffy" environments
+-- around? The signature gives an interesting global overview of the required
+-- constraints...
+fluffyEnv :: forall e m. (MonadReader e m, HasLogger e m, HasRepository e m, MonadWriter TestTrace m) => Env m
+fluffyEnv =
+  let _logger = mkFakeLogger
+      _repository = mkFakeRepository
+      _controller = mkController
+   in Env {_logger, _repository, _controller}
+fluffyEnvIO :: forall e m. (MonadReader e m, HasLogger e m, HasRepository e m, MonadIO m) => Env m
+fluffyEnvIO =
+  let _logger = mkStdoutLogger
+      _repository = mkStdoutRepository
+      _controller = mkController
+   in Env {_logger, _repository, _controller}
+
+
 biggerEnv :: BiggerEnv (DepT BiggerEnv (Writer TestTrace))
 biggerEnv =
   let -- We embed the small environment into the bigger one using "zoomEnv"
