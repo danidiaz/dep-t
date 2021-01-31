@@ -267,13 +267,21 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 
 - I'm unsure of the relationship between `DepT` and the technique described in
   [Adventures assembling records of
-  capabilities](https://discourse.haskell.org/t/adventures-assembling-records-of-capabilities/623). 
+  capabilities](https://discourse.haskell.org/t/adventures-assembling-records-of-capabilities/623)
+  which relies on having "open" and "closed" versions of the environment
+  record. 
 
   It seems that, with `DepT`, functions in the environment obtain their
   dependencies anew every time they are invoked. If we change a function in the
   environment record, all other functions which depend on it will be affected
   in subsequent invocations. I don't think this happens with "Adventures..." at
-  least when changing an already "assembled" record.
+  least when changing a "closed", already assembled record.
+
+  With `DepT` a function might use `local` if it knows enough about the
+  environment. That doesn't seem very useful for program logic; if fact it
+  sounds like a recipe for confusion. It could perhaps be useful for AOP-ish
+  things, to keep a synthetic "call stack", or to implement something like
+  Logback's [Mapped Diagnostic Context](http://logback.qos.ch/manual/mdc.html).
 
 - [RIO](http://hackage.haskell.org/package/rio) is a featureful ReaderT-like /
   prelude replacement library which favors monomorphic environments.
