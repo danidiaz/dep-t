@@ -279,9 +279,10 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 
   With `DepT` a function might use `local` if it knows enough about the
   environment. That doesn't seem very useful for program logic; if fact it
-  sounds like a recipe for confusion. It could perhaps be useful for AOP-ish
-  things, to keep a synthetic "call stack", or to implement something like
-  Logback's [Mapped Diagnostic Context](http://logback.qos.ch/manual/mdc.html).
+  sounds like a recipe for confusion. It could perhaps be useful for [AOP-ish
+  things](http://hackage.haskell.org/package/dep-t-advice), to keep a synthetic
+  "call stack", or to implement something like Logback's [Mapped Diagnostic
+  Context](http://logback.qos.ch/manual/mdc.html).
 
 - [RIO](http://hackage.haskell.org/package/rio) is a featureful ReaderT-like /
   prelude replacement library which favors monomorphic environments.
