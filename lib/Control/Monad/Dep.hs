@@ -46,7 +46,9 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
 import Control.Monad.Writer.Class
 import Control.Monad.Zip
+import Control.Monad.Dep.Class
 import Data.Kind (Type)
+import Data.Coerce
 
 -- |
 --    A monad transformer which adds a read-only environment to the given monad.
@@ -83,6 +85,12 @@ deriving instance MonadState s m => MonadState s (DepT env m)
 deriving instance MonadWriter w m => MonadWriter w (DepT env m)
 
 deriving instance MonadError e m => MonadError e (DepT env m)
+
+instance Monad m => MonadDep (DepT env m) (env (DepT env m)) (DepT env m) where
+  liftD = id
+
+instance (Coercible env' (env (DepT env m)), Monad m) => MonadDep (DepT env m) env' (ReaderT env' m) where
+  liftD = coerce
 
 -- |
 --    Runs a 'DepT' action in an environment.
