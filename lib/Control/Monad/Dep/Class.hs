@@ -15,10 +15,10 @@ module Control.Monad.Dep.Class where
 import Control.Monad.Reader
 import Data.Kind
 
-type MonadDep :: (Type -> Type) -> Type -> (Type -> Type) -> Constraint
-class MonadReader e m => MonadDep d e m where
+type MonadDep ::  Type -> (Type -> Type) -> (Type -> Type) -> Constraint
+class MonadReader e m => MonadDep e d m where
     liftD :: d x -> m x 
 
-instance MonadDep IO e (ReaderT e IO) where
+instance MonadDep e IO (ReaderT e IO) where
     liftD = lift
 

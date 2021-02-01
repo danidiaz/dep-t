@@ -86,10 +86,10 @@ deriving instance MonadWriter w m => MonadWriter w (DepT env m)
 
 deriving instance MonadError e m => MonadError e (DepT env m)
 
-instance Monad m => MonadDep (DepT env m) (env (DepT env m)) (DepT env m) where
+instance Monad m => MonadDep (env (DepT env m)) (DepT env m) (DepT env m) where
   liftD = id
 
-instance (Coercible env' (env (DepT env m)), Monad m) => MonadDep (DepT env m) env' (ReaderT env' m) where
+instance (Coercible env' (env (DepT env m)), Monad m) => MonadDep env' (DepT env m) (ReaderT env' m) where
   liftD = coerce
 
 -- |
