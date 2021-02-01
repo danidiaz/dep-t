@@ -36,8 +36,8 @@ class HasLogger r m | r -> m where
 
 -- Possible convenience function to avoid having to use ask before logging
 -- Worth the extra boilerplate, or not?
-logger' :: (MonadReader e m, HasLogger e m) => String -> m ()
-logger' msg = asks logger >>= \f -> f msg
+logger' :: (MonadDep e d m, HasLogger e d) => String -> m ()
+logger' msg = asks logger >>= \f -> liftD $ f msg
 
 type HasRepository :: Type -> (Type -> Type) -> Constraint
 class HasRepository r m | r -> m where
@@ -48,11 +48,11 @@ class HasRepository r m | r -> m where
 -- An implementation of the controller, done programming against interfaces
 -- (well, against typeclasses).
 -- Polymorphic on the monad.
-mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m String
+mkController :: (MonadDep e d m, HasLogger e d, HasRepository e d) => Int -> m String
 mkController x = do
   e <- ask
-  logger e "I'm going to insert in the db!"
-  repository e x
+  liftD $ logger e "I'm going to insert in the db!"
+  liftD $ repository e x
   return "view"
 
 -- A "real" logger implementation that interacts with the external world.
@@ -60,10 +60,10 @@ mkStdoutLogger :: MonadIO m => String -> m ()
 mkStdoutLogger msg = liftIO (putStrLn msg)
 
 -- A "real" repository implementation
-mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
+mkStdoutRepository :: (MonadDep e d m, HasLogger e d, MonadIO m) => Int -> m ()
 mkStdoutRepository entity = do
   e <- ask
-  logger e "I'm going to write the entity!"
+  liftD $ logger e "I'm going to write the entity!"
   liftIO $ print entity
 
 -- The traces we accumulate from the fakes during tests
@@ -74,10 +74,10 @@ mkFakeLogger :: MonadWriter TestTrace m => String -> m ()
 mkFakeLogger msg = tell ([msg], [])
 
 -- Ditto.
-mkFakeRepository :: (MonadReader e m, HasLogger e m, MonadWriter TestTrace m) => Int -> m ()
+mkFakeRepository :: (MonadDep e d m, HasLogger e d, MonadWriter TestTrace m) => Int -> m ()
 mkFakeRepository entity = do
   e <- ask
-  logger e "I'm going to write the entity!"
+  liftD $ logger e "I'm going to write the entity!"
   tell ([], [entity])
 
 --
@@ -89,11 +89,21 @@ data EnvIO = EnvIO
     _repositoryIO :: Int -> IO ()
   }
 
+envIO' :: EnvIO
+envIO' =
+  let _loggerIO = mkStdoutLogger
+      _repositoryIO i = print "this is the repo"
+   in EnvIO {_loggerIO, _repositoryIO}
+
 instance HasLogger EnvIO IO where
   logger = _loggerIO
 
 instance HasRepository EnvIO IO where
   repository = _repositoryIO
+
+-- mkController works both with DepT and with ReaderT + monomorphic environment
+runningTheControllerInReaderT :: IO String
+runningTheControllerInReaderT = mkController 5 `runReaderT` envIO'
 
 -- In the monomorphic environment, the controller function lives "separate",
 -- having access to the logger and the repository through the ReaderT
@@ -106,12 +116,14 @@ instance HasRepository EnvIO IO where
 -- In a sufficiently complex app, the diverse functions will form a DAG of
 -- dependencies between each other. So it would be nice if the functions were
 -- treated uniformly, all having access to (views of) the environment record.
-mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
-mkControllerIO x = do
-  e <- ask
-  liftIO $ logger e "I'm going to insert in the db!"
-  liftIO $ repository e x
-  return "view"
+--
+-- no need for this now that we have MonadDep... just use the conventional mkController
+-- mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
+-- mkControllerIO x = do
+--   e <- ask
+--   liftIO $ logger e "I'm going to insert in the db!"
+--   liftIO $ repository e x
+--   return "view"
 
 --
 --
@@ -169,13 +181,13 @@ envIO =
 -- signature do we get? Would it be useful to have these "fluffy" environments
 -- around? The signature gives an interesting global overview of the required
 -- constraints...
-fluffyEnv :: forall e m. (MonadReader e m, HasLogger e m, HasRepository e m, MonadWriter TestTrace m) => Env m
+fluffyEnv :: forall e d m. (MonadDep e d m, HasLogger e d, HasRepository e d, MonadWriter TestTrace m) => Env m
 fluffyEnv =
   let _logger = mkFakeLogger
       _repository = mkFakeRepository
       _controller = mkController
    in Env {_logger, _repository, _controller}
-fluffyEnvIO :: forall e m. (MonadReader e m, HasLogger e m, HasRepository e m, MonadIO m) => Env m
+fluffyEnvIO :: forall e d m. (MonadDep e d m, HasLogger e d, HasRepository e d, MonadIO m) => Env m
 fluffyEnvIO =
   let _logger = mkStdoutLogger
       _repository = mkStdoutRepository

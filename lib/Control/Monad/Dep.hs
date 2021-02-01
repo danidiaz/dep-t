@@ -30,6 +30,7 @@ module Control.Monad.Dep
     NilEnv(NilEnv),
     -- * Re-exports
     module Control.Monad.Trans,
+    module Control.Monad.Dep.Class,
     module Control.Monad.Reader.Class
   )
 where
