@@ -85,12 +85,6 @@ deriving instance MonadWriter w m => MonadWriter w (DepT env m)
 
 deriving instance MonadError e m => MonadError e (DepT env m)
 
--- instance Monad m => MonadDep (env (DepT env m)) (DepT env m) (DepT env m) where
---   liftD = id
--- 
--- instance (Monad m, Coercible env' (env (DepT env m))) => MonadDep env' (DepT env m) (ReaderT env' m) where
---   liftD = coerce
-
 instance Monad m => LiftDep (DepT env m) (DepT env m) where
   liftD = id
 
@@ -99,6 +93,9 @@ instance (Monad m, Coercible newtyped (env (DepT env m))) => LiftDep (DepT env m
 
 -- |
 --    Runs a 'DepT' action in an environment.
+--      
+-- >>> runDepT (pure "foo") NilEnv
+-- "foo"
 --
 --    For more sophisticated invocation functions, see @runFinalDepT@ and @runFromEnv@ from <http://hackage.haskell.org/package/dep-t-advice dep-t-advice>.
 runDepT :: DepT env m r -> env (DepT env m) -> m r
