@@ -114,6 +114,12 @@ envW = Env
        \_ -> do e <- ask; liftD $ logger e "foo" ; liftD $ intermediate e "foo"
   }
 
+_controllerA' :: MonadDep '[HasLogger, HasIntermediate] d e m => String -> m () 
+_controllerA' = \_ -> do e <- ask; liftD $ logger e "foo" ; liftD $ intermediate e "foo"
+
+_intermediate' :: MonadDep '[HasLogger] d e m => String -> m () 
+_intermediate' = \_ -> do e <- ask ; liftD $ logger e "foo" 
+
 --
 --
 tests :: TestTree

@@ -32,8 +32,8 @@ import Prelude hiding (log)
 -- environments.
 -- Note that the environment determines the monad.
 type HasLogger :: (Type -> Type) -> Type -> Constraint
-class HasLogger m r | r -> m where
-  logger :: r -> String -> m ()
+class HasLogger d e | e -> d where
+  logger :: e -> String -> d ()
 
 -- Possible convenience function to avoid having to use ask before logging
 -- Worth the extra boilerplate, or not?
@@ -42,8 +42,8 @@ logger' :: MonadDep '[HasLogger] d e m => String -> m ()
 logger' msg = asks logger >>= \f -> liftD $ f msg
 
 type HasRepository :: (Type -> Type) -> Type -> Constraint
-class HasRepository m r | r -> m where
-  repository :: r -> Int -> m ()
+class HasRepository d e | e -> d where
+  repository :: e -> Int -> d ()
 
 -- Some possible implementations.
 --
