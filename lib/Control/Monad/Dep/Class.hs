@@ -31,8 +31,8 @@ class LiftDep d m where
 instance (Monad m, MonadTrans t) => LiftDep m (t m) where
     liftD = lift
 
-type MonadDep :: [Type -> (Type -> Type) -> Constraint] -> Type -> (Type -> Type) -> (Type -> Type) -> Constraint
-type family MonadDep capabilities e d m where
-    MonadDep '[] e d m = (MonadReader e m, LiftDep d m)
-    MonadDep (capability ': capabilities) e d m  = (capability e d, MonadDep capabilities e d m)
+type MonadDep :: [(Type -> Type) -> Type -> Constraint] -> (Type -> Type) -> Type -> (Type -> Type) -> Constraint
+type family MonadDep capabilities d e m where
+    MonadDep '[] d e m = (LiftDep d m, MonadReader e m)
+    MonadDep (capability ': capabilities) d e m  = (capability d e, MonadDep capabilities d e m)
 

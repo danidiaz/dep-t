@@ -31,18 +31,18 @@ import Prelude hiding (log)
 -- Has-style typeclasses can be provided to avoid depending on concrete
 -- environments.
 -- Note that the environment determines the monad.
-type HasLogger :: Type -> (Type -> Type) -> Constraint
-class HasLogger r m | r -> m where
+type HasLogger :: (Type -> Type) -> Type -> Constraint
+class HasLogger m r | r -> m where
   logger :: r -> String -> m ()
 
 -- Possible convenience function to avoid having to use ask before logging
 -- Worth the extra boilerplate, or not?
 --logger' :: (MonadReader e m, LiftDep d m, HasLogger e d) => String -> m ()
-logger' :: MonadDep '[HasLogger] e d m => String -> m ()
+logger' :: MonadDep '[HasLogger] d e m => String -> m ()
 logger' msg = asks logger >>= \f -> liftD $ f msg
 
-type HasRepository :: Type -> (Type -> Type) -> Constraint
-class HasRepository r m | r -> m where
+type HasRepository :: (Type -> Type) -> Type -> Constraint
+class HasRepository m r | r -> m where
   repository :: r -> Int -> m ()
 
 -- Some possible implementations.
@@ -51,7 +51,7 @@ class HasRepository r m | r -> m where
 -- (well, against typeclasses).
 -- Polymorphic on the monad.
 --mkController :: (MonadReader e m, LiftDep d m, HasLogger e d, HasRepository e d) => Int -> m String
-mkController :: MonadDep '[HasLogger, HasRepository] e d m => Int -> m String
+mkController :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
 mkController x = do
   e <- ask
   liftD $ logger e "I'm going to insert in the db!"
@@ -64,7 +64,7 @@ mkStdoutLogger msg = liftIO (putStrLn msg)
 
 -- A "real" repository implementation
 --mkStdoutRepository :: (MonadReader e m, LiftDep d m, HasLogger e d, MonadIO m) => Int -> m ()
-mkStdoutRepository :: (MonadDep '[HasLogger] e d m, MonadIO m) => Int -> m ()
+mkStdoutRepository :: (MonadDep '[HasLogger] d e m, MonadIO m) => Int -> m ()
 mkStdoutRepository entity = do
   e <- ask
   liftD $ logger e "I'm going to write the entity!"
@@ -79,7 +79,7 @@ mkFakeLogger msg = tell ([msg], [])
 
 -- Ditto.
 --mkFakeRepository :: (MonadReader e m, LiftDep d m, HasLogger e d, MonadWriter TestTrace m) => Int -> m ()
-mkFakeRepository :: (MonadDep '[HasLogger] e d m, MonadWriter TestTrace m) => Int -> m ()
+mkFakeRepository :: (MonadDep '[HasLogger] d e m, MonadWriter TestTrace m) => Int -> m ()
 mkFakeRepository entity = do
   e <- ask
   liftD $ logger e "I'm going to write the entity!"
@@ -100,10 +100,10 @@ envIO' =
       _repositoryIO i = print "this is the repo"
    in EnvIO {_loggerIO, _repositoryIO}
 
-instance HasLogger EnvIO IO where
+instance HasLogger IO EnvIO where
   logger = _loggerIO
 
-instance HasRepository EnvIO IO where
+instance HasRepository IO EnvIO where
   repository = _repositoryIO
 
 -- mkController works both with DepT and with ReaderT + monomorphic environment
@@ -145,10 +145,10 @@ $(Rank2.TH.deriveFunctor ''Env)
 
 -- If our environment is parmeterized by the monad m, then logging is done in
 -- m.
-instance HasLogger (Env m) m where
+instance HasLogger m (Env m) where
   logger = _logger
 
-instance HasRepository (Env m) m where
+instance HasRepository m (Env m) where
   repository = _repository
 
 -- This bigger environment is for demonstrating how to "nest" environments.
@@ -182,24 +182,6 @@ envIO =
       _controller = mkController
    in Env {_logger, _repository, _controller}
 
--- What happens if we build the env but still don't commit to `DepT`? What
--- signature do we get? Would it be useful to have these "fluffy" environments
--- around? The signature gives an interesting global overview of the required
--- constraints...
--- fluffyEnv :: forall e d m. (MonadReader e m, LiftDep d m, HasLogger e d, HasRepository e d, MonadWriter TestTrace m) => Env m
--- fluffyEnv =
---   let _logger = mkFakeLogger
---       _repository = mkFakeRepository
---       _controller = mkController
---    in Env {_logger, _repository, _controller}
--- fluffyEnvIO :: forall e d m. (MonadReader e m, LiftDep d m, HasLogger e d, HasRepository e d, MonadIO m) => Env m
--- fluffyEnvIO =
---   let _logger = mkStdoutLogger
---       _repository = mkStdoutRepository
---       _controller = mkController
---    in Env {_logger, _repository, _controller}
-
-
 biggerEnv :: BiggerEnv (DepT BiggerEnv (Writer TestTrace))
 biggerEnv =
   let -- We embed the small environment into the bigger one using "zoomEnv"
@@ -226,7 +208,7 @@ expected = (["I'm going to insert in the db!", "I'm going to write the entity!"]
 class Instrumentable e m r | r -> e m where
   instrument ::
     ( forall x.
-      HasLogger (e (DepT e m)) (DepT e m) =>
+      HasLogger (DepT e m) (e (DepT e m)) =>
       [String] ->
       DepT e m x ->
       DepT e m x
@@ -234,7 +216,7 @@ class Instrumentable e m r | r -> e m where
     r ->
     r
 
-instance HasLogger (e (DepT e m)) (DepT e m) => Instrumentable e m (DepT e m x) where
+instance HasLogger (DepT e m) (e (DepT e m)) => Instrumentable e m (DepT e m x) where
   instrument f d = f [] d
 
 instance (Instrumentable e m r, Show a) => Instrumentable e m (a -> r) where
