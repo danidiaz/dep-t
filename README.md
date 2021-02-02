@@ -45,7 +45,8 @@ Record-of-functions-in-IO is a simple technique which works well in many
 situations. There are even [specialized
 libraries](http://hackage.haskell.org/package/rio) that support it.
 
-Here's a function which obtains its dependencies from the environment record:
+Here's a function which obtains its dependencies from the monomorphic
+environment:
 
     mkControllerIO :: (HasLogger IO e, HasRepository IO e) => Int -> ReaderT e IO String
     mkControllerIO x = do
