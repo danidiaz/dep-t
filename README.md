@@ -16,13 +16,13 @@ record of functions and pass it to the program logic using some variant of
 Let's start by defining some auxiliary typeclasses to extract functions from an
 environment record:
 
-    type HasLogger :: Type -> (Type -> Type) -> Constraint
-    class HasLogger r m | r -> m where
-      logger :: r -> String -> m ()
+    type HasLogger :: (Type -> Type) -> Type -> Constraint
+    class HasLogger d e | e -> d where
+      logger :: e -> String -> d ()
 
-    type HasRepository :: Type -> (Type -> Type) -> Constraint
-    class HasRepository r m | r -> m where
-      repository :: r -> Int -> m ()
+    type HasRepository :: (Type -> Type) -> Type -> Constraint
+    class HasRepository d e | e -> d where
+      repository :: e -> Int -> d ()
 
 We see that the type of the record determines the monad in which the effects take place.
 
@@ -34,10 +34,10 @@ Let's define a monomorphic record with effects in `IO`:
         _repositoryIO :: Int -> IO ()
       }
 
-    instance HasLogger EnvIO IO where
+    instance HasLogger IO EnvIO where
       logger = _loggerIO
 
-    instance HasRepository EnvIO IO where
+    instance HasRepository IO EnvIO where
       repository = _repositoryIO
 
 Record-of-functions-in-IO is a simple technique which works well in many
@@ -139,6 +139,13 @@ I suggest something like
 
     runDepT (do e <- ask; _controller e 7) envIO 
 
+or 
+    (do e <- ask; _controller e 7) `runDepT` envIO 
+
+The companion package
+[dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) has some more
+functions for running `DepT` computations.
+
 ## How to embed environments into other environments?
 
 Sometimes it might be convenient to [nest an environment into another
@@ -174,20 +181,23 @@ The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
 collecting the outputs of functions working as ["test
 doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
-## How to avoid using "ask" or "asks" before invoking a dependency?
+## How to avoid using "ask" and "liftD" before invoking a dependency?
 
 One possible workaround (at the cost of more boilerplate) is to define helper
 functions like:  
 
-    logger' :: (MonadReader e m, HasLogger e m) => String -> m ()
-    logger' msg = asks logger >>= \f -> f msg
+    loggerD :: MonadDep '[HasLogger] d e m => String -> m ()
+    loggerD msg = asks logger >>= \f -> liftD $ f msg
 
 Which you can invoke like this:
 
-    mkController x = do
-      logger' "I'm going to insert in the db!"
+    usesLoggerD :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
+    usesLoggerD i = do
+      e <- ask
+      loggerD "I'm calling the logger!"
+      return "foo"
 
-I'm not sure it's worth the hassle.
+Though perhaps it isn't worth the hassle.
 
 ## How to instrument functions in the environment?
 

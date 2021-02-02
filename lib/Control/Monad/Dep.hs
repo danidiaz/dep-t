@@ -16,9 +16,7 @@
 --    @DepT@'s own monad stack.
 --
 --    There's a function 'withDepT' which is analogous to 'withReaderT'.
---
---    There's no analogue of 'mapReaderT' however. This means you can't tweak
---    the monad below the 'DepT' with a natural transformation.
+--    There's no analogue of 'mapReaderT' however. 
 module Control.Monad.Dep
   ( 
     -- * The DepT transformer
@@ -113,7 +111,7 @@ runDepT = runReaderT . toReaderT
 --    The scary first parameter is a function that, given a natural
 --    transformation of monads, changes the monad parameter of the environment
 --    record. This function can be defined manually for each environment record,
---    or it can be generated using TH from the "rank2classes" package.
+--    or it can be generated using TH from the <http://hackage.haskell.org/package/rank2classes-1.4.1/docs/Rank2-TH.html#v:deriveFunctor rank2classes> package.
 withDepT ::
   forall small big m a.
   Monad m =>
@@ -151,10 +149,9 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
 --    The scary first parameter is a function that, given a natural
 --    transformation of monads, changes the monad parameter of the environment
 --    record. This function can be defined manually for each environment record,
---    or it can be generated using TH from the "rank2classes" package.
-
--- For the reason for not inlining, see https://twitter.com/DiazCarrete/status/1350116413445439493
+--    or it can be generated using TH from the <http://hackage.haskell.org/package/rank2classes-1.4.1/docs/Rank2-TH.html#v:deriveFunctor rank2classes> package.
 {-# NOINLINE zoomEnv #-}
+-- For the reason for not inlining, see https://twitter.com/DiazCarrete/status/1350116413445439493
 zoomEnv ::
   forall small big m a.
   Monad m =>

@@ -38,8 +38,8 @@ class HasLogger d e | e -> d where
 -- Possible convenience function to avoid having to use ask before logging
 -- Worth the extra boilerplate, or not?
 --logger' :: (MonadReader e m, LiftDep d m, HasLogger e d) => String -> m ()
-logger' :: MonadDep '[HasLogger] d e m => String -> m ()
-logger' msg = asks logger >>= \f -> liftD $ f msg
+loggerD :: MonadDep '[HasLogger] d e m => String -> m ()
+loggerD msg = asks logger >>= \f -> liftD $ f msg
 
 type HasRepository :: (Type -> Type) -> Type -> Constraint
 class HasRepository d e | e -> d where
@@ -57,6 +57,12 @@ mkController x = do
   liftD $ logger e "I'm going to insert in the db!"
   liftD $ repository e x
   return "view"
+
+usesLoggerD :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
+usesLoggerD i = do
+  e <- ask
+  loggerD "I'm calling the logger!"
+  return "foo"
 
 -- A "real" logger implementation that interacts with the external world.
 mkStdoutLogger :: MonadIO m => String -> m ()
@@ -123,12 +129,12 @@ runningTheControllerInReaderT = mkController 5 `runReaderT` envIO'
 -- treated uniformly, all having access to (views of) the environment record.
 --
 -- no need for this now that we have MonadDep... just use the conventional mkController
--- mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
--- mkControllerIO x = do
---   e <- ask
---   liftIO $ logger e "I'm going to insert in the db!"
---   liftIO $ repository e x
---   return "view"
+mkControllerIO :: (HasLogger IO e, HasRepository IO e) => Int -> ReaderT e IO String
+mkControllerIO x = do
+  e <- ask
+  liftIO $ logger e "I'm going to insert in the db!"
+  liftIO $ repository e x
+  return "view"
 
 --
 --
@@ -274,7 +280,10 @@ tests =
           execWriter $ runDepT (do e <- ask; (_controller . _inner) e 7) biggerEnv,
       testCase "hopeAOPWorks" $
         assertEqual "" expectedInstrumented $
-          execWriter $ runDepT (do e <- ask; _controller e 7) instrumentedEnv
+          execWriter $ runDepT (do e <- ask; _controller e 7) instrumentedEnv,
+      testCase "hopeLoggerDWorks" $
+        assertEqual "" (["foo"],[]) $
+          execWriter $ loggerD "foo" `runDepT` env
     ]
 
 main :: IO ()
