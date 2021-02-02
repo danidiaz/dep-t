@@ -47,7 +47,7 @@ libraries](http://hackage.haskell.org/package/rio) that support it.
 
 Here's a function which obtains its dependencies from the environment record:
 
-    mkControllerIO :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
+    mkControllerIO :: (HasLogger IO e, HasRepository IO e) => Int -> ReaderT e IO String
     mkControllerIO x = do
       e <- ask
       liftIO $ logger e "I'm going to insert in the db!"
@@ -55,6 +55,10 @@ Here's a function which obtains its dependencies from the environment record:
       return "view"
 
 That's all and well, but there are two issues that bug me:
+
+- We might want to write code that is innocent of `IO` and polymorphic over the
+  monad, to ensure that the program logic can't do some unexpected missile
+  launch, or to allow testing our app in a "pure" way. 
 
 - What if the repository function needs access to the logger, too? The
   repository lives in the environment record, but isn't aware of it. That means
@@ -68,11 +72,32 @@ That's all and well, but there are two issues that bug me:
   were treated uniformly; if all of them had access to (some view of) the
   environment record.
 
-- We might want to write code that is innocent of `IO` and polymorphic over the
-  monad, to ensure that the program logic can't do some unexpected missile
-  launch, or to allow testing our app in a "pure" way. 
+To tackle these issues, let's begin by writing the controller in a more generic
+way:
 
-Let's parameterize our environment by a monad: 
+    mkController :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
+    mkController x = do
+      e <- ask
+      liftD $ logger e "I'm going to insert in the db!"
+      liftD $ repository e x
+      return "view"
+
+The signature has changed, and we now use `liftD` instead of `liftIO`. But
+`mkController` does the same things as `mkControllerIO`, and can be used as a
+substitute for it:
+
+    mkControllerIO' :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
+    mkControllerIO' = mkController
+
+Here we have intantiated `m` to `ReaderT e IO`, and `d` (the effect monad used
+by dependencies in the environment) to `IO`. So in this example `liftD` (the
+function that lifts `d` effects to `m`) is simply `liftIO`.
+
+However the constraints of `mkController` have valid instances for other
+monads, as we shall see.
+
+Now let's turn our attention to the environment record. Let's parameterize its
+type by a monad: 
 
     type Env :: (Type -> Type) -> Type
     data Env m = Env
@@ -80,13 +105,11 @@ Let's parameterize our environment by a monad:
         _repository :: Int -> m (),
         _controller :: Int -> m String
       }
-    -- helper from the "rank2classes" package
-    $(Rank2.TH.deriveFunctor ''Env)
 
-    instance HasLogger (Env m) m where
+    instance HasLogger m (Env m) where
       logger = _logger
 
-    instance HasRepository (Env m) m where
+    instance HasRepository m (Env m) where
       repository = _repository
 
 Notice that the controller function is now part of the environment. No
@@ -99,24 +122,15 @@ The following implementation of the logger function has no dependencies besides
     mkStdoutLogger msg = liftIO (putStrLn msg)
 
 But look at this implementation of the repository function. It gets hold of the
-logger through `HasLogger`:
+logger through `HasLogger`, just as the controller did:
 
-    mkStdoutRepository :: (MonadReader e m, HasLogger e m, MonadIO m) => Int -> m ()
+    mkStdoutRepository :: (MonadDep '[HasLogger] d e m, MonadIO m) => Int -> m ()
     mkStdoutRepository entity = do
       e <- ask
-      logger e "I'm going to write the entity!"
+      liftD $ logger e "I'm going to write the entity!"
       liftIO $ print entity
 
-And here's the controller:
-
-    mkController :: (MonadReader e m, HasLogger e m, HasRepository e m) => Int -> m String
-    mkController x = do
-      e <- ask
-      logger e "I'm going to insert in the db!"
-      repository e x
-      return "view"
-
-Now, lets choose `IO` as the base monad and assemble an environment record:
+It's about time we chose a concrete monad and assemble an environment record:
 
     envIO :: Env (DepT Env IO)
     envIO =
@@ -128,11 +142,12 @@ Now, lets choose `IO` as the base monad and assemble an environment record:
 Not very complicated, except... what is that weird `DepT Env IO` doing there in
 the signature? 
 
-Well, that's the whole reason this library exists. Trying to use a `ReaderT
-(Env something) IO` to parameterize `Env` won't fly; you'll get weird "infinite
-type" kind of errors because the `Env` needs to be parameterized with the monad
-that provides the `Env` environment. So I created the `DepT` newtype over
-`ReaderT` to mollify the compiler.
+Well, that's the whole reason this library exists. For dependency injection to
+work for all functions, `Env` needs to be parameterized with the monad that
+provides that same `Env` environment. And trying to use a `ReaderT (Env
+something) IO` to parameterize `Env` won't fly; you'll get weird "infinite
+type" kind of errors. So I created the `DepT` newtype over `ReaderT` to mollify
+the compiler.
 
 ## So how do we invoke the controller now?
 
