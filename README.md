@@ -94,7 +94,7 @@ Here we have intantiated `m` to `ReaderT e IO`, and `d` (the effect monad used
 by dependencies in the environment) to `IO`. So in this example `liftD` (the
 function that lifts `d` effects to `m`) is simply `liftIO`.
 
-However the constraints of `mkController` have valid instances for other
+However the `MonadDep` constraint of `mkController` have valid instances for other
 monads, as we shall see.
 
 Now let's turn our attention to the environment record. Let's parameterize its
@@ -144,11 +144,14 @@ Not very complicated, except... what is that weird `DepT Env IO` doing there in
 the signature? 
 
 Well, that's the whole reason this library exists. For dependency injection to
-work for all functions, `Env` needs to be parameterized with the monad that
+work for all functions, `Env` needs to be parameterized with a monad that
 provides that same `Env` environment. And trying to use a `ReaderT (Env
 something) IO` to parameterize `Env` won't fly; you'll get weird "infinite
 type" kind of errors. So I created the `DepT` newtype over `ReaderT` to mollify
 the compiler.
+
+`DepT` satisfies the `MonadDep` constraint, so the effects of `mkController`
+can take place on it.
 
 ## So how do we invoke the controller now?
 
