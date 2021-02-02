@@ -49,6 +49,19 @@ import Control.Monad.Dep.Class
 import Data.Kind (Type)
 import Data.Coerce
 
+-- $setup
+--
+-- >>> :set -XTypeApplications
+-- >>> :set -XImportQualifiedPost
+-- >>> :set -XTemplateHaskell
+-- >>> :set -XStandaloneKindSignatures
+-- >>> :set -XNamedFieldPuns
+-- >>> import Control.Monad.Dep
+-- >>> import Rank2 qualified
+-- >>> import Rank2.TH qualified
+--
+
+
 -- |
 --    A monad transformer which adds a read-only environment to the given monad.
 --    The environment type must be parameterized with the transformer's stack.
@@ -142,6 +155,33 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
 --
 --    This can be useful if we are encasing the small environment as a field of
 --    the big environment, in order to make the types match.
+--
+--
+-- >>> :{ 
+--   type Env :: (Type -> Type) -> Type
+--   data Env m = Env
+--     { _logger :: String -> m (),
+--       _repository :: Int -> m (),
+--       _controller :: Int -> m String
+--     }
+--   $(Rank2.TH.deriveFunctor ''Env)
+--   env :: Env (DepT Env IO)
+--   env = Env 
+--     { _logger = \_ -> pure (), 
+--       _repository = \_ -> pure (), 
+--       _controller = \_ -> pure "foo" 
+--     }
+--   type BiggerEnv :: (Type -> Type) -> Type
+--   data BiggerEnv m = BiggerEnv
+--     { _inner :: Env m,
+--       _extra :: Int -> m Int
+--     }
+--   biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
+--   biggerEnv =
+--     let _inner' = zoomEnv (Rank2.<$>) _inner env
+--         _extra = pure
+--      in BiggerEnv {_inner = _inner', _extra}
+-- :}
 --
 --    The scary first parameter is a function that, given a natural
 --    transformation of monads, changes the monad parameter of the environment

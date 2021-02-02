@@ -65,5 +65,6 @@ test-suite doctests
   main-is:             doctests.hs
   build-depends:       
                        dep-t, 
+                       rank2classes       ^>= 1.4.1,
                        doctest            ^>= 0.17,
 
