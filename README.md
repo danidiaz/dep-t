@@ -24,7 +24,8 @@ environment record:
     class HasRepository d e | e -> d where
       repository :: e -> Int -> d ()
 
-We see that the type of the record determines the monad in which the effects take place.
+We see that the type of the record `e` determines the monad `d` in which the
+effects take place.
 
 Let's define a monomorphic record with effects in `IO`:
 
@@ -140,6 +141,7 @@ I suggest something like
     runDepT (do e <- ask; _controller e 7) envIO 
 
 or 
+
     (do e <- ask; _controller e 7) `runDepT` envIO 
 
 The companion package
@@ -158,11 +160,10 @@ Which you can invoke like this:
 
     usesLoggerD :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
     usesLoggerD i = do
-      e <- ask
       loggerD "I'm calling the logger!"
       return "foo"
 
-Though perhaps it isn't worth the hassle.
+Though perhaps this isn't worth the hassle.
 
 ## How to use "pure fakes" during testing?
 
@@ -174,8 +175,8 @@ doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
 The companion package
 [dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) provides a
-general method extending the behaviour of `DepT`-effectful functions, in a
-manner reminiscent of aspect-oriented programming.
+general method of extending the behaviour of `DepT`-effectful functions, in a
+way reminiscent of aspect-oriented programming.
 
 ## Caveats
 

@@ -60,7 +60,6 @@ mkController x = do
 
 usesLoggerD :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
 usesLoggerD i = do
-  e <- ask
   loggerD "I'm calling the logger!"
   return "foo"
 
