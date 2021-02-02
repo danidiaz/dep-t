@@ -13,6 +13,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module Main (main) where
 
@@ -69,11 +71,62 @@ instance Deceivable as newtyped e m r curried => Deceivable (a ': as) newtyped e
   type Deceive (a ': as) newtyped e m r (a -> curried) = a -> Deceive as newtyped e m r curried
   deceive f g a = deceive @as @newtyped @e @m @r f (g a)
 
+--
+--
+--
+type HasLogger :: (Type -> Type) -> Type -> Constraint
+class HasLogger m em | em -> m where
+  logger :: em -> String -> m ()
+type HasIntermediate :: (Type -> Type) -> Type -> Constraint
+class HasIntermediate m em | em -> m where
+  intermediate :: em -> String -> m ()
+type Env :: (Type -> Type) -> Type
+data Env m = Env
+  { _logger1 :: String -> m (),
+    _logger2 :: String -> m (),
+    _intermediate :: String -> m (),
+    _controllerA :: Int -> m (),
+    _controllerB :: Int -> m ()
+  }
+instance HasLogger m (Env m) where
+  logger = _logger1
+instance HasIntermediate m (Env m) where
+  intermediate = _intermediate
+
+newtype Switcheroo m = Switcheroo (Env m) 
+    deriving newtype (HasIntermediate m)
+instance HasLogger m (Switcheroo m) where
+  logger (Switcheroo e) = _logger2 e
+
+envW :: Env (DepT Env (Writer [String]))
+envW = Env 
+  {
+    _logger1 = 
+       \_ -> tell ["logger 1"],
+    _logger2 = 
+       \_ -> tell ["logger 2"],
+    _intermediate =
+       \_ -> do e <- ask ; liftD $ logger e "foo", 
+    _controllerA = 
+       \_ -> do e <- ask; liftD $ logger e "foo" ; liftD $ intermediate e "foo",
+    _controllerB = 
+       deceive Switcheroo $
+       \_ -> do e <- ask; liftD $ logger e "foo" ; liftD $ intermediate e "foo"
+  }
+
+--
+--
 tests :: TestTree
 tests =
   testGroup
     "All"
     [
+      testCase "undeceived" $
+        assertEqual "" ["logger 1", "logger 1"] $
+          execWriter $ (do e <- ask; _controllerA e 7) `runDepT` envW,
+      testCase "deceived" $
+        assertEqual "" ["logger 2", "logger 1"] $
+          execWriter $ (do e <- ask; _controllerB e 7) `runDepT` envW
     ]
 
 main :: IO ()
