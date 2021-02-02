@@ -9,18 +9,15 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Control.Monad.Dep.Class where
 
 import Control.Monad.Reader
 import Data.Kind
-
--- type MonadDep ::  Type -> (Type -> Type) -> (Type -> Type) -> Constraint
--- class MonadReader e m => MonadDep e d m where
---     liftD :: d x -> m x 
--- 
--- instance MonadDep e IO (ReaderT e IO) where
---     liftD = lift
 
 type LiftDep :: (Type -> Type) -> (Type -> Type) -> Constraint
 class LiftDep d m where
@@ -28,4 +25,9 @@ class LiftDep d m where
 
 instance (Monad m, MonadTrans t) => LiftDep m (t m) where
     liftD = lift
+
+type MonadDep :: [Type -> (Type -> Type) -> Constraint] -> Type -> (Type -> Type) -> (Type -> Type) -> Constraint
+type family MonadDep capabilities e d m where
+    MonadDep '[] e d m = (MonadReader e m, LiftDep d m)
+    MonadDep (capability ': capabilities) e d m  = (capability e d, MonadDep capabilities e d m)
 

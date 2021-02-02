@@ -10,6 +10,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DataKinds #-}
 
 module Main (main) where
 
@@ -36,7 +37,8 @@ class HasLogger r m | r -> m where
 
 -- Possible convenience function to avoid having to use ask before logging
 -- Worth the extra boilerplate, or not?
-logger' :: (MonadReader e m, LiftDep d m, HasLogger e d) => String -> m ()
+--logger' :: (MonadReader e m, LiftDep d m, HasLogger e d) => String -> m ()
+logger' :: MonadDep '[HasLogger] e d m => String -> m ()
 logger' msg = asks logger >>= \f -> liftD $ f msg
 
 type HasRepository :: Type -> (Type -> Type) -> Constraint
@@ -48,7 +50,8 @@ class HasRepository r m | r -> m where
 -- An implementation of the controller, done programming against interfaces
 -- (well, against typeclasses).
 -- Polymorphic on the monad.
-mkController :: (MonadReader e m, LiftDep d m, HasLogger e d, HasRepository e d) => Int -> m String
+--mkController :: (MonadReader e m, LiftDep d m, HasLogger e d, HasRepository e d) => Int -> m String
+mkController :: MonadDep '[HasLogger, HasRepository] e d m => Int -> m String
 mkController x = do
   e <- ask
   liftD $ logger e "I'm going to insert in the db!"
@@ -60,7 +63,8 @@ mkStdoutLogger :: MonadIO m => String -> m ()
 mkStdoutLogger msg = liftIO (putStrLn msg)
 
 -- A "real" repository implementation
-mkStdoutRepository :: (MonadReader e m, LiftDep d m, HasLogger e d, MonadIO m) => Int -> m ()
+--mkStdoutRepository :: (MonadReader e m, LiftDep d m, HasLogger e d, MonadIO m) => Int -> m ()
+mkStdoutRepository :: (MonadDep '[HasLogger] e d m, MonadIO m) => Int -> m ()
 mkStdoutRepository entity = do
   e <- ask
   liftD $ logger e "I'm going to write the entity!"
@@ -74,7 +78,8 @@ mkFakeLogger :: MonadWriter TestTrace m => String -> m ()
 mkFakeLogger msg = tell ([msg], [])
 
 -- Ditto.
-mkFakeRepository :: (MonadReader e m, LiftDep d m, HasLogger e d, MonadWriter TestTrace m) => Int -> m ()
+--mkFakeRepository :: (MonadReader e m, LiftDep d m, HasLogger e d, MonadWriter TestTrace m) => Int -> m ()
+mkFakeRepository :: (MonadDep '[HasLogger] e d m, MonadWriter TestTrace m) => Int -> m ()
 mkFakeRepository entity = do
   e <- ask
   liftD $ logger e "I'm going to write the entity!"
