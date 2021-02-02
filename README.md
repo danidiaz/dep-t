@@ -24,7 +24,7 @@ environment record:
     class HasRepository d e | e -> d where
       repository :: e -> Int -> d ()
 
-We see that the type of the environment `e` determines the monad `d` in which
+We see that the type of the environment `e` determines the monad `d` on which
 the effects take place.
 
 Let's define a monomorphic record with effects in `IO`:
