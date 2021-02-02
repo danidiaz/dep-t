@@ -96,7 +96,7 @@ deriving instance MonadError e m => MonadError e (DepT env m)
 instance Monad m => LiftDep (DepT env m) (DepT env m) where
   liftD = id
 
-instance (Monad m, Coercible env' (env (DepT env m))) => LiftDep (DepT env m) (ReaderT env' m) where
+instance (Monad m, Coercible newtyped (env (DepT env m))) => LiftDep (DepT env m) (ReaderT newtyped m) where
   liftD = coerce
 
 -- |
