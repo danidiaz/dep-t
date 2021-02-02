@@ -1,5 +1,13 @@
 # Revision history for dep-t
 
+## 0.4.0.0
+
+Actually no breaking changes here, but a change in the recommended structure of
+the HasX helper classes, and in how to write general code against those
+typeclasses.
+
+* added Control.Monad.Dep.Class
+
 ## 0.1.3.0
 
 * re-exported Control.Monad.Trans

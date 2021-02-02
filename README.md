@@ -146,41 +146,6 @@ The companion package
 [dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) has some more
 functions for running `DepT` computations.
 
-## How to embed environments into other environments?
-
-Sometimes it might be convenient to [nest an environment into another
-one](https://stackoverflow.com/questions/43452644/what-is-the-difference-between-spring-parent-context-and-child-context),
-basically making it a field of the bigger environment:
-
-    type BiggerEnv :: (Type -> Type) -> Type
-    data BiggerEnv m = BiggerEnv
-      { _inner :: Env m,
-        _extra :: Int -> m Int
-      }
-    $(Rank2.TH.deriveFunctor ''BiggerEnv)
-
-When constructing the bigger environment, we have to tweak the monad parameter
-of the smaller one, to make the types match. This can be done with the
-`zoomEnv` function:
-
-    biggerEnvIO :: BiggerEnv (DepT BiggerEnv IO)
-    biggerEnvIO =
-      let _inner' = zoomEnv (Rank2.<$>) _inner envIO
-          _extra = pure
-       in BiggerEnv {_inner = _inner', _extra}
-
-We need to pass as the first parameter of `zoomEnv` a function that tweaks the
-monad parameter of `Env` using a natural transformation. We can write such a
-function ourselves, but here we are using the function generated for us by the
-[rank2classes
-TH](http://hackage.haskell.org/package/rank2classes-1.4.1/docs/Rank2-TH.html#v:deriveFunctor).
-
-## How to use "pure fakes" during testing?
-
-The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
-collecting the outputs of functions working as ["test
-doubles"](https://martinfowler.com/bliki/TestDouble.html).
-
 ## How to avoid using "ask" and "liftD" before invoking a dependency?
 
 One possible workaround (at the cost of more boilerplate) is to define helper
@@ -199,59 +164,18 @@ Which you can invoke like this:
 
 Though perhaps it isn't worth the hassle.
 
-## How to instrument functions in the environment?
+## How to use "pure fakes" during testing?
 
-Once we have commited to a concrete monad and constructed our
-record-of-functions, we might indulge in a bit of low-calorie
-aspect-oriented-programming.
+The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
+collecting the outputs of functions working as ["test
+doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
-For example, imagine we want a generic way of adding logging of function
-parameters to any function in the environment, provided the environment already
-contains a logging function.
+## How to add "aspects" to functions in an environment?
 
-We can write the following typeclass:
-
-    class Instrumentable e m r | r -> e m where
-      instrument ::
-        ( forall x.
-          HasLogger (e (DepT e m)) (DepT e m) =>
-          [String] ->
-          DepT e m x ->
-          DepT e m x
-        ) ->
-        r ->
-        r
-
-Which means "if you tell me how to transform a terminal `DepT` action, using
-the list of preceding arguments, in an environment that has as logger, then
-I'll be able to transform any function which ends in `DepT`".
-
-The terminal case is a `DepT` without preceding parameters:
-
-    instance HasLogger (e (DepT e m)) (DepT e m) => Instrumentable e m (DepT e m x) where
-      instrument f d = f [] d
-
-The recursive case handles functions argument by argument:
-
-    instance (Instrumentable e m r, Show a) => Instrumentable e m (a -> r) where
-      instrument f ar =
-        let instrument' = instrument @e @m @r
-         in \a -> instrument' (\names d -> f (show a : names) d) (ar a)
-
-Here's how to add logging advice to the controller function:
-
-    instrumentedEnv :: Env (DepT Env (Writer TestTrace))
-    instrumentedEnv =
-       let loggingAdvice args action = do
-                e <- ask
-                logger e $ "advice before " ++ intercalate "," args
-                r <- action
-                logger e $ "advice after"
-                pure r
-        in env { _controller = instrument loggingAdvice (_controller env) }
-
-More complete advice support can be found in the
-[dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) package.
+The companion package
+[dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) provides a
+general method extending the behaviour of `DepT`-effectful functions, in a
+manner reminiscent of aspect-oriented programming.
 
 ## Caveats
 

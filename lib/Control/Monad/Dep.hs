@@ -25,6 +25,7 @@ module Control.Monad.Dep
     toReaderT,
     withDepT,
     zoomEnv,
+    -- * The simplest environment
     NilEnv(NilEnv),
     -- * Re-exports
     module Control.Monad.Trans,
@@ -153,9 +154,13 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
 -- |
 --    Makes the functions inside a small environment require a bigger environment.
 --
---    This can be useful if we are encasing the small environment as a field of
---    the big environment, in order to make the types match.
+--    The scary first parameter is a function that, given a natural
+--    transformation of monads, changes the monad parameter of the environment
+--    record. This function can be defined manually for each environment record,
+--    or it can be generated using TH from the <http://hackage.haskell.org/package/rank2classes-1.4.1/docs/Rank2-TH.html#v:deriveFunctor rank2classes> package.
 --
+--    'zoomEnv' can be useful if we are encasing some preexisting small environment as a field of
+--    a big environment, in order to make the types match:
 --
 -- >>> :{ 
 --   type Env :: (Type -> Type) -> Type
@@ -177,16 +182,12 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
 --       _extra :: Int -> m Int
 --     }
 --   biggerEnv :: BiggerEnv (DepT BiggerEnv IO)
---   biggerEnv =
---     let _inner' = zoomEnv (Rank2.<$>) _inner env
---         _extra = pure
---      in BiggerEnv {_inner = _inner', _extra}
+--   biggerEnv = BiggerEnv 
+--     { _inner = zoomEnv (Rank2.<$>) _inner env, 
+--       _extra = pure
+--     }
 -- :}
 --
---    The scary first parameter is a function that, given a natural
---    transformation of monads, changes the monad parameter of the environment
---    record. This function can be defined manually for each environment record,
---    or it can be generated using TH from the <http://hackage.haskell.org/package/rank2classes-1.4.1/docs/Rank2-TH.html#v:deriveFunctor rank2classes> package.
 {-# NOINLINE zoomEnv #-}
 -- For the reason for not inlining, see https://twitter.com/DiazCarrete/status/1350116413445439493
 zoomEnv ::
