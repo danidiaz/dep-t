@@ -14,7 +14,12 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Control.Monad.Dep.Class where
+module Control.Monad.Dep.Class (
+        -- * Reader-like monads carrying dependencies in the environment
+        MonadDep,
+        -- * Lifting effects from dependencies 
+        LiftDep (..),
+    ) where
 
 import Control.Monad.Reader
 import Data.Kind

@@ -57,18 +57,17 @@ instance Multicurryable as e m r curried => Multicurryable (a ': as) e m r (a ->
   multicurry f a = multicurry @as @e @m @r @curried (f . (:*) (I a))
   _runFromEnv producer extractor a = _runFromEnv @as @e @m @r @curried producer (\f -> extractor f a)
 
-class Multicurryable as e m r curried => Deceivable e' as e m r curried where
-  type OutermostReader e' as e m r curried :: Type  
-  deceive :: (e (DepT e m) -> e') -> OutermostReader e' as e m r curried -> curried 
+class Multicurryable as e m r curried => Deceivable as newtyped e m r curried where
+  type Deceive as newtyped e m r curried :: Type  
+  deceive :: (e (DepT e m) -> newtyped) -> Deceive as newtyped e m r curried -> curried 
 
-instance (Monad m, Coercible e' (e (DepT e m))) => Deceivable e' '[] e m r (DepT e m r) where
-  type OutermostReader e' '[] e m r (DepT e m r) = ReaderT e' m r
+instance Monad m => Deceivable '[] newtyped e m r (DepT e m r) where
+  type Deceive '[] newtyped e m r (DepT e m r) = ReaderT newtyped m r
   deceive f action = DepT (withReaderT f action)
 
-instance Deceivable e' as e m r curried => Deceivable e' (a ': as) e m r (a -> curried) where
-  type OutermostReader e' (a ': as) e m r (a -> curried) = a -> OutermostReader e' as e m r curried
-  deceive f g a = deceive @e' @as @e @m @r f (g a)
-
+instance Deceivable as newtyped e m r curried => Deceivable (a ': as) newtyped e m r (a -> curried) where
+  type Deceive (a ': as) newtyped e m r (a -> curried) = a -> Deceive as newtyped e m r curried
+  deceive f g a = deceive @as @newtyped @e @m @r f (g a)
 
 tests :: TestTree
 tests =
