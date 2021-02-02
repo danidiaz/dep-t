@@ -36,7 +36,7 @@ class HasLogger r m | r -> m where
 
 -- Possible convenience function to avoid having to use ask before logging
 -- Worth the extra boilerplate, or not?
-logger' :: (MonadDep e d m, HasLogger e d) => String -> m ()
+logger' :: (MonadReader e m, LiftDep d m, HasLogger e d) => String -> m ()
 logger' msg = asks logger >>= \f -> liftD $ f msg
 
 type HasRepository :: Type -> (Type -> Type) -> Constraint
@@ -48,7 +48,7 @@ class HasRepository r m | r -> m where
 -- An implementation of the controller, done programming against interfaces
 -- (well, against typeclasses).
 -- Polymorphic on the monad.
-mkController :: (MonadDep e d m, HasLogger e d, HasRepository e d) => Int -> m String
+mkController :: (MonadReader e m, LiftDep d m, HasLogger e d, HasRepository e d) => Int -> m String
 mkController x = do
   e <- ask
   liftD $ logger e "I'm going to insert in the db!"
@@ -60,7 +60,7 @@ mkStdoutLogger :: MonadIO m => String -> m ()
 mkStdoutLogger msg = liftIO (putStrLn msg)
 
 -- A "real" repository implementation
-mkStdoutRepository :: (MonadDep e d m, HasLogger e d, MonadIO m) => Int -> m ()
+mkStdoutRepository :: (MonadReader e m, LiftDep d m, HasLogger e d, MonadIO m) => Int -> m ()
 mkStdoutRepository entity = do
   e <- ask
   liftD $ logger e "I'm going to write the entity!"
@@ -74,7 +74,7 @@ mkFakeLogger :: MonadWriter TestTrace m => String -> m ()
 mkFakeLogger msg = tell ([msg], [])
 
 -- Ditto.
-mkFakeRepository :: (MonadDep e d m, HasLogger e d, MonadWriter TestTrace m) => Int -> m ()
+mkFakeRepository :: (MonadReader e m, LiftDep d m, HasLogger e d, MonadWriter TestTrace m) => Int -> m ()
 mkFakeRepository entity = do
   e <- ask
   liftD $ logger e "I'm going to write the entity!"
@@ -181,18 +181,18 @@ envIO =
 -- signature do we get? Would it be useful to have these "fluffy" environments
 -- around? The signature gives an interesting global overview of the required
 -- constraints...
-fluffyEnv :: forall e d m. (MonadDep e d m, HasLogger e d, HasRepository e d, MonadWriter TestTrace m) => Env m
-fluffyEnv =
-  let _logger = mkFakeLogger
-      _repository = mkFakeRepository
-      _controller = mkController
-   in Env {_logger, _repository, _controller}
-fluffyEnvIO :: forall e d m. (MonadDep e d m, HasLogger e d, HasRepository e d, MonadIO m) => Env m
-fluffyEnvIO =
-  let _logger = mkStdoutLogger
-      _repository = mkStdoutRepository
-      _controller = mkController
-   in Env {_logger, _repository, _controller}
+-- fluffyEnv :: forall e d m. (MonadReader e m, LiftDep d m, HasLogger e d, HasRepository e d, MonadWriter TestTrace m) => Env m
+-- fluffyEnv =
+--   let _logger = mkFakeLogger
+--       _repository = mkFakeRepository
+--       _controller = mkController
+--    in Env {_logger, _repository, _controller}
+-- fluffyEnvIO :: forall e d m. (MonadReader e m, LiftDep d m, HasLogger e d, HasRepository e d, MonadIO m) => Env m
+-- fluffyEnvIO =
+--   let _logger = mkStdoutLogger
+--       _repository = mkStdoutRepository
+--       _controller = mkController
+--    in Env {_logger, _repository, _controller}
 
 
 biggerEnv :: BiggerEnv (DepT BiggerEnv (Writer TestTrace))
