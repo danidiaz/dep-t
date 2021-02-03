@@ -94,7 +94,7 @@ Here we have intantiated `m` to `ReaderT e IO`, and `d` (the effect monad used
 by dependencies in the environment) to `IO`. So in this example `liftD` (the
 function that lifts `d` effects to `m`) is simply `liftIO`.
 
-However the `MonadDep` constraint of `mkController` have valid instances for other
+However the `MonadDep` constraint of `mkController` has valid instances for other
 monads, as we shall see.
 
 Now let's turn our attention to the environment record. Let's parameterize its
