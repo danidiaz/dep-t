@@ -203,7 +203,7 @@ The companion package
 [dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) provides a
 `deceive` function that allows for this.
 
-## How to add "aspects" to functions in an environment?
+## How to add AOP-ish "aspects" to functions in an environment?
 
 The companion package
 [dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) provides a
