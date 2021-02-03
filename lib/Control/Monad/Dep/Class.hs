@@ -24,10 +24,13 @@ module Control.Monad.Dep.Class (
 import Control.Monad.Reader
 import Data.Kind
 
+-- | Auxiliary typeclass for monads that can be lifted to other monads. 
+--
 type LiftDep :: (Type -> Type) -> (Type -> Type) -> Constraint
 class LiftDep d m where
     liftD :: d x -> m x 
 
+-- | The obvious case: we can lift the base monad below a monad transformer.
 instance (Monad m, MonadTrans t) => LiftDep m (t m) where
     liftD = lift
 
