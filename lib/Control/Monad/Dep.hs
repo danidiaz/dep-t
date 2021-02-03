@@ -99,10 +99,6 @@ deriving instance MonadWriter w m => MonadWriter w (DepT env m)
 
 deriving instance MonadError e m => MonadError e (DepT env m)
 
--- | 'DepT' can be lifted to itself.
-instance LiftDep (DepT env m) (DepT env m) where
-  liftD = id
-
 -- | 'DepT' can be lifted to a 'ReaderT' in which the environment record
 -- containing further 'DepT' actions has been hidden behind a newtype. 
 --

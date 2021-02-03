@@ -34,6 +34,10 @@ class LiftDep d m where
 instance (Monad m, MonadTrans t) => LiftDep m (t m) where
     liftD = lift
 
+-- | Any monad can be \"lifted\" to itself.
+instance LiftDep m m where
+  liftD = id
+
 type MonadDep :: [(Type -> Type) -> Type -> Constraint] -> (Type -> Type) -> Type -> (Type -> Type) -> Constraint
 type family MonadDep capabilities d e m where
     MonadDep '[] d e m = (LiftDep d m, MonadReader e m)

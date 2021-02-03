@@ -115,7 +115,7 @@ instance HasRepository IO EnvIO where
 runningTheControllerInReaderT :: IO String
 runningTheControllerInReaderT = mkController 5 `runReaderT` envIO'
 
-mkControllerIO' :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
+mkControllerIO' :: (HasLogger IO e, HasRepository IO e) => Int -> ReaderT e IO String
 mkControllerIO' = mkController
 
 -- In the monomorphic environment, the controller function lives "separate",

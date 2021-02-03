@@ -87,7 +87,7 @@ The signature has changed, and we now use `liftD` instead of `liftIO`. But
 `mkController` does the same things as `mkControllerIO`, and can be used as a
 substitute for it:
 
-    mkControllerIO' :: (HasLogger e IO, HasRepository e IO) => Int -> ReaderT e IO String
+    mkControllerIO' :: (HasLogger IO e, HasRepository IO e) => Int -> ReaderT e IO String
     mkControllerIO' = mkController
 
 Here we have intantiated `m` to `ReaderT e IO`, and `d` (the effect monad used
