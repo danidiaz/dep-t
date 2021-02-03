@@ -190,7 +190,7 @@ The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
 collecting the outputs of functions working as ["test
 doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
-## How to make a function "see" a different evironment than the one seen by its dependencies?
+## How to make a function "see" a different evironment from the one seen by its dependencies?
 
 Sometimes we want a function in the environment to see a slightly different
 record from the record seen by the other functions, and in particular from the
