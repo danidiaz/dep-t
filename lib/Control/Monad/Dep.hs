@@ -110,7 +110,7 @@ instance (Monad m, Coercible newtyped (env (DepT env m))) => LiftDep (DepT env m
 
 
 -- | 'DepT' can be lifted to itself.
-instance LiftDep (DepT env m) (DepT env m) where
+instance Monad m => LiftDep (DepT env m) (DepT env m) where
   liftD = id
 
 -- |

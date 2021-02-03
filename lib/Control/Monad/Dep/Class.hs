@@ -84,7 +84,7 @@ import Data.Kind
 -- given a @LiftDept IO RIO@ instance; it's not done here to avoid increasing
 -- the dependency footprint.
 type LiftDep :: (Type -> Type) -> (Type -> Type) -> Constraint
-class LiftDep d m where
+class Monad d => LiftDep d m where
   liftD :: d x -> m x
 
 -- | The simplest case: we can lift the base monad sitting just below a 'ReaderT'.
