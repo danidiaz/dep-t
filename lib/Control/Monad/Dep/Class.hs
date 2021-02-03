@@ -87,7 +87,7 @@ type LiftDep :: (Type -> Type) -> (Type -> Type) -> Constraint
 class Monad d => LiftDep d m where
   liftD :: d x -> m x
 
--- | The simplest case: we can lift the base monad sitting just below a 'ReaderT'.
+-- | The simplest case: we can d-lift the base monad sitting just below a 'ReaderT'.
 --
 -- (Perhaps this could be extended to any monad transformer, but let's leave it simple for now.)
 instance Monad m => LiftDep m (ReaderT e m) where

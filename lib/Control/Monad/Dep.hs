@@ -99,7 +99,7 @@ deriving instance MonadWriter w m => MonadWriter w (DepT e_ m)
 
 deriving instance MonadError e m => MonadError e (DepT e_ m)
 
--- | 'DepT' can be lifted to a 'ReaderT' in which the environment record
+-- | 'DepT' can be d-lifted to a 'ReaderT' in which the environment record
 -- containing further 'DepT' actions has been hidden behind a newtype. 
 --
 -- This can be useful to "deceive" a function into using an environment
@@ -109,7 +109,7 @@ instance (Monad m, Coercible newtyped (e_ (DepT e_ m))) => LiftDep (DepT e_ m) (
   liftD = coerce
 
 
--- | 'DepT' can be lifted to itself.
+-- | 'DepT' can be d-lifted to itself.
 instance Monad m => LiftDep (DepT e_ m) (DepT e_ m) where
   liftD = id
 
