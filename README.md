@@ -196,8 +196,8 @@ Sometimes we want a function in the environment to see a slightly different
 record from the record seen by the other functions, and in particular from the
 record seen by its own dependencies. 
 
-For example, the function might have a 'HasLogger' constraint but we don't want
-it to use the default 'HasLogger' instance of the environment.
+For example, the function might have a `HasLogger` constraint but we don't want
+it to use the default `HasLogger` instance of the environment.
 
 The companion package
 [dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) provides a
