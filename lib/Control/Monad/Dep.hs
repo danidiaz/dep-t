@@ -74,7 +74,7 @@ type DepT ::
   (Type -> Type) ->
   Type ->
   Type
-newtype DepT env m r = DepT {toReaderT :: ReaderT (env (DepT env m)) m r}
+newtype DepT e_ m r = DepT {toReaderT :: ReaderT (e_ (DepT e_ m)) m r}
   deriving
     ( Functor,
       Applicative,
@@ -87,17 +87,17 @@ newtype DepT env m r = DepT {toReaderT :: ReaderT (env (DepT env m)) m r}
       MonadCont,
       MonadIO,
       MonadUnliftIO,
-      MonadReader (env (DepT env m))
+      MonadReader (e_ (DepT e_ m))
     )
 
-instance MonadTrans (DepT env) where
+instance MonadTrans (DepT e_) where
   lift = DepT . lift
 
-deriving instance MonadState s m => MonadState s (DepT env m)
+deriving instance MonadState s m => MonadState s (DepT e_ m)
 
-deriving instance MonadWriter w m => MonadWriter w (DepT env m)
+deriving instance MonadWriter w m => MonadWriter w (DepT e_ m)
 
-deriving instance MonadError e m => MonadError e (DepT env m)
+deriving instance MonadError e m => MonadError e (DepT e_ m)
 
 -- | 'DepT' can be lifted to a 'ReaderT' in which the environment record
 -- containing further 'DepT' actions has been hidden behind a newtype. 
@@ -105,12 +105,12 @@ deriving instance MonadError e m => MonadError e (DepT env m)
 -- This can be useful to "deceive" a function into using an environment
 -- possessing different instances than the instances seen by the function's
 -- dependencies.
-instance (Monad m, Coercible newtyped (env (DepT env m))) => LiftDep (DepT env m) (ReaderT newtyped m) where
+instance (Monad m, Coercible newtyped (e_ (DepT e_ m))) => LiftDep (DepT e_ m) (ReaderT newtyped m) where
   liftD = coerce
 
 
 -- | 'DepT' can be lifted to itself.
-instance Monad m => LiftDep (DepT env m) (DepT env m) where
+instance Monad m => LiftDep (DepT e_ m) (DepT e_ m) where
   liftD = id
 
 -- |
@@ -120,7 +120,7 @@ instance Monad m => LiftDep (DepT env m) (DepT env m) where
 -- "foo"
 --
 --    For more sophisticated invocation functions, see @runFinalDepT@ and @runFromEnv@ from <http://hackage.haskell.org/package/dep-t-advice dep-t-advice>.
-runDepT :: DepT env m r -> env (DepT env m) -> m r
+runDepT :: DepT e_ m r -> e_ (DepT e_ m) -> m r
 runDepT = runReaderT . toReaderT
 
 -- |
