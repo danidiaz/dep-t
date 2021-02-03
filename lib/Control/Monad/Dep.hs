@@ -108,6 +108,11 @@ deriving instance MonadError e m => MonadError e (DepT env m)
 instance (Monad m, Coercible newtyped (env (DepT env m))) => LiftDep (DepT env m) (ReaderT newtyped m) where
   liftD = coerce
 
+
+-- | 'DepT' can be lifted to itself.
+instance LiftDep (DepT env m) (DepT env m) where
+  liftD = id
+
 -- |
 --    Runs a 'DepT' action in an environment.
 --      

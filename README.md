@@ -76,7 +76,7 @@ That's all and well, but there are two issues that bug me:
 To tackle these issues, let's begin by writing the controller in a more generic
 way:
 
-    mkController :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
+    mkController :: MonadDep [HasLogger, HasRepository] d e m => Int -> m String
     mkController x = do
       e <- ask
       liftD $ logger e "I'm going to insert in the db!"
@@ -177,7 +177,7 @@ functions like:
 
 Which you can invoke like this:
 
-    usesLoggerD :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
+    usesLoggerD :: MonadDep [HasLogger, HasRepository] d e m => Int -> m String
     usesLoggerD i = do
       loggerD "I'm calling the logger!"
       return "foo"
