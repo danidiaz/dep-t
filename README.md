@@ -190,6 +190,19 @@ The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
 collecting the outputs of functions working as ["test
 doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
+## How to make a function "see" a different evironment than the one seen by its dependencies?
+
+Sometimes we want a function in the environment to see a slightly different
+record from the record seen by the other functions, and in particular from the
+record seen by its own dependencies. 
+
+For example, the function might have a 'HasLogger' constraint but we don't want
+it to use the default 'HasLogger' instance of the environment.
+
+The companion package
+[dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) provides a
+`deceive` function that allows for this.
+
 ## How to add "aspects" to functions in an environment?
 
 The companion package
