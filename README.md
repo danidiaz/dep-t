@@ -78,8 +78,8 @@ way:
 
     mkControllerIO :: (HasLogger IO e, HasRepository IO e, MonadIO m, MonadReader e m) => Int -> m String
 
-So far only the signature has changed, but now the function can work in
-reader-like monads other than `ReaderT`.
+So far only the signature has changed, but now the function can work in other
+reader-like monads besides `ReaderT`.
 
 Let's go one step further, and abstract away the `IO`, so that function in the
 record can have effects in other monads:
@@ -93,8 +93,8 @@ record can have effects in other monads:
 
 Now both the implementation and the signature have changed:
 
-- There's a new type variable @d@, the monad in which functions taken from the
-  environment @e@ have their effects.
+- There's a new type variable `d`, the monad in which functions taken from the
+  environment `e` have their effects.
 - `MonadIO` has been replaced by `LiftDep` from `Control.Monad.Dep.Class`, a
   constraint that says we can lift `d` effects into `m` (though it could still
   make sense to require `MonadIO m` for effects not originating in the
