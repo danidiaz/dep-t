@@ -13,7 +13,7 @@ To perform dependency injection in Haskell, a common solution is to build a
 record of functions and pass it to the program logic using some variant of
 [`ReaderT`](http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html).
 
-To avoid depending on a concrete reader environment, let's define some
+To avoid being tied to a concrete reader environment, let's define some
 auxiliary typeclasses that extract functions from a generic environment:
 
     type HasLogger :: (Type -> Type) -> Type -> Constraint
