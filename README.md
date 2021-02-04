@@ -81,7 +81,7 @@ way:
 So far only the signature has changed, but now the function can work in other
 reader-like monads besides `ReaderT`.
 
-Let's go one step further, and abstract away the `IO`, so that function in the
+Let's go one step further, and abstract away the `IO`, so that functions in the
 record can have effects in other monads:
 
     mkController :: (HasLogger d e, HasRepository d e, LiftDep d m, MonadReader e m) => Int -> m String
