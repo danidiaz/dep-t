@@ -14,7 +14,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- | This module provides definitions that let us generalize record-of-functions code of the form:
+-- | This module provides definitions that let us translate record-of-functions code of the form:
 --
 -- >>> :{ 
 --  type HasLogger :: (Type -> Type) -> Type -> Constraint
@@ -31,7 +31,7 @@
 --    return "view"
 -- :}
 --
--- To the more general:
+-- into the more polymorphic form:
 --
 -- >>> :{
 --  mkController :: MonadDep [HasLogger, HasRepository] d e m => Int -> m String
@@ -41,6 +41,13 @@
 --    liftD $ repository e x
 --    return "view"
 -- :}
+--
+-- which can also be given the equivalent signature:
+--
+-- >>> :{
+--    mkController' :: (HasLogger d e, HasRepository d e, LiftDep d m, MonadReader e m) => Int -> m String
+--    mkController' = mkController
+-- :}   
 --
 -- The new code can be used as a drop-in replacement of the old one. Notice
 -- that in the new code effects taken from the environment record are
@@ -110,7 +117,7 @@ instance Monad m => LiftDep m (ReaderT e m) where
 -- effects can be lifted back to the monad @m@ by using 'liftD'.
 --
 -- The @dependencies@ are specified as a type-level list of two-parameter
--- @HasX@-style typeclasses. Those typeclasses should expect the effect monad
+-- @HasX@ typeclasses. Those typeclasses should expect the effect monad
 -- @d@ as its first parameter.
 --
 -- Writing code polymorphic over 'MonadDep' lets us execute it in both 'ReaderT' and 'Control.Monad.Dep.DepT' contexts.
