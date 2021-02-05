@@ -281,6 +281,18 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 > can be lifted by composing the van Laarhoven free monad with suitable
 > projection functions that pick out the requisite primitive operations. 
 
+- [Interesting SO response](https://stackoverflow.com/a/634754/1364288) (from
+  2009) about the benefits of autowiring in Spring. The record-of-functions
+  approach in Haskell can't be said to provide true autowiring. You still need
+  to assemble the record manually, and field names in the record play the part
+  of Spring bean names. 
+
+> Right now I think the most important reason for using autowiring is that
+> there's one less abstraction in your system to keep track of. The "bean name"
+> is effectively gone. It turns out the bean name only exists because of xml. So
+> a full layer of abstract indirections (where you would wire bean-name "foo"
+> into bean "bar") is gone
+
 - [registry](http://hackage.haskell.org/package/registry) is a package that
   implements an alternative approach to dependency injection, one different
   from the `ReaderT`-based one. 
