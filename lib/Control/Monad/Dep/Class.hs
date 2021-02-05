@@ -49,8 +49,14 @@
 --    mkController' = mkController
 -- :}   
 --
--- The new code can be used as a drop-in replacement of the old one. Notice
--- that in the new code effects taken from the environment record are
+-- The new code can be used as a drop-in replacement of the old one: 
+--
+-- >>> :{ 
+--    mkControllerIO' :: (HasLogger IO e, HasRepository IO e) => Int -> ReaderT e IO String
+--    mkControllerIO' = mkController'
+-- :}
+--
+-- Notice that in the new code effects taken from the environment record are
 -- lifted using 'liftD' instead of 'lift' or 'liftIO'. 
 --
 module Control.Monad.Dep.Class

@@ -73,13 +73,11 @@ That's all and well, but there are two issues that bug me:
   were treated uniformly; if all of them had access to (some view of) the
   environment record.
 
-To tackle these issues, we begin by writing the controller in a more generic
-way:
+To tackle these issues, we begin by giving the controller a more general signature:
 
     mkControllerIO :: (HasLogger IO e, HasRepository IO e, MonadIO m, MonadReader e m) => Int -> m String
 
-So far only the signature has changed, but now the function can work in other
-reader-like monads besides `ReaderT`.
+Now the function can work in other reader-like monads besides `ReaderT`.
 
 Let's go one step further, and abstract away the `IO`, so that functions in the
 record can have effects in other monads:
@@ -91,14 +89,16 @@ record can have effects in other monads:
       liftD $ repository e x
       return "view"
 
-Now both the implementation and the signature have changed:
+Now both the signature and the implementation have changed:
 
 - There's a new type variable `d`, the monad in which functions taken from the
   environment `e` have their effects.
+
 - `MonadIO` has been replaced by `LiftDep` from `Control.Monad.Dep.Class`, a
   constraint that says we can lift `d` effects into `m` (though it could still
   make sense to require `MonadIO m` for effects not originating in the
   environment).
+
 - Uses of `liftIO` have been replaced by `liftD`.
 
 If all those constraints prove annoying to write, there's a convenient shorthand using the `MonadDep` type family:
