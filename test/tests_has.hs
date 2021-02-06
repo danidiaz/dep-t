@@ -44,9 +44,14 @@ data Env m = Env
     controller :: Int -> m String
   }
 
--- instance Has Logger m (Env m)
+-- instance Has Logger m (Env m) where
+--    type The Logger m (Env m) = String -> m ()
+--    the = logger 
 
--- mkController :: forall d e m .MonadDep '[Has Logger] d e m => Int -> m String
+instance Has Logger m (Env m) where
+
+
+-- mkController :: forall d e m . MonadDep '[Has Logger] d e m => Int -> m String
 -- mkController x = do
 --   e <- ask
 --   liftD $ the @_ @Logger @d @e e "I'm going to insert in the db!"
