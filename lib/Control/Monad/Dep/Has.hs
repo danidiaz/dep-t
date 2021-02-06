@@ -20,8 +20,8 @@ type Has :: k -> (Type -> Type) -> Type -> Constraint
 class Has k d e | e -> d where
   type The k d e :: Type
   type The k d e = ExtractedDepType k d
-  the :: forall k d e . e -> The k d e
-  default the :: forall k d e. (DepMarker k d, HasField (PreferredFieldName k d) e (The k d e)) => e -> The k d e
+  the :: e -> The k d e
+  default the :: (DepMarker k d, HasField (PreferredFieldName k d) e (The k d e)) => e -> The k d e
   the = getField @(PreferredFieldName k d)
 
 type DepMarker :: k -> (Type -> Type) -> Constraint
