@@ -47,17 +47,22 @@ data Repository d = Repository {
 instance DepDefaults Repository where
     type DefaultFieldName Repository = "repository" 
 
+newtype Controller d = Controller { serve :: Int -> d String }
+instance DepDefaults Controller where
+    type DefaultFieldName Controller = "controller" 
+
 type Env :: (Type -> Type) -> Type
 data Env m = Env
   { logger :: Logger m,
-    repository :: Repository m
+    repository :: Repository m,
+    controller :: Controller m
   }
 instance Has Logger m (Env m)
 instance Has Repository m (Env m)
+instance Has Controller m (Env m)
 
-mkController :: forall d e m . MonadDep [Has Logger, Has Repository] d e m => Int -> m String
---mkController :: forall d e m . (MonadReader e m, LiftDep d m, Has Logger d e) => Int -> m String
-mkController x = do
+mkController :: forall d e m . MonadDep [Has Logger, Has Repository] d e m => Controller m
+mkController = Controller \url -> do
   e <- ask
   liftD $ log (dep e) "I'm going to insert in the db!" 
   -- liftD $ (dep e).log "I'm going to insert in the db!" -- Once RecordDotSyntax arrives...
@@ -73,11 +78,11 @@ withEnv f = do
     liftD (f e)
 
 -- better than with all that liftD spam... although slightly less flexible
-mkController' :: forall d e m . MonadDep [Has Logger, Has Repository] d e m => Int -> m String
-mkController' x = withEnv \e -> do
+mkController' :: forall d e m . MonadDep [Has Logger, Has Repository] d e m => Controller m
+mkController' = Controller \url -> withEnv \e -> do
   log (dep e) "I'm going to insert in the db!" 
   select (dep e) "select * from ..." 
-  insert (dep e) [1,2,3,4]
+  insert (dep e) [5,3,43]
   return "view"
 
 
@@ -88,6 +93,31 @@ data EnvIO = EnvIO
   }
 instance Has Logger IO EnvIO
 instance Has Repository IO EnvIO
+
+type TestTrace = ([String], [Int])
+
+mkFakeLogger :: MonadWriter TestTrace m => Logger m
+mkFakeLogger = Logger \msg -> tell ([msg], [])
+
+mkFakeRepository :: (MonadDep '[Has Logger] d e m, MonadWriter TestTrace m) => Repository m
+mkFakeRepository = Repository {
+  select = \_ -> do
+    e <- ask
+    liftD $ log (dep e) "I'm going to select an entity"
+    return [],
+  insert = \entity -> do
+  e <- ask
+  liftD $ log (dep e) "I'm going to write the entity!"
+  tell ([], entity)
+  }
+
+env :: Env (DepT Env (Writer TestTrace))
+env =
+  let logger = mkFakeLogger
+      repository = mkFakeRepository
+      controller = mkController
+   in Env {logger, repository, controller}
+
 
 --
 --
