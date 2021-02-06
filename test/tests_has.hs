@@ -15,6 +15,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Main (main) where
 
@@ -31,31 +32,37 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
 
-data Logger
+instance DepMarker Logger where
+    type PreferredFieldName Logger = "logger" 
+    type ExtractedDepType Logger = Logger
 
-instance DepMarker Logger d where
-    type PreferredFieldName Logger d = "logger" 
-    type ExtractedDepType Logger d = String -> d () 
+newtype Logger d = Logger { runLogger :: String -> d () }
 
 type Env :: (Type -> Type) -> Type
 data Env m = Env
-  { logger :: String -> m (),
+  { logger :: Logger m,
     repository :: Int -> m (),
     controller :: Int -> m String
   }
 
--- instance Has Logger m (Env m) where
---    type The Logger m (Env m) = String -> m ()
---    the = logger 
-
 instance Has Logger m (Env m) where
 
-
 -- mkController :: forall d e m . MonadDep '[Has Logger] d e m => Int -> m String
--- mkController x = do
---   e <- ask
---   liftD $ the @_ @Logger @d @e e "I'm going to insert in the db!"
---   return "view"
+mkController :: forall d e m . (MonadReader e m, LiftDep d m, Has Logger d e) => Int -> m String
+mkController x = do
+  e <- ask
+  liftD $ runLogger (the @_ @Logger e) "I'm going to insert in the db!" 
+  -- liftD $ runLogger (the @_ @Logger e) "I'm going to insert in the db!" 
+  return "view"
+
+
+type EnvIO :: Type
+data EnvIO = EnvIO
+  { logger :: Logger IO,
+    repository :: Int -> IO ()
+  }
+
+instance Has Logger IO EnvIO
 
 --
 --

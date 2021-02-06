@@ -9,6 +9,7 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Control.Monad.Dep.Has (Has (..), DepMarker (..)) where
 
@@ -18,15 +19,17 @@ import GHC.TypeLits
 
 type Has :: k -> (Type -> Type) -> Type -> Constraint
 class Has k d e | e -> d where
-  type The k d e :: Type
-  type The k d e = ExtractedDepType k d
-  the :: e -> The k d e
-  default the :: (DepMarker k d, HasField (PreferredFieldName k d) e (The k d e)) => e -> The k d e
-  the = getField @(PreferredFieldName k d)
+  type The k :: (Type -> Type) -> Type
+  type The k = ExtractedDepType k
+  the :: e -> The k d
+  default the :: (DepMarker k, HasField (PreferredFieldName k) e (The k d)) => e -> The k d
+  the = getField @(PreferredFieldName k)
 
-type DepMarker :: k -> (Type -> Type) -> Constraint
-class DepMarker k d where
+type DepMarker :: k -> Constraint
+class DepMarker k where
   -- The Char kind would be useful here, to lowercase the first letter of the
   -- k type and use it as the default preferred field name.
-  type PreferredFieldName k d :: Symbol
-  type ExtractedDepType k d :: Type
+  type PreferredFieldName k :: Symbol
+  -- Only works for type constructors which receive a monad
+  type ExtractedDepType k :: (Type -> Type) -> Type
+
