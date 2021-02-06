@@ -56,6 +56,20 @@ test-suite dep-t-test-curry
     tasty-hunit        >=  0.10.0.2,
     sop-core           ^>= 0.5.0.0,
 
+test-suite dep-t-test-has
+  import: common
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             tests_has.hs
+  build-depends:       
+    dep-t, 
+    rank2classes       ^>= 1.4.1,
+    template-haskell,
+    tasty              >=  1.3.1,
+    tasty-hunit        >=  0.10.0.2,
+    sop-core           ^>= 0.5.0.0,
+
+
 -- VERY IMPORTANT for doctests to work: https://stackoverflow.com/a/58027909/1364288
 -- http://hackage.haskell.org/package/cabal-doctest
 test-suite doctests
