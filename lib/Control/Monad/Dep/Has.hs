@@ -30,4 +30,3 @@ class DepMarker k d where
     -- k type and use it as the default preferred field name.
     type PreferredFieldName k d :: Symbol
     type ExtractedDepType k d :: Type
-
