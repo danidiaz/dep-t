@@ -196,6 +196,11 @@ withDepT mapEnv inner (DepT (ReaderT f)) =
 --     }
 -- :}
 --
+-- __However__, this is only needed when the monad of the smaller environment
+-- is already \"fixed\" before inserting it in the bigger one—which I expect
+-- to be an infrequent case. When the concrete monad is selected after nesting
+-- the environments, 'zoomEnv' shouldn't be necessary.
+--
 {-# NOINLINE zoomEnv #-}
 -- For the reason for not inlining, see https://twitter.com/DiazCarrete/status/1350116413445439493
 zoomEnv ::

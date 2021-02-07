@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+## 0.4.4.0
+
+* added Control.Monad.Dep.Has
+
 ## 0.4.0.0
 
 Actually no breaking changes here, but a change in the recommended structure of
