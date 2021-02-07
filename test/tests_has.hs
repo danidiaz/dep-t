@@ -32,11 +32,12 @@ import Rank2 qualified
 import Rank2.TH qualified
 import Test.Tasty
 import Test.Tasty.HUnit
+import Data.SOP
 import Prelude hiding (log)
 
 newtype Logger d = Logger { log :: String -> d () }
 
-instance DepDefaults Logger where
+instance Dep Logger where
     type DefaultFieldName Logger = "logger" 
 
 data Repository d = Repository {
@@ -44,11 +45,11 @@ data Repository d = Repository {
     insert :: [Int] -> d ()
 }
 
-instance DepDefaults Repository where
+instance Dep Repository where
     type DefaultFieldName Repository = "repository" 
 
 newtype Controller d = Controller { serve :: Int -> d String }
-instance DepDefaults Controller where
+instance Dep Controller where
     type DefaultFieldName Controller = "controller" 
 
 type Env :: (Type -> Type) -> Type
@@ -118,6 +119,17 @@ env =
       controller = mkController
    in Env {logger, repository, controller}
 
+--
+-- to test the coercible in the definition of Has 
+type EnvHKD :: (Type -> Type) -> (Type -> Type) -> Type
+data EnvHKD h m = EnvHKD
+  { logger :: h (Logger m),
+    repository :: h (Repository m),
+    controller :: h (Controller m)
+  }
+instance Has Logger m (EnvHKD I m)
+instance Has Repository m (EnvHKD I m)
+instance Has Controller m (EnvHKD I m)
 
 --
 --
