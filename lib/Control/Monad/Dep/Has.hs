@@ -23,7 +23,7 @@ class Has k d e | e -> d where
   default dep :: (DepDefaults k, HasField (DefaultFieldName k) e (k d)) => e -> k d
   dep = getField @(DefaultFieldName k)
 
-type DepDefaults :: k -> Constraint
+type DepDefaults :: ((Type -> Type) -> Type) -> Constraint
 class DepDefaults k where
   -- The Char kind would be useful here, to lowercase the first letter of the
   -- k type and use it as the default preferred field name.
