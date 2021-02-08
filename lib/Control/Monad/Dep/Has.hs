@@ -12,7 +12,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
--- | This module provies a generic \"Has\" class which favors a style where the
+-- | This module provies a generic \"Has\" class favoring a style in which the
 -- components of the environment come wrapped in records or newtypes, instead
 -- of being bare functions.
 --
@@ -50,12 +50,12 @@
 -- :}
 --
 -- The @adviseRecord@ and @deceiveRecord@ functions from the companion package
--- \"dep-t-advice\" provide useful functionality for this style of components.
+-- \"dep-t-advice\" can facilitate working with this style of components.
 --
 module Control.Monad.Dep.Has (
-        -- A generic \"Has\" typeclass.
+        -- * A generic \"Has\"
         Has (..), 
-        -- Component defaults.
+        -- * Component defaults
         Dep (..)
     ) where
 
@@ -93,6 +93,11 @@ import Data.Coerce
 type Has :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Constraint
 class Has r_ d e | e -> d where
   -- |  Given an environment @e@, produce a record-of-functions parameterized by the environment's effect monad @d@.
+  --
+  -- The hope is that using a selector function on the resulting record will
+  -- determine its type without the need for type annotations.
+  --
+  -- (This will likely not play well with RecordDotSyntax. See also <https://chrisdone.com/posts/import-aliases-field-names/ this trick>.)
   dep :: e -> r_ d
   default dep :: (Dep r_, HasField (DefaultFieldName r_) e u, Coercible u (r_ d)) => e -> r_ d
   dep e = coerce . getField @(DefaultFieldName r_) $ e
