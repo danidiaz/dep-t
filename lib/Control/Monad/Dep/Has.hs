@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 -- | This module provies a generic \"Has\" class which favors a style where the
 -- components of the environment come wrapped in records or newtypes, instead
@@ -43,7 +44,6 @@
 --    Controller \url -> do
 --      e <- ask
 --      liftD $ log (dep e) "I'm going to insert in the db!"
---      -- liftD $ (dep e).log "I'm going to insert in the db!" -- Once RecordDotSyntax arrives...
 --      liftD $ select (dep e) "select * from ..."
 --      liftD $ insert (dep e) [1, 2, 3, 4]
 --      return "view"
@@ -108,4 +108,20 @@ class Dep r_ where
   -- The Char kind would be useful here, to lowercase the first letter of the
   -- k type and use it as the default preferred field name.
   type DefaultFieldName r_ :: Symbol
+
+-- -- Doesn't make much sense to have this, we already have Has!
+-- type Sub :: ((Type -> Type) -> Type) -> ((Type -> Type) -> Type) -> Constraint
+-- class Sub sub super
+-- type SubWrapper :: ((Type -> Type) -> Type) -> ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Type
+-- data SubWrapper sub super d e = SubWrapper e
+
+-- type Nested :: ((Type -> Type) -> Type) -> ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Type
+-- data Nested sub super d e = Nested e
+-- 
+-- instance (Has sub d e, Has super d (sub d)) => Has super d (Nested sub super d e) where
+--     dep (Nested e) = dep @super (dep @sub e)
+
+-- Possible example
+-- instance Has ReadRef IO (Env IO) via (Nested Ref ReadRef IO (Env IO))
+
 
