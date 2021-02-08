@@ -66,7 +66,7 @@ module Control.Monad.Dep.Class
     -- * Lifting effects from dependencies
     LiftDep (..),
     -- * Helpers
-    withEnv
+    useEnv
   )
 where
 
@@ -140,8 +140,8 @@ type family MonadDep dependencies d e m where
   MonadDep (dependency ': dependencies) d e m = (dependency d e, MonadDep dependencies d e m)
 
 -- | Avoids repeated calls to 'liftD' when all the effects in a function come from the environment.
-withEnv :: forall d e m r. (LiftDep d m, MonadReader e m) => (e -> d r) -> m r
-withEnv f = do
+useEnv :: forall d e m r. (LiftDep d m, MonadReader e m) => (e -> d r) -> m r
+useEnv f = do
   e <- ask
   liftD (f e)
 

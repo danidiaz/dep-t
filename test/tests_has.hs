@@ -25,6 +25,7 @@ module Main (main) where
 
 import Control.Monad.Dep
 import Control.Monad.Dep.Has
+import Control.Monad.Dep.Class
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Data.Coerce
@@ -36,13 +37,12 @@ import Rank2 qualified
 import Rank2.TH qualified
 import Test.Tasty
 import Test.Tasty.HUnit
-import GHC.Generics
 import Prelude hiding (log)
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
 type Logger :: (Type -> Type) -> Type
-newtype Logger d = Logger {log :: String -> d ()} deriving Generic
+newtype Logger d = Logger {log :: String -> d ()} deriving (Generic)
 
 instance Dep Logger where
   type DefaultFieldName Logger = "logger"
@@ -50,12 +50,13 @@ instance Dep Logger where
 data Repository d = Repository
   { select :: String -> d [Int],
     insert :: [Int] -> d ()
-  } deriving Generic
+  }
+  deriving (Generic)
 
 instance Dep Repository where
   type DefaultFieldName Repository = "repository"
 
-newtype Controller d = Controller {serve :: Int -> d String} deriving Generic
+newtype Controller d = Controller {serve :: Int -> d String} deriving (Generic)
 
 instance Dep Controller where
   type DefaultFieldName Controller = "controller"
@@ -84,20 +85,20 @@ mkController =
     return "view"
 
 -- also toss in this helper function
-withEnv :: forall d e m r. (LiftDep d m, MonadReader e m) => (e -> d r) -> m r
-withEnv f = do
-  e <- ask
-  liftD (f e)
+-- useEnv :: forall d e m r. (LiftDep d m, MonadReader e m) => (e -> d r) -> m r
+-- useEnv f = do
+--   e <- ask
+--   liftD (f e)
 
 -- better than with all that liftD spam... although slightly less flexible
 mkController' :: forall d e m. MonadDep [Has Logger, Has Repository] d e m => Controller m
-mkController' = 
-  Controller \url -> 
-  withEnv \e -> do
-  log (dep e) "I'm going to insert in the db!"
-  select (dep e) "select * from ..."
-  insert (dep e) [5, 3, 43]
-  return "view"
+mkController' =
+  Controller \url ->
+    useEnv \e -> do
+      log (dep e) "I'm going to insert in the db!"
+      select (dep e) "select * from ..."
+      insert (dep e) [5, 3, 43]
+      return "view"
 
 type EnvIO :: Type
 data EnvIO = EnvIO

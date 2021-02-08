@@ -5,7 +5,7 @@
 * added Control.Monad.Dep.Has, a generic "Has" typeclass which favors a style in which
   the components come wrapped in records or newtypes.
 
-* added "withEnv" to Control.Monad.Dep.Class.
+* added "useEnv" to Control.Monad.Dep.Class.
 
 ## 0.4.0.0
 
