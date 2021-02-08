@@ -12,7 +12,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
--- | This module provies a generic \"Has\" class favoring a style in which the
+-- | This module provides a generic \"Has\" class favoring a style in which the
 -- components of the environment come wrapped in records or newtypes, instead
 -- of being bare functions.
 --
@@ -102,9 +102,9 @@ class Has r_ d e | e -> d where
   default dep :: (Dep r_, HasField (DefaultFieldName r_) e u, Coercible u (r_ d)) => e -> r_ d
   dep e = coerce . getField @(DefaultFieldName r_) $ e
 
--- | Parametrizable records-of-functions can implement this instance to specify
--- the default field name 'Has' expects for the component in the environment
--- record.
+-- | Parametrizable records-of-functions can be given an instance of this
+-- typeclass to specify the default field name 'Has' expects for the component
+-- in the environment record.
 --
 -- This allows defining 'Has' instances with empty bodies, thanks to
 -- @DefaultSignatures@.
