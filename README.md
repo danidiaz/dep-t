@@ -41,7 +41,7 @@ Here's a monomorphic environment record with functions that have effects in `IO`
     instance HasRepository IO EnvIO where
       repository = _repositoryIO
 
-Record-of-functions-in-IO is a simple technique which works well in many
+[Record-of-functions-in-IO](https://www.fpcomplete.com/blog/2017/06/readert-design-pattern/) is a simple technique which works well in many
 situations. There are even [specialized
 libraries](http://hackage.haskell.org/package/rio) that support it.
 
@@ -264,11 +264,17 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   "call stack", or to implement something like Logback's [Mapped Diagnostic
   Context](http://logback.qos.ch/manual/mdc.html).
 
-- [RIO](http://hackage.haskell.org/package/rio) is a featureful ReaderT-like /
-  prelude replacement library which favors monomorphic environments.
-
 - Another exploration of dependency injection with `ReaderT`:
   [ReaderT-OpenProduct-Environment](https://github.com/keksnicoh/ReaderT-OpenProduct-Environment).
+
+- [The ReaderT design pattern](https://www.fpcomplete.com/blog/2017/06/readert-design-pattern/).
+
+> Your application code will, in general, live in ReaderT Env IO. Define it as type App = ReaderT Env IO if you wish, or use a newtype wrapper instead of ReaderT directly.
+
+> Optional: instead of directly using the App datatype, write your functions in terms of mtl-style typeclasses like MonadReader and MonadIO
+
+- [RIO](http://hackage.haskell.org/package/rio) is a featureful ReaderT-like /
+  prelude replacement library which favors monomorphic environments.
 
 - The [van Laarhoven Free Monad](http://r6.ca/blog/20140210T181244Z.html).
 
