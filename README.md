@@ -270,8 +270,8 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   contains an example of `DepT`-less and `ReaderT`-less dependency injection.
   It does use `Control.Monad.Dep.Has`, in combination with "open" and "closed"
   versions of the environment record. Unlike in "Adventures..." the gist
-  doesn't use an extensible record but, too keep things simple, a suitably
-  parameterized conventional one.
+  doesn't use an extensible record for the environment but, to keep things
+  simple, a suitably parameterized conventional one.
 
 - Another exploration of dependency injection with `ReaderT`:
   [ReaderT-OpenProduct-Environment](https://github.com/keksnicoh/ReaderT-OpenProduct-Environment).
