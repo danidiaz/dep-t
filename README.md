@@ -264,6 +264,15 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   "call stack", or to implement something like Logback's [Mapped Diagnostic
   Context](http://logback.qos.ch/manual/mdc.html).
 
+  So perhaps `DepT` will be overkill in a lot of cases, offering unneeded
+  flexibility. [This
+  gist](https://gist.github.com/danidiaz/358fdccdef51ad37bbec932631dcc4d2)
+  contains an example of `DepT`-less and `ReaderT`-less dependency injection.
+  We do use `Control.Monad.Dep.Has`, in combination with "open" and "closed"
+  versions of the environment record. (Unlike in "Adventures..." we don't use
+  an extensible record but, too keep things simple, a suitably parameterized
+  conventional one.)
+
 - Another exploration of dependency injection with `ReaderT`:
   [ReaderT-OpenProduct-Environment](https://github.com/keksnicoh/ReaderT-OpenProduct-Environment).
 
