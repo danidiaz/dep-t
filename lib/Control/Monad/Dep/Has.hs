@@ -97,7 +97,17 @@ import Control.Monad.Reader.Class
 -- asSelf env = \f -> f (dep env)
 --
 
--- | Avoids repeated calls to 'liftD' when all the effects in a function come from the environment.
+-- | Avoids repeated calls to 'liftD' when all the effects in a function come
+--   from the environment.
+--
+--   Similar to 'useEnv', but the callback receives a \"self\" function that
+--   pre-applies any record selector with the correct record extracted from the
+--   environment.
+--
+--   Inside the callback, invocations of functions from the environment will be
+--   preceded by \"self\".
+--
+--   The name \"self\" intends to evoke the self argument in Python.
 useSelf :: forall d env m y . (LiftDep d m, MonadReader env m) => ((forall r_ x . Has r_ d env => (r_ d -> x) -> x) -> d y) -> m y
 useSelf needsSelf = do
   (asSelf -> self) <- ask @env
