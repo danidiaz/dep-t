@@ -20,18 +20,18 @@
 --
 -- >>> :{
 --  type Logger :: (Type -> Type) -> Type
---  newtype Logger d = Logger {log :: String -> d ()} deriving Generic
+--  newtype Logger d = Logger {log :: String -> d ()}
 --  instance Dep Logger where
 --    type DefaultFieldName Logger = "logger"
 --  --
 --  data Repository d = Repository
 --    { select :: String -> d [Int],
 --      insert :: [Int] -> d ()
---    } deriving Generic
+--    }
 --  instance Dep Repository where
 --    type DefaultFieldName Repository = "repository"
 --  --
---  newtype Controller d = Controller {serve :: Int -> d String} deriving Generic
+--  newtype Controller d = Controller {serve :: Int -> d String}
 --  instance Dep Controller where
 --    type DefaultFieldName Controller = "controller"
 --  --
@@ -88,8 +88,6 @@ import Control.Monad.Reader.Class
 -- >>> :set -XViewPatterns
 -- >>> import Data.Kind
 -- >>> import Control.Monad.Dep
--- >>> import Rank2 qualified
--- >>> import Rank2.TH qualified
 -- >>> import GHC.Generics (Generic)
 --
 
