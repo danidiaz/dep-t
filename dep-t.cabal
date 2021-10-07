@@ -1,7 +1,7 @@
 cabal-version:       3.0
 
 name:                dep-t
-version:             0.4.4.0
+version:             0.4.5.0
 synopsis:            Reader-like monad transformer for dependency injection.
 description:         Put all your functions in the environment record! Let all
                      your functions read from the environment record! No favorites!
@@ -22,6 +22,7 @@ common common
                        transformers ^>= 0.5.0.0,
                        mtl ^>= 2.2,
                        unliftio-core ^>= 0.2.0.0,
+                       dani-di ^>= 1.0.0.0,
   default-language:    Haskell2010
 
 library
@@ -81,5 +82,5 @@ test-suite doctests
   build-depends:       
                        dep-t, 
                        rank2classes       ^>= 1.4.1,
-                       doctest            ^>= 0.17,
+                       doctest            ^>= 0.18,
 
