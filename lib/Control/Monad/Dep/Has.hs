@@ -47,10 +47,10 @@
 --  --
 --  mkController :: MonadDep [Has Logger, Has Repository] d e m => Controller m
 --  mkController =
---    Controller \url -> useSelf \self -> do
---      self log "I'm going to insert in the db!"
---      self select "select * from ..."
---      self insert [1, 2, 3, 4]
+--    Controller \url -> useCaller \call -> do
+--      call log "I'm going to insert in the db!"
+--      call select "select * from ..."
+--      call insert [1, 2, 3, 4]
 --      return "view"
 -- :}
 --
@@ -63,7 +63,7 @@ module Control.Monad.Dep.Has (
         -- * Component defaults
     ,   Dep (..)
         -- * self
-    ,   useSelf
+    ,   useCaller
     ) where
 
 import DI
@@ -91,23 +91,14 @@ import Control.Monad.Reader.Class
 -- >>> import GHC.Generics (Generic)
 --
 
--- asSelf :: forall env m . env -> forall r_ x. Has r_ m env => (r_ m -> x) -> x
--- asSelf env = \f -> f (dep env)
---
-
 -- | Avoids repeated calls to 'liftD' when all the effects in a function come
 --   from the environment.
 --
---   Similar to 'useEnv', but the callback receives a \"self\" function that
+--   Similar to 'useEnv', but the callback receives a \"call\" function that
 --   pre-applies any record selector with the correct record extracted from the
 --   environment.
---
---   Inside the callback, invocations of functions from the environment will be
---   preceded by \"self\".
---
---   The name \"self\" intends to evoke the self argument in Python.
-useSelf :: forall d env m y . (LiftDep d m, MonadReader env m) => ((forall r_ x . Has r_ d env => (r_ d -> x) -> x) -> d y) -> m y
-useSelf needsSelf = do
-  (asSelf -> self) <- ask @env
-  liftD (needsSelf self)
+useCaller :: forall d env m y . (LiftDep d m, MonadReader env m) => ((forall r_ x . Has r_ d env => (r_ d -> x) -> x) -> d y) -> m y
+useCaller usesCaller = do
+  (asCaller -> call) <- ask @env
+  liftD (usesCaller call)
 
