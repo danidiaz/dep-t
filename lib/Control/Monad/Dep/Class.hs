@@ -84,6 +84,7 @@ import Data.Kind
 -- >>> :set -XFunctionalDependencies
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XDataKinds
+-- >>> import Control.Monad.Reader
 -- >>> import Control.Monad.Dep
 -- >>> import Rank2 qualified
 -- >>> import Rank2.TH qualified

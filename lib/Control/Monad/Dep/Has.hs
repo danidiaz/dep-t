@@ -47,7 +47,7 @@
 --  --
 --  mkController :: MonadDep [Has Logger, Has Repository] d e m => Controller m
 --  mkController =
---    Controller \url -> useCaller \call -> do
+--    Controller \url -> useCall \call -> do
 --      call log "I'm going to insert in the db!"
 --      call select "select * from ..."
 --      call insert [1, 2, 3, 4]
@@ -63,7 +63,7 @@ module Control.Monad.Dep.Has (
         -- * Component defaults
     ,   Dep (..)
         -- * self
-    ,   useCaller
+    ,   useCall
     ) where
 
 import DI
@@ -97,8 +97,8 @@ import Control.Monad.Reader.Class
 --   Similar to 'useEnv', but the callback receives a \"call\" function that
 --   pre-applies any record selector with the correct record extracted from the
 --   environment.
-useCaller :: forall d env m y . (LiftDep d m, MonadReader env m) => ((forall r_ x . Has r_ d env => (r_ d -> x) -> x) -> d y) -> m y
-useCaller usesCaller = do
-  (asCaller -> call) <- ask @env
-  liftD (usesCaller call)
+useCall :: forall d env m y . (LiftDep d m, MonadReader env m) => ((forall r_ x . Has r_ d env => (r_ d -> x) -> x) -> d y) -> m y
+useCall usesCall = do
+  (asCall -> call) <- ask @env
+  liftD (usesCall call)
 
