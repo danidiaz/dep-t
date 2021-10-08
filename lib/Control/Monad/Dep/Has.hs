@@ -62,7 +62,7 @@ module Control.Monad.Dep.Has (
         Has (..) 
         -- * Component defaults
     ,   Dep (..)
-        -- * self
+        -- * call helper
     ,   useCall
     ) where
 
