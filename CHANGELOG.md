@@ -2,11 +2,7 @@
 
 ## 0.4.5.0
 
-* the definitions from Control.Monad.Dep.Has can be useful in scenarios
-  unrelated to DepT and MonadDep. They have been moved to a separate package
-  "dani-di" and re-exported from there.
-
-* added "userEnv" to Control.Monad.Dep.Has
+* added "asCall" and "useCall" to Control.Monad.Dep.Has
 
 ## 0.4.4.0
 
