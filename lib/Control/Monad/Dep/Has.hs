@@ -15,8 +15,12 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
---   which the components of the environment come wrapped in records or newtypes,
---   instead of being bare functions:
+-- which the components of the environment, instead of being bare functions,
+-- are themselves records or newtypes containing functions.
+--
+-- In this style, the functions that are \"invoked\" from the environment are
+-- actually record field selectors. These selectors guide the 'Has' class to
+-- find the correct records in the environment.
 --
 -- >>> :{
 --  type Logger :: (Type -> Type) -> Type
@@ -109,6 +113,9 @@ class Has r_ m env | env -> m where
 -- | Transforms an environment with suitable 'Has' instances into a \"helper\"
 --   function that looks in the environment for the arguments of other functions.
 --   Typically, the \"helped\" functions will be record field selectors.
+--
+--   In practice, this means that you can write @call foo@ instead of @foo (dep
+--   env)@.
 --
 --   Using 'asCall' in a view pattern avoids having to name the
 --   environment.
