@@ -76,13 +76,12 @@ instance Has Controller m (Env m)
 
 mkController :: forall d e m. MonadDep [Has Logger, Has Repository] d e m => Controller m
 mkController =
-  Controller \url -> do
-    e <- ask
-    liftD $ log (dep e) "I'm going to insert in the db!"
-    -- liftD $ (dep e).log "I'm going to insert in the db!" -- Once RecordDotSyntax arrives...
-    liftD $ select (dep e) "select * from ..."
-    liftD $ insert (dep e) [1, 2, 3, 4]
-    return "view"
+  Controller \url -> 
+    useEnv \(asCall -> call) -> do
+      call log "I'm going to insert in the db!"
+      call select "select * from ..."
+      call insert [1, 2, 3, 4]
+      return "view"
 
 -- also toss in this helper function
 -- useEnv :: forall d e m r. (LiftDep d m, MonadReader e m) => (e -> d r) -> m r
@@ -95,9 +94,10 @@ mkController' :: forall d e m. MonadDep [Has Logger, Has Repository] d e m => Co
 mkController' =
   Controller \url ->
     useEnv \e -> do
-      log (dep e) "I'm going to insert in the db!"
-      select (dep e) "select * from ..."
-      insert (dep e) [5, 3, 43]
+      let (asCall -> call) = e
+      call log "I'm going to insert in the db!"
+      call select "select * from ..."
+      call insert [5, 3, 43]
       return "view"
 
 type EnvIO :: Type
@@ -123,8 +123,8 @@ mkFakeRepository =
         liftD $ log (dep e) "I'm going to select an entity"
         return [],
       insert = \entity -> do
-        e <- ask
-        liftD $ log (dep e) "I'm going to write the entity!"
+        (asCall -> call) <- ask
+        liftD $ call log "I'm going to write the entity!"
         tell ([], entity)
     }
 

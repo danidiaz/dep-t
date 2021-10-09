@@ -92,8 +92,8 @@ import Data.Coerce
 -- import Control.Monad.Dep.Class
 
 -- | A generic \"Has\" class. When partially applied to a parametrizable
--- record-of-functions @r_@, produces a 2-place constraint that can be later
--- used with "Control.Monad.Dep.Class".
+-- record-of-functions @r_@, produces a 2-place constraint that can used on its
+-- own, or with "Control.Monad.Dep.Class".
 type Has :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Constraint
 class Has r_ m env | env -> m where
   -- |  Given an environment @e@, produce a record-of-functions parameterized by the environment's effect monad @m@.
@@ -101,7 +101,7 @@ class Has r_ m env | env -> m where
   -- The hope is that using a selector function on the resulting record will
   -- fix the record's type without the need for type annotations.
   --
-  -- (This will likely not play well with RecordDotSyntax. See also <https://chrisdone.com/posts/import-aliases-field-names/ this import aliases trick for avoiding name collisions>.)
+  -- (This will likely not play well with RecordDotSyntax. See also <https://chrisdone.com/posts/import-aliases-field-names/ this import alias trick for avoiding name collisions>.)
   dep :: env -> r_ m
   default dep :: (Dep r_, HasField (DefaultFieldName r_) env u, Coercible u (r_ m)) => env -> r_ m
   dep env = coerce . getField @(DefaultFieldName r_) $ env
