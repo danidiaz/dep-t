@@ -95,8 +95,8 @@ mkController' =
   Controller \url ->
     useEnv \e -> do
       let (asCall -> call) = e
-      call log "I'm going to insert in the db!"
-      call select "select * from ..."
+      call @Logger log "I'm going to insert in the db!"
+      call @Repository select "select * from ..."
       call insert [5, 3, 43]
       return "view"
 
