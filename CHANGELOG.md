@@ -2,7 +2,7 @@
 
 ## 0.4.5.0
 
-* added "asCall" and "useCall" to Control.Monad.Dep.Has
+* added "asCall" to Control.Monad.Dep.Has
 
 ## 0.4.4.0
 
