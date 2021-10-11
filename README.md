@@ -166,6 +166,14 @@ the compiler.
 `DepT` has `MonadReader` and `LiftDep` instances, so the effects of
 `mkController` can take place on it.
 
+## Inter-module dependencies
+
+[![dep-t.png](https://i.postimg.cc/yYmcpV85/dep-t.png)](https://postimg.cc/sv2MvCS9)
+
+- __Control.Monad.Dep.Class__ can be used to program against both `ReaderT` and `DepT`.
+- __Control.Monad.Dep__ contains the actual `DepT` monad transformer.
+- __Control.Monad.Dep.Has__ can be useful independently of `ReaderT`, `DepT` or any monad transformer.
+
 ## So how do we invoke the controller now?
 
 I suggest something like
