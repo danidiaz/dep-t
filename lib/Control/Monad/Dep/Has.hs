@@ -161,7 +161,7 @@ newtype FirstFieldWithSuchType env m = FirstFieldWithSuchType (env m)
 data Location = LeftSide
               | RightSide
 
-type FindType_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Maybe Location
+type FindType_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Maybe [Location]
 type family FindType_ r_ m x where
 
 
