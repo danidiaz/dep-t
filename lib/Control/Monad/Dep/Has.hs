@@ -13,6 +13,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
 -- which the components of the environment, instead of being bare functions,
@@ -92,6 +94,7 @@ import Data.Kind
 import GHC.Records
 import GHC.TypeLits
 import Data.Coerce
+import GHC.Generics qualified as G
 -- import Control.Monad.Reader
 -- import Control.Monad.Dep.Class
 
@@ -161,7 +164,18 @@ newtype FirstFieldWithSuchType env m = FirstFieldWithSuchType (env m)
 data Location = LeftSide
               | RightSide
 
-type FindType_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Maybe [Location]
+-- The k -> Type alwasy trips me up
+type FindType_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> (k -> Type) -> Maybe [Location]
 type family FindType_ r_ m x where
+    FindType_ r_ m (left G.:*: right) = WithLeftResult_ r_ m (FindType_ r_ m left) right
+    -- pending: recursion
 
+type WithLeftResult_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> Maybe [Location] -> (k -> Type) -> Maybe [Location] 
+type family WithLeftResult_ r_ m leftResult right where
+    WithLeftResult_ r_ m ('Just ls) right = 'Just (LeftSide ': ls)
+    WithLeftResult_ r_ m Nothing right = WithRightResult_ (FindType_ r_ m right)
 
+type WithRightResult_ :: Maybe [Location] -> Maybe [Location] 
+type family WithRightResult_ rightResult where
+    WithRightResult_ ('Just ls) = 'Just (RightSide ': ls)
+    WithRightResult_ Nothing = Nothing
