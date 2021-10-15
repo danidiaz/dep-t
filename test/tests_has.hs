@@ -167,7 +167,7 @@ data EnvHKD2 h m = EnvHKD2
 
 
 deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance 
-    ExistsNamedFieldOfType r_ m (EnvHKD2 Identity m) name u 
+    ExistsNamedFieldOfType (r_ m) (EnvHKD2 Identity m) name u 
     => Has r_ m (EnvHKD2 Identity m)
 
 findLogger :: EnvHKD2 Identity m -> Logger m

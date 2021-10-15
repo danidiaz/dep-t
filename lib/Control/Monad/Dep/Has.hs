@@ -162,54 +162,51 @@ class Dep r_ where
 -- >>> import GHC.Generics (Generic)
 --
 
+
+-- class FieldTypeToFieldName where
+--     type FindFieldName  
+
 type FirstFieldOfType :: Type -> Type
 newtype FirstFieldOfType env = FirstFieldOfType env
 
-
--- type Conditions r_ m env_ = 
---          ( FindFieldName r_ m (G.Rep env) ~ name
---          , HasField name env u
---          , Coercible u (r_ m))
-
-
-type ExistsNamedFieldOfType r_ m env name u =
-         ( FindFieldName r_ m env ~ name
+type ExistsNamedFieldOfType r env name u =
+         ( FindFieldName r env ~ name
          , HasField name env u
-         , Coercible u (r_ m) )
+         , Coercible u r )
 
 instance ( G.Generic (env_ m),
-           ExistsNamedFieldOfType r_ m (env_ m) name u 
+           ExistsNamedFieldOfType (r_ m) (env_ m) name u 
          ) 
          => Has r_ m (FirstFieldOfType (env_ m)) where
-   dep (FirstFieldOfType env) = coerce (getField @(FindFieldName r_ m (env_ m)) env)
+   dep (FirstFieldOfType env) = coerce (getField @(FindFieldName (r_ m) (env_ m)) env)
 
-type FindFieldName :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Symbol
-type family FindFieldName r_ m env where
-    FindFieldName r_ m env = IfMissing r_ (FindFieldName_ r_ m (ExtractProduct (G.Rep env)))
+type FindFieldName :: Type -> Type -> Symbol
+type family FindFieldName r env where
+    FindFieldName r env = IfMissing r (FindFieldName_ r (ExtractProduct (G.Rep env)))
 
 type ExtractProduct :: (k -> Type) -> k -> Type
 type family ExtractProduct envRep where
     ExtractProduct (G.D1 _ (G.C1 _ z)) = z
 
-type IfMissing :: ((Type -> Type) -> Type) -> Maybe Symbol -> Symbol
-type family IfMissing r_ ms where
-    IfMissing r_ Nothing = 
+type IfMissing :: Type -> Maybe Symbol -> Symbol
+type family IfMissing r ms where
+    IfMissing r Nothing = 
         TypeError (
                  Text "The component " 
-            :<>: ShowType r_ 
+            :<>: ShowType r 
             :<>: Text " could not be found in record.")
     IfMissing _ (Just name) = name
 
 -- The k -> Type alwasy trips me up
-type FindFieldName_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> (k -> Type) -> Maybe Symbol
-type family FindFieldName_ r_ m x where
-    FindFieldName_ r_ m (left G.:*: right) = WithLeftResult_ r_ m (FindFieldName_ r_ m left) right
-    FindFieldName_ r_ m (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (Identity (r_ m)))) = Just name
-    FindFieldName_ r_ m (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (r_ m))) = Just name
-    FindFieldName_ _  _ _ = Nothing
+type FindFieldName_ :: Type -> (k -> Type) -> Maybe Symbol
+type family FindFieldName_ r x where
+    FindFieldName_ r (left G.:*: right) = WithLeftResult_ r (FindFieldName_ r left) right
+    FindFieldName_ r (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (Identity r))) = Just name
+    FindFieldName_ r (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 r)) = Just name
+    FindFieldName_ r _ = Nothing
 
-type WithLeftResult_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> Maybe Symbol -> (k -> Type) -> Maybe Symbol 
-type family WithLeftResult_ r_ m leftResult right where
-    WithLeftResult_ r_ m ('Just ls) right = 'Just ls
-    WithLeftResult_ r_ m Nothing right = FindFieldName_ r_ m right
+type WithLeftResult_ :: Type -> Maybe Symbol -> (k -> Type) -> Maybe Symbol 
+type family WithLeftResult_ r leftResult right where
+    WithLeftResult_ r ('Just ls) right = 'Just ls
+    WithLeftResult_ r Nothing right = FindFieldName_ r right
 
