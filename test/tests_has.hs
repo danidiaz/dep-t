@@ -44,6 +44,7 @@ import Test.Tasty.HUnit
 import Prelude hiding (log)
 import Data.Functor.Identity
 import GHC.Records
+import GHC.TypeLits
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
@@ -197,11 +198,16 @@ data EnvHKD4 h m = EnvHKD4
     controller :: h (Controller m)
   } deriving (Generic)
     
+type Correspondence4 :: Type -> Type -> Symbol
+type family Correspondence4 env r :: Symbol where
+    Correspondence4 (EnvHKD4 Identity m) (Logger m) = "logger"
+    Correspondence4 (EnvHKD4 Identity m) (Repository m) = "repository"
+    Correspondence4 (EnvHKD4 Identity m) (Controller m) = "controller"
+    Correspondence4 (EnvHKD4 Identity m) _ = TypeError (Text "what")
+
 -- non-default FieldTypeToFieldName instance
 instance FieldTypeToFieldName (EnvHKD4 Identity m) where
-    type FindFieldNameX (EnvHKD4 Identity m) (Logger m) = "logger"
-    type FindFieldNameX (EnvHKD4 Identity m) (Repository m) = "repository"
-    type FindFieldNameX (EnvHKD4 Identity m) (Controller m) = "controller"
+    type FindFieldNameX (EnvHKD4 Identity m) r = Correspondence4 (EnvHKD4 Identity m) r
 
 deriving via (FirstFieldOfType (EnvHKD4 Identity m)) instance 
     ExistsNamedFieldOfType (r_ m) (EnvHKD4 Identity m) name u => Has r_ m (EnvHKD4 Identity m)
