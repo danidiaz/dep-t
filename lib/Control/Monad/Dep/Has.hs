@@ -177,7 +177,7 @@ type ExistsNamedFieldOfType name wrapping r env =
          , HasField name env wrapping
          , Coercible wrapping r )
 
-instance ( G.Generic (env_ m),
+instance (
            FieldTypeToFieldName (env_ m),
            ExistsNamedFieldOfType name wrapping (r_ m) (env_ m) 
          ) 
