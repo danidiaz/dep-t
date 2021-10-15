@@ -164,11 +164,11 @@ data EnvHKD2 h m = EnvHKD2
 
 -- deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
 -- deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
-deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance 
-         ( 
-           FindFieldName r_ m (Rep (EnvHKD2 Identity m)) ~ name , 
-           HasField name (EnvHKD2 Identity m) u , 
-           Coercible u (r_ m)) => Has r_ m (EnvHKD2 Identity m)
+
+
+deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance 
+    ExistsNamedFieldOfType r_ m (EnvHKD2 Identity m) name u 
+    => Has r_ m (EnvHKD2 Identity m)
 
 findLogger :: EnvHKD2 Identity m -> Logger m
 findLogger env = dep env

@@ -15,6 +15,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
 -- which the components of the environment, instead of being bare functions,
@@ -88,8 +89,8 @@ module Control.Monad.Dep.Has (
         -- * Component defaults
     ,   Dep (..)
 --    ,   useCall
-    , FirstFieldWithSuchType (..)
-    , FindFieldName
+    , FirstFieldOfType (..)
+    , ExistsNamedFieldOfType
     ) where
 
 import Data.Kind
@@ -161,8 +162,8 @@ class Dep r_ where
 -- >>> import GHC.Generics (Generic)
 --
 
-type FirstFieldWithSuchType :: Type -> Type
-newtype FirstFieldWithSuchType env = FirstFieldWithSuchType env
+type FirstFieldOfType :: Type -> Type
+newtype FirstFieldOfType env = FirstFieldOfType env
 
 
 -- type Conditions r_ m env_ = 
@@ -170,17 +171,25 @@ newtype FirstFieldWithSuchType env = FirstFieldWithSuchType env
 --          , HasField name env u
 --          , Coercible u (r_ m))
 
-instance ( G.Generic (env_ m)
-         , FindFieldName r_ m (G.Rep (env_ m)) ~ name
-         , HasField name (env_ m) u
-         , Coercible u (r_ m)
-         ) 
-         => Has r_ m (FirstFieldWithSuchType (env_ m)) where
-   dep (FirstFieldWithSuchType env) = coerce (getField @(FindFieldName r_ m (G.Rep (env_ m))) env)
 
-type FindFieldName :: ((Type -> Type) -> Type) -> (Type -> Type) -> (k -> Type) -> Symbol
-type family FindFieldName r_ m x where
-    FindFieldName r_ m (G.D1 _ (G.C1 _ z)) = IfMissing r_ (FindFieldName_ r_ m z)
+type ExistsNamedFieldOfType r_ m env name u =
+         ( FindFieldName r_ m env ~ name
+         , HasField name env u
+         , Coercible u (r_ m) )
+
+instance ( G.Generic (env_ m),
+           ExistsNamedFieldOfType r_ m (env_ m) name u 
+         ) 
+         => Has r_ m (FirstFieldOfType (env_ m)) where
+   dep (FirstFieldOfType env) = coerce (getField @(FindFieldName r_ m (env_ m)) env)
+
+type FindFieldName :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Symbol
+type family FindFieldName r_ m env where
+    FindFieldName r_ m env = IfMissing r_ (FindFieldName_ r_ m (ExtractProduct (G.Rep env)))
+
+type ExtractProduct :: (k -> Type) -> k -> Type
+type family ExtractProduct envRep where
+    ExtractProduct (G.D1 _ (G.C1 _ z)) = z
 
 type IfMissing :: ((Type -> Type) -> Type) -> Maybe Symbol -> Symbol
 type family IfMissing r_ ms where
