@@ -161,7 +161,7 @@ data EnvHKD2 h m = EnvHKD2
     controller :: h (Controller m)
   }
 
-deriving via (FirstFieldWithSuchType (EnvHKD2 Identity) m) instance Has r_ m (EnvHKD2 Identity m)
+deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance Has r_ m (EnvHKD2 Identity m)
 
 --
 --

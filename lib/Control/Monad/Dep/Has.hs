@@ -160,15 +160,15 @@ class Dep r_ where
 -- >>> import GHC.Generics (Generic)
 --
 
-type FirstFieldWithSuchType :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type
-newtype FirstFieldWithSuchType env m = FirstFieldWithSuchType (env m)
+type FirstFieldWithSuchType :: Type -> Type
+newtype FirstFieldWithSuchType env = FirstFieldWithSuchType env
 
 instance ( G.Generic (env_ m)
          , FindFieldName r_ m (G.Rep (env_ m)) ~ name
          , HasField name (env_ m) u
          , Coercible u (r_ m)
          ) 
-         => Has r_ m (FirstFieldWithSuchType env_ m) where
+         => Has r_ m (FirstFieldWithSuchType (env_ m)) where
    dep (FirstFieldWithSuchType env) = coerce (getField @(FindFieldName r_ m (G.Rep (env_ m))) env)
 
 type FindFieldName :: ((Type -> Type) -> Type) -> (Type -> Type) -> (k -> Type) -> Symbol
