@@ -16,6 +16,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE PolyKinds #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
 -- which the components of the environment, instead of being bare functions,
@@ -89,6 +90,7 @@ module Control.Monad.Dep.Has (
         -- * Component defaults
     ,   Dep (..)
 --    ,   useCall
+    , FieldTypeToFieldName (..)
     , FirstFieldOfType (..)
     , ExistsNamedFieldOfType
     ) where
@@ -162,12 +164,13 @@ class Dep r_ where
 -- >>> import GHC.Generics (Generic)
 --
 
-
--- class FieldTypeToFieldName where
---     type FindFieldName  
-
 type FirstFieldOfType :: Type -> Type
 newtype FirstFieldOfType env = FirstFieldOfType env
+
+type FieldTypeToFieldName :: Type -> Constraint
+class FieldTypeToFieldName (env :: Type) where
+    type FindFieldNameX env (r :: Type) :: Symbol 
+    type FindFieldNameX env r = FindFieldName r env
 
 type ExistsNamedFieldOfType r env name u =
          ( FindFieldName r env ~ name

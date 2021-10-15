@@ -162,16 +162,24 @@ data EnvHKD2 h m = EnvHKD2
     controller :: h (Controller m)
   } deriving (Generic)
 
--- deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
--- deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
+deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
+deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
 
+findLogger2 :: EnvHKD2 Identity m -> Logger m
+findLogger2 env = dep env
 
-deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance 
-    ExistsNamedFieldOfType (r_ m) (EnvHKD2 Identity m) name u 
-    => Has r_ m (EnvHKD2 Identity m)
+type EnvHKD3 :: (Type -> Type) -> (Type -> Type) -> Type
+data EnvHKD3 h m = EnvHKD3
+  { logger :: h (Logger m),
+    repository :: h (Repository m),
+    controller :: h (Controller m)
+  } deriving (Generic)
+deriving via (FirstFieldOfType (EnvHKD3 Identity m)) instance 
+    ExistsNamedFieldOfType (r_ m) (EnvHKD3 Identity m) name u 
+    => Has r_ m (EnvHKD3 Identity m)
 
-findLogger :: EnvHKD2 Identity m -> Logger m
-findLogger env = dep env
+findLogger3 :: EnvHKD3 Identity m -> Logger m
+findLogger3 env = dep env
 
 --
 --
