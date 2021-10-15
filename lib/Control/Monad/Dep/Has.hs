@@ -169,11 +169,11 @@ newtype FirstFieldOfType env = FirstFieldOfType env
 
 type FieldTypeToFieldName :: Type -> Constraint
 class FieldTypeToFieldName (env :: Type) where
-    type FindFieldNameX env (r :: Type) :: Symbol 
-    type FindFieldNameX env r = FindFieldName r env
+    type FindFieldName env (r :: Type) :: Symbol 
+    type FindFieldName env r = FindFieldName_ env r
 
 type ExistsNamedFieldOfType r env name u =
-         ( FindFieldNameX env r ~ name
+         ( FindFieldName env r ~ name
          , HasField name env u
          , Coercible u r )
 
@@ -182,11 +182,11 @@ instance ( G.Generic (env_ m),
            ExistsNamedFieldOfType (r_ m) (env_ m) name u 
          ) 
          => Has r_ m (FirstFieldOfType (env_ m)) where
-   dep (FirstFieldOfType env) = coerce (getField @(FindFieldNameX (env_ m) (r_ m)) env)
+   dep (FirstFieldOfType env) = coerce (getField @(FindFieldName (env_ m) (r_ m)) env)
 
-type FindFieldName :: Type -> Type -> Symbol
-type family FindFieldName r env where
-    FindFieldName r env = IfMissing r (FindFieldName_ r (ExtractProduct (G.Rep env)))
+type FindFieldName_ :: Type -> Type -> Symbol
+type family FindFieldName_ env r where
+    FindFieldName_ env r = IfMissing r (GFindFieldName (ExtractProduct (G.Rep env)) r)
 
 type ExtractProduct :: (k -> Type) -> k -> Type
 type family ExtractProduct envRep where
@@ -202,15 +202,16 @@ type family IfMissing r ms where
     IfMissing _ (Just name) = name
 
 -- The k -> Type alwasy trips me up
-type FindFieldName_ :: Type -> (k -> Type) -> Maybe Symbol
-type family FindFieldName_ r x where
-    FindFieldName_ r (left G.:*: right) = WithLeftResult_ r (FindFieldName_ r left) right
-    FindFieldName_ r (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (Identity r))) = Just name
-    FindFieldName_ r (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 r)) = Just name
-    FindFieldName_ r _ = Nothing
+type GFindFieldName :: (k -> Type) -> Type -> Maybe Symbol
+type family GFindFieldName r x where
+    GFindFieldName (left G.:*: right)                                          r = 
+        WithLeftResult_ (GFindFieldName left r) right r
+    GFindFieldName (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (Identity r))) r = Just name
+    GFindFieldName (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 r))            r = Just name
+    GFindFieldName _                                                           _ = Nothing
 
-type WithLeftResult_ :: Type -> Maybe Symbol -> (k -> Type) -> Maybe Symbol 
-type family WithLeftResult_ r leftResult right where
-    WithLeftResult_ r ('Just ls) right = 'Just ls
-    WithLeftResult_ r Nothing right = FindFieldName_ r right
+type WithLeftResult_ :: Maybe Symbol -> (k -> Type) -> Type -> Maybe Symbol 
+type family WithLeftResult_ leftResult right r where
+    WithLeftResult_ ('Just ls) right r = 'Just ls
+    WithLeftResult_ Nothing    right r = GFindFieldName right r
 

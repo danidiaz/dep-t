@@ -207,7 +207,7 @@ type family Correspondence4 r :: Symbol where
 
 -- non-default FieldTypeToFieldName instance
 instance FieldTypeToFieldName (EnvHKD4 Identity m) where
-    type FindFieldNameX (EnvHKD4 Identity m) r = Correspondence4 r
+    type FindFieldName (EnvHKD4 Identity m) r = Correspondence4 r
 
 deriving via (FirstFieldOfType (EnvHKD4 Identity m)) instance 
     ExistsNamedFieldOfType (r_ m) (EnvHKD4 Identity m) name u => Has r_ m (EnvHKD4 Identity m)
