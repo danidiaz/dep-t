@@ -41,6 +41,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
 import Data.Functor.Identity
+import GHC.Records
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
@@ -159,9 +160,18 @@ data EnvHKD2 h m = EnvHKD2
   { logger :: h (Logger m),
     repository :: h (Repository m),
     controller :: h (Controller m)
-  }
+  } deriving (Generic)
 
-deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance Has r_ m (EnvHKD2 Identity m)
+-- deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
+-- deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
+deriving via (FirstFieldWithSuchType (EnvHKD2 Identity m)) instance 
+         ( 
+           FindFieldName r_ m (Rep (EnvHKD2 Identity m)) ~ name , 
+           HasField name (EnvHKD2 Identity m) u , 
+           Coercible u (r_ m)) => Has r_ m (EnvHKD2 Identity m)
+
+findLogger :: EnvHKD2 Identity m -> Logger m
+findLogger env = dep env
 
 --
 --

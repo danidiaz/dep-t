@@ -89,6 +89,7 @@ module Control.Monad.Dep.Has (
     ,   Dep (..)
 --    ,   useCall
     , FirstFieldWithSuchType (..)
+    , FindFieldName
     ) where
 
 import Data.Kind
@@ -162,6 +163,12 @@ class Dep r_ where
 
 type FirstFieldWithSuchType :: Type -> Type
 newtype FirstFieldWithSuchType env = FirstFieldWithSuchType env
+
+
+-- type Conditions r_ m env_ = 
+--          ( FindFieldName r_ m (G.Rep env) ~ name
+--          , HasField name env u
+--          , Coercible u (r_ m))
 
 instance ( G.Generic (env_ m)
          , FindFieldName r_ m (G.Rep (env_ m)) ~ name
