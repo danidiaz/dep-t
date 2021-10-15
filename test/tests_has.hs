@@ -166,7 +166,7 @@ data EnvHKD2 h m = EnvHKD2
   } deriving (Generic)
 
 -- necessary for it to work, otherwise strange error...
-deriving anyclass instance FieldTypeToFieldName (EnvHKD2 Identity m)
+deriving instance FieldTypeToFieldName (EnvHKD2 Identity m)
 deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
 deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
 
