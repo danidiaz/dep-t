@@ -22,6 +22,8 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Main (main) where
 
@@ -162,11 +164,13 @@ data EnvHKD2 h m = EnvHKD2
     controller :: h (Controller m)
   } deriving (Generic)
 
+-- necessary for it to work, otherwise strange error...
+deriving anyclass instance FieldTypeToFieldName (EnvHKD2 Identity m)
 deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
 deriving via (FirstFieldOfType (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
 
-findLogger2 :: EnvHKD2 Identity m -> Logger m
-findLogger2 env = dep env
+-- findLogger2 :: EnvHKD2 Identity m -> Logger m
+-- findLogger2 env = dep env
 
 type EnvHKD3 :: (Type -> Type) -> (Type -> Type) -> Type
 data EnvHKD3 h m = EnvHKD3
@@ -174,12 +178,36 @@ data EnvHKD3 h m = EnvHKD3
     repository :: h (Repository m),
     controller :: h (Controller m)
   } deriving (Generic)
+    
+
+deriving anyclass instance FieldTypeToFieldName (EnvHKD3 Identity m)
+
 deriving via (FirstFieldOfType (EnvHKD3 Identity m)) instance 
-    ExistsNamedFieldOfType (r_ m) (EnvHKD3 Identity m) name u 
-    => Has r_ m (EnvHKD3 Identity m)
+    ExistsNamedFieldOfType (r_ m) (EnvHKD3 Identity m) name u => Has r_ m (EnvHKD3 Identity m)
 
 findLogger3 :: EnvHKD3 Identity m -> Logger m
 findLogger3 env = dep env
+
+
+
+type EnvHKD4 :: (Type -> Type) -> (Type -> Type) -> Type
+data EnvHKD4 h m = EnvHKD4
+  { logger :: h (Logger m),
+    repository :: h (Repository m),
+    controller :: h (Controller m)
+  } deriving (Generic)
+    
+-- non-default FieldTypeToFieldName instance
+instance FieldTypeToFieldName (EnvHKD4 Identity m) where
+    type FindFieldNameX (EnvHKD4 Identity m) (Logger m) = "logger"
+    type FindFieldNameX (EnvHKD4 Identity m) (Repository m) = "repository"
+    type FindFieldNameX (EnvHKD4 Identity m) (Controller m) = "controller"
+
+deriving via (FirstFieldOfType (EnvHKD4 Identity m)) instance 
+    ExistsNamedFieldOfType (r_ m) (EnvHKD4 Identity m) name u => Has r_ m (EnvHKD4 Identity m)
+
+findLogger4 :: EnvHKD4 Identity m -> Logger m
+findLogger4 env = dep env
 
 --
 --

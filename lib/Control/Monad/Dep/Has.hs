@@ -173,15 +173,16 @@ class FieldTypeToFieldName (env :: Type) where
     type FindFieldNameX env r = FindFieldName r env
 
 type ExistsNamedFieldOfType r env name u =
-         ( FindFieldName r env ~ name
+         ( FindFieldNameX env r ~ name
          , HasField name env u
          , Coercible u r )
 
 instance ( G.Generic (env_ m),
+           FieldTypeToFieldName (env_ m),
            ExistsNamedFieldOfType (r_ m) (env_ m) name u 
          ) 
          => Has r_ m (FirstFieldOfType (env_ m)) where
-   dep (FirstFieldOfType env) = coerce (getField @(FindFieldName (r_ m) (env_ m)) env)
+   dep (FirstFieldOfType env) = coerce (getField @(FindFieldNameX (env_ m) (r_ m)) env)
 
 type FindFieldName :: Type -> Type -> Symbol
 type family FindFieldName r env where
