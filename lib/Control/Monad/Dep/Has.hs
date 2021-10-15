@@ -88,6 +88,7 @@ module Control.Monad.Dep.Has (
         -- * Component defaults
     ,   Dep (..)
 --    ,   useCall
+    , FirstFieldWithSuchType (..)
     ) where
 
 import Data.Kind
@@ -95,6 +96,7 @@ import GHC.Records
 import GHC.TypeLits
 import Data.Coerce
 import GHC.Generics qualified as G
+import Data.Functor.Identity
 -- import Control.Monad.Reader
 -- import Control.Monad.Dep.Class
 
@@ -161,21 +163,37 @@ class Dep r_ where
 type FirstFieldWithSuchType :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type
 newtype FirstFieldWithSuchType env m = FirstFieldWithSuchType (env m)
 
-data Location = LeftSide
-              | RightSide
+instance ( G.Generic (env_ m)
+         , FindFieldName r_ m (G.Rep (env_ m)) ~ name
+         , HasField name (env_ m) u
+         , Coercible u (r_ m)
+         ) 
+         => Has r_ m (FirstFieldWithSuchType env_ m) where
+   dep (FirstFieldWithSuchType env) = coerce (getField @(FindFieldName r_ m (G.Rep (env_ m))) env)
+
+type FindFieldName :: ((Type -> Type) -> Type) -> (Type -> Type) -> (k -> Type) -> Symbol
+type family FindFieldName r_ m x where
+    FindFieldName r_ m (G.D1 _ (G.C1 _ z)) = IfMissing r_ (FindFieldName_ r_ m z)
+
+type IfMissing :: ((Type -> Type) -> Type) -> Maybe Symbol -> Symbol
+type family IfMissing r_ ms where
+    IfMissing r_ Nothing = 
+        TypeError (
+                 Text "The component " 
+            :<>: ShowType r_ 
+            :<>: Text " could not be found in record.")
+    IfMissing _ (Just name) = name
 
 -- The k -> Type alwasy trips me up
-type FindType_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> (k -> Type) -> Maybe [Location]
-type family FindType_ r_ m x where
-    FindType_ r_ m (left G.:*: right) = WithLeftResult_ r_ m (FindType_ r_ m left) right
-    -- pending: recursion
+type FindFieldName_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> (k -> Type) -> Maybe Symbol
+type family FindFieldName_ r_ m x where
+    FindFieldName_ r_ m (left G.:*: right) = WithLeftResult_ r_ m (FindFieldName_ r_ m left) right
+    FindFieldName_ r_ m (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (Identity (r_ m)))) = Just name
+    FindFieldName_ r_ m (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (r_ m))) = Just name
+    FindFieldName_ _  _ _ = Nothing
 
-type WithLeftResult_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> Maybe [Location] -> (k -> Type) -> Maybe [Location] 
+type WithLeftResult_ :: ((Type -> Type) -> Type) -> (Type -> Type) -> Maybe Symbol -> (k -> Type) -> Maybe Symbol 
 type family WithLeftResult_ r_ m leftResult right where
-    WithLeftResult_ r_ m ('Just ls) right = 'Just (LeftSide ': ls)
-    WithLeftResult_ r_ m Nothing right = WithRightResult_ (FindType_ r_ m right)
+    WithLeftResult_ r_ m ('Just ls) right = 'Just ls
+    WithLeftResult_ r_ m Nothing right = FindFieldName_ r_ m right
 
-type WithRightResult_ :: Maybe [Location] -> Maybe [Location] 
-type family WithRightResult_ rightResult where
-    WithRightResult_ ('Just ls) = 'Just (RightSide ': ls)
-    WithRightResult_ Nothing = Nothing

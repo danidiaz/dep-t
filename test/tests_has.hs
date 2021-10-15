@@ -20,6 +20,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DerivingVia #-}
 
 module Main (main) where
 
@@ -38,6 +40,7 @@ import Rank2.TH qualified
 import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
+import Data.Functor.Identity
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
@@ -149,6 +152,16 @@ instance Has Logger m (EnvHKD I m)
 instance Has Repository m (EnvHKD I m)
 
 instance Has Controller m (EnvHKD I m)
+
+
+type EnvHKD2 :: (Type -> Type) -> (Type -> Type) -> Type
+data EnvHKD2 h m = EnvHKD2
+  { logger :: h (Logger m),
+    repository :: h (Repository m),
+    controller :: h (Controller m)
+  }
+
+deriving via (FirstFieldWithSuchType (EnvHKD2 Identity) m) instance Has r_ m (EnvHKD2 Identity m)
 
 --
 --
