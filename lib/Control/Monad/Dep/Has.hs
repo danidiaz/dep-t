@@ -90,9 +90,9 @@ module Control.Monad.Dep.Has (
         -- * Component defaults
     ,   Dep (..)
 --    ,   useCall
-    , FieldTypeToFieldName (..)
-    , FirstFieldOfType (..)
-    , ExistsNamedFieldOfType
+    , FieldsFindableByType (..)
+    , Autowire (..)
+    , Autowireable
     ) where
 
 import Data.Kind
@@ -164,29 +164,29 @@ class Dep r_ where
 -- >>> import GHC.Generics (Generic)
 --
 
-type FirstFieldOfType :: Type -> Type
-newtype FirstFieldOfType env = FirstFieldOfType env
+type Autowire :: Type -> Type
+newtype Autowire env = Autowire env
 
-type FieldTypeToFieldName :: Type -> Constraint
-class FieldTypeToFieldName (env :: Type) where
-    type FindFieldName env (r :: Type) :: Symbol 
-    type FindFieldName env r = FindFieldName_ env r
+type FieldsFindableByType :: Type -> Constraint
+class FieldsFindableByType (env :: Type) where
+    type FindFieldByType env (r :: Type) :: Symbol 
+    type FindFieldByType env r = FindFieldByType_ env r
 
-type ExistsNamedFieldOfType name wrapping r env =
-         ( FindFieldName env r ~ name
+type Autowireable name wrapping r_ m env =
+         ( FindFieldByType env (r_ m) ~ name
          , HasField name env wrapping
-         , Coercible wrapping r )
+         , Coercible wrapping (r_ m) )
 
 instance (
-           FieldTypeToFieldName (env_ m),
-           ExistsNamedFieldOfType name wrapping (r_ m) (env_ m) 
+           FieldsFindableByType (env_ m),
+           Autowireable name wrapping r_ m (env_ m) 
          ) 
-         => Has r_ m (FirstFieldOfType (env_ m)) where
-   dep (FirstFieldOfType env) = coerce (getField @(FindFieldName (env_ m) (r_ m)) env)
+         => Has r_ m (Autowire (env_ m)) where
+   dep (Autowire env) = coerce (getField @(FindFieldByType (env_ m) (r_ m)) env)
 
-type FindFieldName_ :: Type -> Type -> Symbol
-type family FindFieldName_ env r where
-    FindFieldName_ env r = IfMissing r (GFindFieldName (ExtractProduct (G.Rep env)) r)
+type FindFieldByType_ :: Type -> Type -> Symbol
+type family FindFieldByType_ env r where
+    FindFieldByType_ env r = IfMissing r (GFindFieldByType (ExtractProduct (G.Rep env)) r)
 
 type ExtractProduct :: (k -> Type) -> k -> Type
 type family ExtractProduct envRep where
@@ -202,16 +202,16 @@ type family IfMissing r ms where
     IfMissing _ (Just name) = name
 
 -- The k -> Type alwasy trips me up
-type GFindFieldName :: (k -> Type) -> Type -> Maybe Symbol
-type family GFindFieldName r x where
-    GFindFieldName (left G.:*: right)                                          r = 
-        WithLeftResult_ (GFindFieldName left r) right r
-    GFindFieldName (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (Identity r))) r = Just name
-    GFindFieldName (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 r))            r = Just name
-    GFindFieldName _                                                           _ = Nothing
+type GFindFieldByType :: (k -> Type) -> Type -> Maybe Symbol
+type family GFindFieldByType r x where
+    GFindFieldByType (left G.:*: right)                                          r = 
+        WithLeftResult_ (GFindFieldByType left r) right r
+    GFindFieldByType (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (Identity r))) r = Just name
+    GFindFieldByType (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 r))            r = Just name
+    GFindFieldByType _                                                           _ = Nothing
 
 type WithLeftResult_ :: Maybe Symbol -> (k -> Type) -> Type -> Maybe Symbol 
 type family WithLeftResult_ leftResult right r where
     WithLeftResult_ ('Just ls) right r = 'Just ls
-    WithLeftResult_ Nothing    right r = GFindFieldName right r
+    WithLeftResult_ Nothing    right r = GFindFieldByType right r
 
