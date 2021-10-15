@@ -180,8 +180,7 @@ data EnvHKD3 h m = EnvHKD3
     controller :: h (Controller m)
   } deriving (Generic)
     
-
-deriving anyclass instance FieldTypeToFieldName (EnvHKD3 Identity m)
+deriving instance FieldTypeToFieldName (EnvHKD3 Identity m)
 
 deriving via (FirstFieldOfType (EnvHKD3 Identity m)) instance 
     ExistsNamedFieldOfType (r_ m) (EnvHKD3 Identity m) name u => Has r_ m (EnvHKD3 Identity m)
@@ -201,6 +200,7 @@ data EnvHKD4 h m = EnvHKD4
 type Correspondence4 :: Type -> Symbol
 type family Correspondence4 r :: Symbol where
     Correspondence4 (Logger m) = "logger"
+    -- Correspondence4 (Identity (Logger m)) = "logger"
     Correspondence4 (Repository m) = "repository"
     Correspondence4 (Controller m) = "controller"
     Correspondence4 _ = TypeError (Text "what")
