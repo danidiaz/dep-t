@@ -182,8 +182,9 @@ data EnvHKD3 h m = EnvHKD3
     
 deriving instance FieldTypeToFieldName (EnvHKD3 Identity m)
 
-deriving via (FirstFieldOfType (EnvHKD3 Identity m)) instance 
-    ExistsNamedFieldOfType name wrapping (r_ m) (EnvHKD3 Identity m) => Has r_ m (EnvHKD3 Identity m)
+deriving via FirstFieldOfType (EnvHKD3 Identity m) 
+    instance ExistsNamedFieldOfType name wrapping (r_ m) (EnvHKD3 Identity m) 
+          => Has r_ m (EnvHKD3 Identity m)
 
 findLogger3 :: EnvHKD3 Identity m -> Logger m
 findLogger3 env = dep env
