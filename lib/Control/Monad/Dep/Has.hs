@@ -172,14 +172,14 @@ class FieldTypeToFieldName (env :: Type) where
     type FindFieldName env (r :: Type) :: Symbol 
     type FindFieldName env r = FindFieldName_ env r
 
-type ExistsNamedFieldOfType r env name u =
+type ExistsNamedFieldOfType name wrapping r env =
          ( FindFieldName env r ~ name
-         , HasField name env u
-         , Coercible u r )
+         , HasField name env wrapping
+         , Coercible wrapping r )
 
 instance ( G.Generic (env_ m),
            FieldTypeToFieldName (env_ m),
-           ExistsNamedFieldOfType (r_ m) (env_ m) name u 
+           ExistsNamedFieldOfType name wrapping (r_ m) (env_ m) 
          ) 
          => Has r_ m (FirstFieldOfType (env_ m)) where
    dep (FirstFieldOfType env) = coerce (getField @(FindFieldName (env_ m) (r_ m)) env)
