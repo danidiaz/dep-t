@@ -198,16 +198,16 @@ data EnvHKD4 h m = EnvHKD4
     controller :: h (Controller m)
   } deriving (Generic)
     
-type Correspondence4 :: Type -> Type -> Symbol
-type family Correspondence4 env r :: Symbol where
-    Correspondence4 (EnvHKD4 Identity m) (Logger m) = "logger"
-    Correspondence4 (EnvHKD4 Identity m) (Repository m) = "repository"
-    Correspondence4 (EnvHKD4 Identity m) (Controller m) = "controller"
-    Correspondence4 (EnvHKD4 Identity m) _ = TypeError (Text "what")
+type Correspondence4 :: Type -> Symbol
+type family Correspondence4 r :: Symbol where
+    Correspondence4 (Logger m) = "logger"
+    Correspondence4 (Repository m) = "repository"
+    Correspondence4 (Controller m) = "controller"
+    Correspondence4 _ = TypeError (Text "what")
 
 -- non-default FieldTypeToFieldName instance
 instance FieldTypeToFieldName (EnvHKD4 Identity m) where
-    type FindFieldNameX (EnvHKD4 Identity m) r = Correspondence4 (EnvHKD4 Identity m) r
+    type FindFieldNameX (EnvHKD4 Identity m) r = Correspondence4 r
 
 deriving via (FirstFieldOfType (EnvHKD4 Identity m)) instance 
     ExistsNamedFieldOfType (r_ m) (EnvHKD4 Identity m) name u => Has r_ m (EnvHKD4 Identity m)
