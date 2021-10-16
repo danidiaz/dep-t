@@ -162,13 +162,12 @@ type family WithLeftResult_ leftResult right r where
 
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased env_ where
-    pullPhase :: (Applicative f, Applicative g) => env_ (Compose f g) m -> f (env_ g m)
+    pullPhase :: (Applicative f) => env_ (Compose f g) m -> f (env_ g m)
     default pullPhase 
         :: ( G.Generic (env_ (Compose f g) m)
            , G.Generic (env_ g m)
            , GPullPhase f g (G.Rep (env_ (Compose f g) m)) (G.Rep (env_ g m))
-           , Applicative f
-           , Applicative g )
+           , Applicative f )
         => env_ (Compose f g) m -> f (env_ g m)
     pullPhase env = G.to <$> gPullPhase (G.from env)
     mapPhase :: (Applicative f, Applicative f') 
@@ -214,7 +213,7 @@ instance (Applicative f,
             right' = gPullPhase @f @g right
          in liftA2 (G.:*:) left' right'
 
-instance (Applicative f, Applicative g) 
+instance (Functor f) 
     => GPullPhase f g (G.S1 metaSel (G.Rec0 (Compose f g bean))) 
                    (G.S1 metaSel (G.Rec0 (g bean))) where
      gPullPhase (G.M1 (G.K1 (Compose fgbean))) =
