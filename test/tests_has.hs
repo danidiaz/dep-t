@@ -208,12 +208,12 @@ type family Correspondence4 r :: Symbol where
     Correspondence4 _ = TypeError (Text "what")
 
 -- non-default FieldsFindableByType instance
-instance FieldsFindableByType           (EnvHKD4 Identity m) where
-    type FindFieldByType                (EnvHKD4 Identity m) r = Correspondence4 r
+instance FieldsFindableByType                    (EnvHKD4 Identity m) where
+    type FindFieldByType                         (EnvHKD4 Identity m) r = Correspondence4 r
 
-deriving via Autowire                   (EnvHKD4 Identity m) 
-    instance Autowireable wrapping r_ m (EnvHKD4 Identity m) 
-                            => Has r_ m (EnvHKD4 Identity m)
+deriving via Autowire                            (EnvHKD4 Identity m) 
+    instance Autowireable (Identity (r_ m)) r_ m (EnvHKD4 Identity m) 
+                                     => Has r_ m (EnvHKD4 Identity m)
 
 findLogger4 :: EnvHKD4 Identity m -> Logger m
 findLogger4 env = dep env
