@@ -182,11 +182,11 @@ data EnvHKD3 h m = EnvHKD3
   } deriving (Generic)
     
 deriving 
-    instance FieldsFindableByType       (EnvHKD3 Identity m)
+    instance FieldsFindableByType                (EnvHKD3 Identity m)
 
-deriving via Autowire                   (EnvHKD3 Identity m) 
-    instance Autowireable wrapping r_ m (EnvHKD3 Identity m) 
-                            => Has r_ m (EnvHKD3 Identity m)
+deriving via Autowire                            (EnvHKD3 Identity m) 
+    instance Autowireable (Identity (r_ m)) r_ m (EnvHKD3 Identity m) 
+                                     => Has r_ m (EnvHKD3 Identity m)
 
 findLogger3 :: EnvHKD3 Identity m -> Logger m
 findLogger3 env = dep env
