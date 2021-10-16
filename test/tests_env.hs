@@ -46,6 +46,7 @@ import Test.Tasty.HUnit
 import Prelude hiding (log)
 import Data.Functor.Identity
 import GHC.TypeLits
+import Data.Aeson
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
@@ -68,6 +69,40 @@ newtype Controller d = Controller {serve :: Int -> d String} deriving stock Gene
 
 instance Dep Controller where
   type DefaultFieldName Controller = "controller"
+
+
+-- A "real" logger implementation that interacts with the external world.
+makeStdoutLogger :: MonadIO m => env -> Logger m
+makeStdoutLogger _ = Logger (\msg -> liftIO (putStrLn msg))
+
+makeStdoutRepository :: (Has Logger m env, Monad m) => env -> Repository m
+makeStdoutRepository (asCall -> call) = Repository {
+          select = \key -> do
+            call log "I'm going to get the entity!"
+            pure [1,2,3]
+            
+        , insert = \keys -> do
+            call log "I'm going to insert!"
+            pure ()
+  }
+
+makeController :: (Has Logger m env, Has Repository m env, Monad m) => env -> Controller m
+makeController (asCall -> call) = Controller {
+        serve = \resourceId -> do
+            call log "Hi I'm the controller!"
+            call insert [resourceId]
+            result <- call select "somekey"
+            pure $ show result
+
+    }
+
+-- makeController :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
+-- makeController x = do
+--   e <- ask
+--   liftD $ logger e "I'm going to insert in the db!"
+--   liftD $ repository e x
+--   return "view"
+-- 
 
 --
 -- to test the coercible in the definition of Has
