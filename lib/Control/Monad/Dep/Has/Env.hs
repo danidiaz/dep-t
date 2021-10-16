@@ -39,8 +39,8 @@ module Control.Monad.Dep.Has.Env (
       -- ** Working with field names
     , DemotableFieldNames (..)
     , mapPhaseWithFieldNames
-      -- * Re-exports
-    , fix
+      -- * Injecting dependencies by tying the knot
+    , fixEnv
     ) where
 
 import Data.Kind
@@ -53,6 +53,7 @@ import Control.Monad.Dep.Has
 import Data.Proxy
 import Data.Functor.Compose
 import Data.Functor.Constant
+import Data.Functor.Identity
 import Data.Function (fix)
 -- import Control.Monad.Reader
 -- import Control.Monad.Dep.Class
@@ -304,5 +305,6 @@ mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_, Applicative f,
 mapPhaseWithFieldNames  f env =
     liftA2Phase (\(Constant name) z -> f name z) demoteFieldNames env
 
-
+fixEnv :: Phased env_ => env_ (Compose ((->) (env_ Identity m)) Identity) m -> env_ Identity m
+fixEnv env = fix (pullPhase env)
 
