@@ -181,11 +181,11 @@ data EnvHKD3 h m = EnvHKD3
   } deriving (Generic)
     
 deriving 
-    instance FieldsFindableByType            (EnvHKD3 Identity m)
+    instance FieldsFindableByType       (EnvHKD3 Identity m)
 
-deriving via Autowire                        (EnvHKD3 Identity m) 
-    instance Autowireable name wrapping r_ m (EnvHKD3 Identity m) 
-                                 => Has r_ m (EnvHKD3 Identity m)
+deriving via Autowire                   (EnvHKD3 Identity m) 
+    instance Autowireable wrapping r_ m (EnvHKD3 Identity m) 
+                            => Has r_ m (EnvHKD3 Identity m)
 
 findLogger3 :: EnvHKD3 Identity m -> Logger m
 findLogger3 env = dep env
@@ -208,12 +208,12 @@ type family Correspondence4 r :: Symbol where
     Correspondence4 _ = TypeError (Text "what")
 
 -- non-default FieldsFindableByType instance
-instance FieldsFindableByType                (EnvHKD4 Identity m) where
-    type FindFieldByType                     (EnvHKD4 Identity m) r = Correspondence4 r
+instance FieldsFindableByType           (EnvHKD4 Identity m) where
+    type FindFieldByType                (EnvHKD4 Identity m) r = Correspondence4 r
 
-deriving via Autowire                        (EnvHKD4 Identity m) 
-    instance Autowireable name wrapping r_ m (EnvHKD4 Identity m) 
-                                 => Has r_ m (EnvHKD4 Identity m)
+deriving via Autowire                   (EnvHKD4 Identity m) 
+    instance Autowireable wrapping r_ m (EnvHKD4 Identity m) 
+                            => Has r_ m (EnvHKD4 Identity m)
 
 findLogger4 :: EnvHKD4 Identity m -> Logger m
 findLogger4 env = dep env
@@ -234,11 +234,11 @@ data EnvHKD5 m = EnvHKD5
     
 
 deriving 
-    instance FieldsFindableByType            (EnvHKD5 m)
+    instance FieldsFindableByType       (EnvHKD5 m)
 
-deriving via Autowire                        (EnvHKD5 m) 
-    instance Autowireable name wrapping r_ m (EnvHKD5 m) 
-                                 => Has r_ m (EnvHKD5 m)
+deriving via Autowire                   (EnvHKD5 m) 
+    instance Autowireable wrapping r_ m (EnvHKD5 m) 
+                            => Has r_ m (EnvHKD5 m)
 
 findLogger5 :: EnvHKD5 m -> Logger m
 findLogger5 env = dep env

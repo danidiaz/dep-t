@@ -172,14 +172,13 @@ class FieldsFindableByType (env :: Type) where
     type FindFieldByType env (r :: Type) :: Symbol 
     type FindFieldByType env r = FindFieldByType_ env r
 
-type Autowireable name wrapping r_ m env =
-         ( FindFieldByType env (r_ m) ~ name
-         , HasField name env wrapping
+type Autowireable wrapping r_ m env =
+         ( HasField (FindFieldByType env (r_ m)) env wrapping
          , Coercible wrapping (r_ m) )
 
 instance (
            FieldsFindableByType (env_ m),
-           Autowireable name wrapping r_ m (env_ m) 
+           Autowireable wrapping r_ m (env_ m) 
          ) 
          => Has r_ m (Autowire (env_ m)) where
    dep (Autowire env) = coerce (getField @(FindFieldByType (env_ m) (r_ m)) env)
