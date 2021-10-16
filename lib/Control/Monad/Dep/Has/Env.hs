@@ -49,6 +49,7 @@ import Data.Coerce
 import GHC.Generics qualified as G
 import Control.Applicative
 import Control.Monad.Dep.Has 
+import Data.Proxy
 import Data.Functor.Compose
 import Data.Functor.Constant
 import Data.Function (fix)
@@ -278,69 +279,30 @@ instance (Applicative f, Applicative f')
      gLiftA2Phase f (G.M1 (G.K1 (Compose abean))) (G.M1 (G.K1 (Compose fgbean))) =
          G.M1 (G.K1 (Compose (f abean fgbean)))
 
+-- Demotable field names
 type DemotableFieldNames :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class DemotableFieldNames env_ where
     demoteFieldNames :: env_ (Compose (Constant String) g) m
     default demoteFieldNames 
         :: ( G.Generic (env_ (Compose (Constant String) g) m)
-           , GDemotableFieldNames g m (G.Rep (env_ (Compose (Constant String) g) m)))
+           , GDemotableFieldNames g (G.Rep (env_ (Compose (Constant String) g) m)))
            => env_ (Compose (Constant String) g) m
     demoteFieldNames = G.to gDemoteFieldNames
 
-class GDemotableFieldNames g m env | env -> g m where
+class GDemotableFieldNames g env | env -> g where
     gDemoteFieldNames :: env x
             
-instance GDemotableFieldNames g m fields
-    => GDemotableFieldNames g m (G.D1 metaData (G.C1 metaCons fields)) where
+instance GDemotableFieldNames g fields
+    => GDemotableFieldNames g (G.D1 metaData (G.C1 metaCons fields)) where
     gDemoteFieldNames = G.M1 (G.M1 gDemoteFieldNames)
 
-instance ( GDemotableFieldNames g m left,
-           GDemotableFieldNames g m right) 
-        => GDemotableFieldNames g m (left G.:*: right) where
+instance ( GDemotableFieldNames g left,
+           GDemotableFieldNames g right) 
+        => GDemotableFieldNames g (left G.:*: right) where
      gDemoteFieldNames = 
          gDemoteFieldNames G.:*: gDemoteFieldNames
 
-instance GDemotableFieldNames g m (G.S1 metaSel (G.Rec0 (Compose (Constant String) g bean))) where
+instance KnownSymbol name => GDemotableFieldNames g (G.S1 (G.MetaSel ('Just name) u v w) (G.Rec0 (Compose (Constant String) g bean))) where
      gDemoteFieldNames = 
-         G.M1 (G.K1 (Compose (Constant "")))
+         G.M1 (G.K1 (Compose (Constant (symbolVal (Proxy @name)))))
 
--- class Multifixable (cc_ :: (Type -> Type) -> Type) where
---     multifix 
---         :: Open cc_ -> Closed cc_
---     default multifix 
---         :: ( Generic (Open cc_)
---            , Generic (Closed cc_)
---            , GMultifixable (Closed cc_)
---                            (Rep (Open cc_))
---                            (Rep (Closed cc_))
---            )
---         => Open cc_ -> Closed cc_
---     multifix cc_ =
---         -- Dependency injection by knot-tying.
---         let result = to (gMultifix result (from cc_))  
---          in result
--- 
--- class GMultifixable final g g' where
---     gMultifix :: final -> g x -> g' x
--- 
--- 
--- instance GMultifixable final fields fields'
---     => GMultifixable final (D1 metaData (C1 metaCons fields)) 
---                              (D1 metaData (C1 metaCons fields')) where
---     gMultifix final (M1 (M1 fields)) = 
---         M1 (M1 (gMultifix final fields))
--- 
--- instance Instrumentable bean 
---     => GMultifixable final (S1 metaSel (Rec0 (final -> bean))) 
---                            (S1 metaSel (Rec0 (Identity bean))) where
---      gMultifix final (M1 (K1 beanf)) =
---         let bean' = beanf $ final
---          in M1 (K1 (Identity bean'))
--- 
--- instance (GMultifixable final left left',
---           GMultifixable final right right') 
---         => GMultifixable final (left :*: right) (left' :*: right') where
---      gMultifix final (left :*: right) = 
---         let left' = gMultifix final left
---             right' = gMultifix final right
---          in left' :*: right'
