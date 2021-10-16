@@ -158,6 +158,7 @@ instance Has Repository m (EnvHKD I m)
 instance Has Controller m (EnvHKD I m)
 
 
+--- Test isolated instance definitions for autowired
 type EnvHKD2 :: (Type -> Type) -> (Type -> Type) -> Type
 data EnvHKD2 h m = EnvHKD2
   { logger :: h (Logger m),
@@ -234,11 +235,11 @@ data EnvHKD5 m = EnvHKD5
     
 
 deriving 
-    instance FieldsFindableByType       (EnvHKD5 m)
+    instance FieldsFindableByType     (EnvHKD5 m)
 
-deriving via Autowire                   (EnvHKD5 m) 
-    instance Autowireable wrapping r_ m (EnvHKD5 m) 
-                            => Has r_ m (EnvHKD5 m)
+deriving via Autowire                 (EnvHKD5 m) 
+    instance Autowireable (r_ m) r_ m (EnvHKD5 m) 
+                          => Has r_ m (EnvHKD5 m)
 
 findLogger5 :: EnvHKD5 m -> Logger m
 findLogger5 env = dep env
