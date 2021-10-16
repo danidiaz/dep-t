@@ -83,13 +83,18 @@
 --
 --
 module Control.Monad.Dep.Has (
-        -- * A general-purpose Has
-        Has (..) 
-        -- * call helper
-    ,   asCall
-        -- * Component defaults
-    ,   Dep (..)
---    ,   useCall
+      -- * A general-purpose Has
+      Has (..) 
+      -- * call helper
+    , asCall
+      -- * Component defaults
+    , Dep (..)
+      -- * Helpers for deriving Has
+      -- ** via the default field name
+    , TheDefaultFieldName (..)
+      -- ** via arbitrary field name
+    , TheFieldName (..)
+      -- ** via Autowiring
     , FieldsFindableByType (..)
     , Autowire (..)
     , Autowireable
@@ -164,14 +169,59 @@ class Dep r_ where
 -- >>> import GHC.Generics (Generic)
 --
 
-type Autowire :: Type -> Type
-newtype Autowire env = Autowire env
+-- via the default field name
 
+-- | Helper for @DerivingVia@ 'HasField' instances.
+--
+-- It expects the component to have as field name the default fieldname
+-- specified by 'Dep'.
+--
+-- This is the same behavior as the @DefaultSignatures@ implementation for
+-- 'Has', so maybe it doesn't make much sense to use it, except for
+-- explicitness.
+newtype TheDefaultFieldName env = TheDefaultFieldName env
+
+instance (Dep r_, HasField (DefaultFieldName r_) (env_ m) u, Coercible u (r_ m)) 
+         => Has r_ m (TheDefaultFieldName (env_ m)) where
+   dep (TheDefaultFieldName env) = coerce . getField @(DefaultFieldName r_) $ env
+
+-- | Helper for @DerivingVia@ 'HasField' instances.
+--
+-- The field name is specified as a 'Symbol'.
+type TheFieldName :: Symbol -> Type -> Type
+newtype TheFieldName name env = TheFieldName env
+
+instance (HasField name (env_ m) u, Coercible u (r_ m)) 
+         => Has r_ m (TheFieldName name (env_ m)) where
+   dep (TheFieldName env) = coerce . getField @name $ env
+
+-- via autowiring
+
+-- | Class for getting the field name from the field's type.
+--
+-- The default implementation of 'FindFieldByType' requires a 'G.Generic'
+-- instance, but users can write their own implementations.
 type FieldsFindableByType :: Type -> Constraint
 class FieldsFindableByType (env :: Type) where
     type FindFieldByType env (r :: Type) :: Symbol 
     type FindFieldByType env r = FindFieldByType_ env r
 
+-- | Helper for @DerivingVia@ 'HasField' instances.
+--
+-- The fields are identified by their types.
+--
+-- It uses 'FindFieldByType' under the hood.
+--
+-- __BEWARE__: for large records with many components, this technique might
+-- incur in long compilation times.
+type Autowire :: Type -> Type
+newtype Autowire env = Autowire env
+
+-- | Constraints required when @DerivingVia@ all possible instances of 'Has' in
+-- a single definition.
+--
+-- @wrapping@ should be @r_ m@ when the components don't come wrapped in some
+-- newtype, and @somenewtype (r_ m)@ otherwise.
 type Autowireable wrapping r_ m env =
          ( HasField (FindFieldByType env (r_ m)) env wrapping
          , Coercible wrapping (r_ m) )

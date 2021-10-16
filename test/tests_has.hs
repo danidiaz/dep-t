@@ -152,11 +152,21 @@ data EnvHKD h m = EnvHKD
   }
 
 instance Has Logger m (EnvHKD I m)
-
 instance Has Repository m (EnvHKD I m)
-
 instance Has Controller m (EnvHKD I m)
 
+--
+-- Test TheDefaultFieldName
+type EnvHKD' :: (Type -> Type) -> (Type -> Type) -> Type
+data EnvHKD' h m = EnvHKD'
+  { logger :: h (Logger m),
+    repository :: h (Repository m),
+    controller :: h (Controller m)
+  }
+
+deriving via (TheDefaultFieldName (EnvHKD' I m)) instance Has Logger m (EnvHKD' I m)
+deriving via (TheDefaultFieldName (EnvHKD' I m)) instance Has Repository m (EnvHKD' I m)
+deriving via (TheDefaultFieldName (EnvHKD' I m)) instance Has Controller m (EnvHKD' I m)
 
 --- Test isolated instance definitions for autowired
 type EnvHKD2 :: (Type -> Type) -> (Type -> Type) -> Type
@@ -248,6 +258,26 @@ findRepository5 env = dep env
 findController5 :: EnvHKD5 m -> Controller m
 findController5 env = dep env
 
+-- Test TheFieldName
+type EnvHKD6 :: (Type -> Type) -> Type
+data EnvHKD6 m = EnvHKD6
+  { loggerx :: (Logger m),
+    repositoryx :: (Repository m),
+    controllerx :: (Controller m)
+  } deriving (Generic)
+    
+deriving via (TheFieldName "loggerx" (EnvHKD6 m)) instance Has Logger m (EnvHKD6 m)
+deriving via (TheFieldName "repositoryx" (EnvHKD6 m)) instance Has Repository m (EnvHKD6 m)
+deriving via (TheFieldName "controllerx" (EnvHKD6 m)) instance Has Controller m (EnvHKD6 m)
+
+findLogger6 :: EnvHKD6 m -> Logger m
+findLogger6 env = dep env
+findRepository6 :: EnvHKD6 m -> Repository m
+findRepository6 env = dep env
+findController6 :: EnvHKD6 m -> Controller m
+findController6 env = dep env
+
+--
 --
 --
 tests :: TestTree
