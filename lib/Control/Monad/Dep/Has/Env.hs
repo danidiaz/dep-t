@@ -38,6 +38,7 @@ module Control.Monad.Dep.Has.Env (
     , Phased (..)
       -- ** Working with field names
     , DemotableFieldNames (..)
+    , mapPhaseWithFieldNames
       -- * Re-exports
     , fix
     ) where
@@ -305,4 +306,11 @@ instance ( GDemotableFieldNames g left,
 instance KnownSymbol name => GDemotableFieldNames g (G.S1 (G.MetaSel ('Just name) u v w) (G.Rec0 (Compose (Constant String) g bean))) where
      gDemoteFieldNames = 
          G.M1 (G.K1 (Compose (Constant (symbolVal (Proxy @name)))))
+
+mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_, Applicative f, Applicative f') 
+    => (forall x. String -> f x -> f' x) -> env_ (f `Compose` g) m -> env_ (f' `Compose` g) m
+mapPhaseWithFieldNames  f env =
+    liftA2Phase (\(Constant name) z -> f name z) demoteFieldNames env
+
+
 
