@@ -178,15 +178,13 @@ class Phased env_ where
            )
         => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
     mapPhase f env = G.to (gMapPhase f (G.from env))
-    liftA2Phase :: (Applicative a, Applicative f, Applicative f') 
-        => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
+    liftA2Phase ::  (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
     default liftA2Phase 
         :: ( G.Generic (env_ (Compose a g) m)
            , G.Generic (env_ (Compose f g) m)
            , G.Generic (env_ (Compose f' g) m)
            , GLiftA2Phase a f f' (G.Rep (env_ (Compose a g) m)) (G.Rep (env_ (Compose f g) m)) (G.Rep (env_ (Compose f' g) m))
-           , Applicative f
-           , Applicative f')
+           )
         => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
     liftA2Phase f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
 
@@ -248,7 +246,7 @@ instance  GMapPhase f f' (G.S1 metaSel (G.Rec0 (Compose f g bean)))
 class GLiftA2Phase a f f' enva env env' | enva -> a, env -> f, env' -> f' where
     gLiftA2Phase :: (forall r. a r -> f r -> f' r) -> enva x -> env x -> env' x
 
-instance (Functor f , GLiftA2Phase a f f' fieldsa fields fields')
+instance GLiftA2Phase a f f' fieldsa fields fields'
     => GLiftA2Phase 
                a
                f 
@@ -259,19 +257,18 @@ instance (Functor f , GLiftA2Phase a f f' fieldsa fields fields')
     gLiftA2Phase f (G.M1 (G.M1 fieldsa)) (G.M1 (G.M1 fields)) = 
         G.M1 (G.M1 (gLiftA2Phase @a @f @f' f fieldsa fields))
 
-instance (Applicative f,
-          GLiftA2Phase a f f' lefta left left',
-          GLiftA2Phase a f f' righta right right') 
-        => GLiftA2Phase a f f' (lefta G.:*: righta) (left G.:*: right) (left' G.:*: right') where
+instance ( GLiftA2Phase a f f' lefta left left',
+           GLiftA2Phase a f f' righta right right'
+         ) 
+         => GLiftA2Phase a f f' (lefta G.:*: righta) (left G.:*: right) (left' G.:*: right') where
      gLiftA2Phase f (lefta G.:*: righta) (left G.:*: right) = 
         let left' = gLiftA2Phase @a @f @f' f lefta left
             right' = gLiftA2Phase @a @f @f' f righta right
          in (G.:*:) left' right'
 
-instance (Applicative f, Applicative f') 
-    => GLiftA2Phase a f f' (G.S1 metaSel (G.Rec0 (Compose a g bean)))
-                        (G.S1 metaSel (G.Rec0 (Compose f g bean))) 
-                        (G.S1 metaSel (G.Rec0 (Compose f' g bean))) where
+instance   GLiftA2Phase a f f' (G.S1 metaSel (G.Rec0 (Compose a g bean)))
+                               (G.S1 metaSel (G.Rec0 (Compose f g bean))) 
+                               (G.S1 metaSel (G.Rec0 (Compose f' g bean))) where
      gLiftA2Phase f (G.M1 (G.K1 (Compose abean))) (G.M1 (G.K1 (Compose fgbean))) =
          G.M1 (G.K1 (Compose (f abean fgbean)))
 
