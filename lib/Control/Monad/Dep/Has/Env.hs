@@ -162,7 +162,7 @@ type family WithLeftResult_ leftResult right r where
 
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased env_ where
-    pullPhase :: (Applicative f) => env_ (Compose f g) m -> f (env_ g m)
+    pullPhase :: Applicative f => env_ (Compose f g) m -> f (env_ g m)
     default pullPhase 
         :: ( G.Generic (env_ (Compose f g) m)
            , G.Generic (env_ g m)
@@ -170,14 +170,12 @@ class Phased env_ where
            , Applicative f )
         => env_ (Compose f g) m -> f (env_ g m)
     pullPhase env = G.to <$> gPullPhase (G.from env)
-    mapPhase :: (Applicative f, Applicative f') 
-        => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
+    mapPhase :: (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
     default mapPhase 
         :: ( G.Generic (env_ (Compose f g) m)
            , G.Generic (env_ (Compose f' g) m)
            , GMapPhase f f' (G.Rep (env_ (Compose f g) m)) (G.Rep (env_ (Compose f' g) m))
-           , Applicative f
-           , Applicative f')
+           )
         => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
     mapPhase f env = G.to (gMapPhase f (G.from env))
     liftA2Phase :: (Applicative a, Applicative f, Applicative f') 
@@ -224,7 +222,7 @@ instance (Functor f)
 class GMapPhase f f' env env' | env -> f, env' -> f' where
     gMapPhase :: (forall r. f r -> f' r) -> env x -> env' x
 
-instance (Functor f , GMapPhase f f' fields fields')
+instance (GMapPhase f f' fields fields')
     => GMapPhase f 
                f'
                (G.D1 metaData (G.C1 metaCons fields)) 
@@ -232,17 +230,15 @@ instance (Functor f , GMapPhase f f' fields fields')
     gMapPhase f (G.M1 (G.M1 fields)) = 
         G.M1 (G.M1 (gMapPhase @f @f' f fields))
 
-instance (Applicative f,
-          GMapPhase f f' left left',
-          GMapPhase f f' right right') 
+instance ( GMapPhase f f' left left',
+           GMapPhase f f' right right') 
         => GMapPhase f f' (left G.:*: right) (left' G.:*: right') where
      gMapPhase f (left G.:*: right) = 
         let left' = gMapPhase @f @f' f left
             right' = gMapPhase @f @f' f right
          in (G.:*:) left' right'
 
-instance (Applicative f, Applicative f') 
-    => GMapPhase f f' (G.S1 metaSel (G.Rec0 (Compose f g bean))) 
+instance  GMapPhase f f' (G.S1 metaSel (G.Rec0 (Compose f g bean))) 
                       (G.S1 metaSel (G.Rec0 (Compose f' g bean))) where
      gMapPhase f (G.M1 (G.K1 (Compose fgbean))) =
          G.M1 (G.K1 (Compose (f fgbean)))
