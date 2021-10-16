@@ -194,17 +194,17 @@ findLogger3 env = dep env
 
 type EnvHKD4 :: (Type -> Type) -> (Type -> Type) -> Type
 data EnvHKD4 h m = EnvHKD4
-  { logger :: h (Logger m),
-    repository :: h (Repository m),
-    controller :: h (Controller m)
+  { loggerx :: h (Logger m),
+    repositoryx :: h (Repository m),
+    controllerx :: h (Controller m)
   } deriving (Generic)
     
 type Correspondence4 :: Type -> Symbol
 type family Correspondence4 r :: Symbol where
-    Correspondence4 (Logger m) = "logger"
+    Correspondence4 (Logger m) = "loggerx"
     -- Correspondence4 (Identity (Logger m)) = "logger"
-    Correspondence4 (Repository m) = "repository"
-    Correspondence4 (Controller m) = "controller"
+    Correspondence4 (Repository m) = "repositoryx"
+    Correspondence4 (Controller m) = "controllerx"
     Correspondence4 _ = TypeError (Text "what")
 
 -- non-default FieldsFindableByType instance
@@ -217,6 +217,35 @@ deriving via Autowire                        (EnvHKD4 Identity m)
 
 findLogger4 :: EnvHKD4 Identity m -> Logger m
 findLogger4 env = dep env
+findRepository4 :: EnvHKD4 Identity m -> Repository m
+findRepository4 env = dep env
+findController4 :: EnvHKD4 Identity m -> Controller m
+findController4 env = dep env
+
+
+
+
+type EnvHKD5 :: (Type -> Type) -> Type
+data EnvHKD5 m = EnvHKD5
+  { loggerx :: (Logger m),
+    repositoryx :: (Repository m),
+    controllerx :: (Controller m)
+  } deriving (Generic)
+    
+
+deriving 
+    instance FieldsFindableByType            (EnvHKD5 m)
+
+deriving via Autowire                        (EnvHKD5 m) 
+    instance Autowireable name wrapping r_ m (EnvHKD5 m) 
+                                 => Has r_ m (EnvHKD5 m)
+
+findLogger5 :: EnvHKD5 m -> Logger m
+findLogger5 env = dep env
+findRepository5 :: EnvHKD5 m -> Repository m
+findRepository5 env = dep env
+findController5 :: EnvHKD5 m -> Controller m
+findController5 env = dep env
 
 --
 --
