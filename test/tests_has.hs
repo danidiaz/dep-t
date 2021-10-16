@@ -43,13 +43,12 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
 import Data.Functor.Identity
-import GHC.Records
 import GHC.TypeLits
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
 type Logger :: (Type -> Type) -> Type
-newtype Logger d = Logger {log :: String -> d ()} deriving (Generic)
+newtype Logger d = Logger {log :: String -> d ()} deriving stock Generic
 
 instance Dep Logger where
   type DefaultFieldName Logger = "logger"
@@ -63,7 +62,7 @@ data Repository d = Repository
 instance Dep Repository where
   type DefaultFieldName Repository = "repository"
 
-newtype Controller d = Controller {serve :: Int -> d String} deriving (Generic)
+newtype Controller d = Controller {serve :: Int -> d String} deriving stock Generic
 
 instance Dep Controller where
   type DefaultFieldName Controller = "controller"
@@ -174,10 +173,9 @@ data EnvHKD2 h m = EnvHKD2
   { logger :: h (Logger m),
     repository :: h (Repository m),
     controller :: h (Controller m)
-  } deriving (Generic)
+  } deriving stock Generic
+    deriving anyclass FieldsFindableByType 
 
--- necessary for it to work, otherwise strange error...
-deriving instance FieldsFindableByType (EnvHKD2 Identity m)
 deriving via (Autowire (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
 deriving via (Autowire (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
 
@@ -189,11 +187,9 @@ data EnvHKD3 h m = EnvHKD3
   { logger :: h (Logger m),
     repository :: h (Repository m),
     controller :: h (Controller m)
-  } deriving (Generic)
+  } deriving stock Generic
+    deriving anyclass FieldsFindableByType
     
-deriving 
-    instance FieldsFindableByType                (EnvHKD3 Identity m)
-
 deriving via Autowire                            (EnvHKD3 Identity m) 
     instance Autowireable (Identity (r_ m)) r_ m (EnvHKD3 Identity m) 
                                      => Has r_ m (EnvHKD3 Identity m)
@@ -238,14 +234,11 @@ findController4 env = dep env
 
 type EnvHKD5 :: (Type -> Type) -> Type
 data EnvHKD5 m = EnvHKD5
-  { loggerx :: (Logger m),
-    repositoryx :: (Repository m),
-    controllerx :: (Controller m)
-  } deriving (Generic)
-    
-
-deriving 
-    instance FieldsFindableByType     (EnvHKD5 m)
+  { loggerx :: Logger m,
+    repositoryx :: Repository m,
+    controllerx :: Controller m
+  } deriving stock Generic
+    deriving anyclass FieldsFindableByType 
 
 deriving via Autowire                 (EnvHKD5 m) 
     instance Autowireable (r_ m) r_ m (EnvHKD5 m) 
@@ -264,7 +257,7 @@ data EnvHKD6 m = EnvHKD6
   { loggerx :: (Logger m),
     repositoryx :: (Repository m),
     controllerx :: (Controller m)
-  } deriving (Generic)
+  } deriving stock Generic
     
 deriving via (TheFieldName "loggerx" (EnvHKD6 m)) instance Has Logger m (EnvHKD6 m)
 deriving via (TheFieldName "repositoryx" (EnvHKD6 m)) instance Has Repository m (EnvHKD6 m)
