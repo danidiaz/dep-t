@@ -16,7 +16,6 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE PolyKinds #-}
 
 -- | This module provides helpers for defining dependency injection
 -- environments composed of records.

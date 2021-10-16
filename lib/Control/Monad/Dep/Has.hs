@@ -15,8 +15,6 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE PolyKinds #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
 -- which the components of the environment, instead of being bare functions,
