@@ -29,6 +29,7 @@ module Main (main) where
 
 import Control.Monad.Dep
 import Control.Monad.Dep.Has
+import Control.Monad.Dep.Has.Env
 import Control.Monad.Dep.Class
 import Control.Monad.Reader
 import Control.Monad.Writer

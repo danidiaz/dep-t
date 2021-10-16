@@ -1,7 +1,7 @@
 cabal-version:       3.0
 
 name:                dep-t
-version:             0.4.5.0
+version:             0.4.6.0
 synopsis:            Reader-like monad transformer for dependency injection.
 description:         Put all your functions in the environment record! Let all
                      your functions read from the environment record! No favorites!
@@ -29,6 +29,7 @@ library
   exposed-modules:     Control.Monad.Dep
                        Control.Monad.Dep.Class
                        Control.Monad.Dep.Has
+                       Control.Monad.Dep.Has.Env
   hs-source-dirs:      lib 
 
 test-suite dep-t-test

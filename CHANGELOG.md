@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+## 0.4.6.0
+
+* added new module Control.Monad.Dep.Has.Env with helpers for defining environments of records.
+
 ## 0.4.5.0
 
 * added "asCall" to Control.Monad.Dep.Has
