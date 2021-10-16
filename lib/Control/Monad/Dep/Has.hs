@@ -255,8 +255,10 @@ type GFindFieldByType :: (k -> Type) -> Type -> Maybe Symbol
 type family GFindFieldByType r x where
     GFindFieldByType (left G.:*: right)                                          r = 
         WithLeftResult_ (GFindFieldByType left r) right r
-    GFindFieldByType (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (Identity r))) r = Just name
     GFindFieldByType (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 r))            r = Just name
+    -- Here we are saying "any wrapper whatsoever over r". Too general?
+    -- If the wrapper is not coercible to the underlying r, we'll fail later.
+    GFindFieldByType (G.S1 (G.MetaSel ('Just name) _ _ _) (G.Rec0 (_ r)))        r = Just name
     GFindFieldByType _                                                           _ = Nothing
 
 type WithLeftResult_ :: Maybe Symbol -> (k -> Type) -> Type -> Maybe Symbol 
