@@ -57,8 +57,10 @@ import System.IO
 import Control.Exception
 import Control.Arrow (Kleisli (..))
 import Data.Text qualified as Text
+import Data.ByteString.Lazy qualified as Bytes
 import Data.Function ((&))
 import Data.Functor ((<&>))
+import Data.String
 
 type Logger :: (Type -> Type) -> Type
 newtype Logger d = Logger {
@@ -75,6 +77,7 @@ data Repository d = Repository
 data Controller d = Controller 
   { create :: d Int
   , append :: Int -> String -> d Bool 
+  , inspect :: Int -> d (Maybe String)
   } 
   deriving stock Generic
 
@@ -125,6 +128,8 @@ makeController (asCall -> call) = Controller {
             Just resource -> do
                 call insert (resource ++ extra) 
                 pure True
+    , inspect = \key -> do
+          call findById key 
     }
 
 -- makeController :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
@@ -189,7 +194,7 @@ tests =
   testGroup
     "All"
     [
-        testCase "fieldNames" $
+          testCase "fieldNames" $
             let fieldNames :: EnvHKD (Compose (Constant String) Identity) IO
                 fieldNames = demoteFieldNames
              in
@@ -199,6 +204,21 @@ tests =
                               controller = Compose (Constant controllerField)  
                              } = fieldNames
                   in intercalate " " [loggerField, repositoryField, controllerField]
+        , testCase "environmentConstruction" $ do
+            let Just (value :: Value) = decode' (fromString "{ \"logger\" : { \"messagePrefix\" : \"[foo]\" } }")
+                Kleisli parser = 
+                      pullPhase  
+                    $ mapPhaseWithFieldNames 
+                        (\fieldName (Kleisli f) -> Kleisli \o -> explicitParseField f o (fromString fieldName)) 
+                    $ env
+                Just allocators = parseMaybe (withObject "configuration" parser) value 
+            runContT (pullPhase allocators) \constructors -> do
+                let (asCall -> call) = fixEnv constructors
+                resourceId <- call create
+                call append 1 "foo"
+                call append 1 "bar"
+                Just result <- call inspect 1
+                assertEqual "" "foobar" $ result
     ]
 
 main :: IO ()
