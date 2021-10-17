@@ -182,18 +182,21 @@ class Phased env_ where
            )
         => (forall x. f x -> f' x) -> env_ f m -> env_ f' m
     mapH f env = G.to (gMapPhase f (G.from env))
-    liftA2Phase ::  (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
-    default liftA2Phase 
-        :: ( G.Generic (env_ (Compose a g) m)
-           , G.Generic (env_ (Compose f g) m)
-           , G.Generic (env_ (Compose f' g) m)
-           , GLiftA2Phase a f f' (G.Rep (env_ (Compose a g) m)) (G.Rep (env_ (Compose f g) m)) (G.Rep (env_ (Compose f' g) m))
+    liftA2H ::  (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
+    default liftA2H
+        :: ( G.Generic (env_ a m)
+           , G.Generic (env_ f m)
+           , G.Generic (env_ f' m)
+           , GLiftA2Phase a f f' (G.Rep (env_ a m)) (G.Rep (env_ f m)) (G.Rep (env_ f' m))
            )
-        => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
-    liftA2Phase f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
+        => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
+    liftA2H f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
 
 mapPhase :: Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
-mapPhase f = mapH (\(Compose fg) -> Compose (f fg))
+mapPhase f env = mapH (\(Compose fg) -> Compose (f fg)) env
+
+liftA2Phase :: Phased env_ => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ (Compose f g) m -> env_ (Compose f' g) m
+liftA2Phase f = liftA2H (\fa (Compose fg) -> Compose (f fa fg))
 
 class GPullPhase f g env env' | env -> env' f g where
     gPullPhase :: env x -> f (env' x)
@@ -272,40 +275,40 @@ instance ( GLiftA2Phase a f f' lefta left left',
             right' = gLiftA2Phase @a @f @f' f righta right
          in (G.:*:) left' right'
 
-instance   GLiftA2Phase a f f' (G.S1 metaSel (G.Rec0 (Compose a g bean)))
-                               (G.S1 metaSel (G.Rec0 (Compose f g bean))) 
-                               (G.S1 metaSel (G.Rec0 (Compose f' g bean))) where
-     gLiftA2Phase f (G.M1 (G.K1 (Compose abean))) (G.M1 (G.K1 (Compose fgbean))) =
-         G.M1 (G.K1 (Compose (f abean fgbean)))
+instance   GLiftA2Phase a f f' (G.S1 metaSel (G.Rec0 (a bean)))
+                               (G.S1 metaSel (G.Rec0 (f bean))) 
+                               (G.S1 metaSel (G.Rec0 (f' bean))) where
+     gLiftA2Phase f (G.M1 (G.K1 abean)) (G.M1 (G.K1 fgbean)) =
+         G.M1 (G.K1 (f abean fgbean))
 
 -- Demotable field names
 type DemotableFieldNames :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class DemotableFieldNames env_ where
-    demoteFieldNames :: env_ (Compose (Constant String) g) m
+    demoteFieldNames :: env_ (Constant String) m
     default demoteFieldNames 
-        :: ( G.Generic (env_ (Compose (Constant String) g) m)
-           , GDemotableFieldNames g (G.Rep (env_ (Compose (Constant String) g) m)))
-           => env_ (Compose (Constant String) g) m
+        :: ( G.Generic (env_ (Constant String) m)
+           , GDemotableFieldNames (G.Rep (env_ (Constant String) m)))
+           => env_ (Constant String) m
     demoteFieldNames = G.to gDemoteFieldNames
 
-class GDemotableFieldNames g env | env -> g where
+class GDemotableFieldNames env where
     gDemoteFieldNames :: env x
             
-instance GDemotableFieldNames g fields
-    => GDemotableFieldNames g (G.D1 metaData (G.C1 metaCons fields)) where
+instance GDemotableFieldNames fields
+    => GDemotableFieldNames (G.D1 metaData (G.C1 metaCons fields)) where
     gDemoteFieldNames = G.M1 (G.M1 gDemoteFieldNames)
 
-instance ( GDemotableFieldNames g left,
-           GDemotableFieldNames g right) 
-        => GDemotableFieldNames g (left G.:*: right) where
+instance ( GDemotableFieldNames left,
+           GDemotableFieldNames right) 
+        => GDemotableFieldNames (left G.:*: right) where
      gDemoteFieldNames = 
          gDemoteFieldNames G.:*: gDemoteFieldNames
 
-instance KnownSymbol name => GDemotableFieldNames g (G.S1 (G.MetaSel ('Just name) u v w) (G.Rec0 (Compose (Constant String) g bean))) where
+instance KnownSymbol name => GDemotableFieldNames (G.S1 (G.MetaSel ('Just name) u v w) (G.Rec0 (Constant String bean))) where
      gDemoteFieldNames = 
-         G.M1 (G.K1 (Compose (Constant (symbolVal (Proxy @name)))))
+         G.M1 (G.K1 (Constant (symbolVal (Proxy @name))))
 
-mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_, Applicative f, Applicative f') 
+mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_) 
     => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 mapPhaseWithFieldNames  f env =
     liftA2Phase (\(Constant name) z -> f name z) demoteFieldNames env
