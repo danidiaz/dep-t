@@ -39,7 +39,7 @@ import Data.Functor.Compose
 import Data.Coerce
 import Data.Kind
 import Data.List (intercalate)
-import GHC.Generics
+import GHC.Generics (Generic)
 import Rank2 qualified
 import Rank2.TH qualified
 import Test.Tasty
@@ -160,33 +160,33 @@ deriving via Autowired (EnvHKD Identity m) instance Autowireable r_ m (EnvHKD Id
 -- deriving via Autowired (EnvHKD Identity m) instance Has Repository m (EnvHKD Identity m)
 -- deriving via Autowired (EnvHKD Identity m) instance Has Controller m (EnvHKD Identity m)
 
-type Configuration = Kleisli Parser Value 
-type Allocation = ContT () IO
-type Construction env_ m = ((->) (env_ Identity m)) `Compose` Identity
-type Phases env_ m = Configuration `Compose` Allocation `Compose` Construction env_ m
+type Configurator = Kleisli Parser Value 
+type Allocator = ContT () IO
+type Constructor env_ m = ((->) (env_ Identity m)) `Compose` Identity
+type Phases env_ m = Configurator `Compose` Allocator `Compose` Constructor env_ m
 
-phases :: Configuration (Allocation (Construction env_ m (r_ m))) -> Phases env_ m (r_ m)
+phases :: Configurator (Allocator (Constructor env_ m (r_ m))) -> Phases env_ m (r_ m)
 phases = coerce
 
-constructor :: forall env_ m r_ . (env_ Identity m -> r_ m) -> Construction env_ m (r_ m)
+constructor :: forall env_ m r_ . (env_ Identity m -> r_ m) -> Constructor env_ m (r_ m)
 constructor = coerce
 
-parseConf :: FromJSON a => Configuration a
+parseConf :: FromJSON a => Configurator a
 parseConf = Kleisli parseJSON
 
 env :: EnvHKD (Phases EnvHKD IO) IO
 env = EnvHKD {
       logger = 
         phases $ parseConf <&> \(LoggerConfiguration {messagePrefix}) 
-              -> pure @Allocation 
+              -> pure @Allocator 
                $ constructor (makeStdoutLogger messagePrefix)
     , repository = 
-        phases $ pure @Configuration 
+        phases $ pure @Configurator 
                $ allocateMap <&> \ref 
               -> constructor (makeInMemoryRepository ref)
     , controller = 
-        phases $ pure @Configuration 
-               $ pure @Allocation 
+        phases $ pure @Configurator 
+               $ pure @Allocator 
                $ constructor makeController
 }
 
