@@ -221,9 +221,9 @@ tests =
             runContT (pullPhase allocators) \constructors -> do
                 let (asCall -> call) = fixEnv constructors
                 resourceId <- call create
-                call append 1 "foo"
-                call append 1 "bar"
-                Just result <- call inspect 1
+                call append resourceId "foo"
+                call append resourceId "bar"
+                Just result <- call inspect resourceId
                 assertEqual "" "foobar" $ result
     ]
 
