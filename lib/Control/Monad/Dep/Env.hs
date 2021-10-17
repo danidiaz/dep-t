@@ -16,6 +16,9 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 -- | This module provides helpers for defining dependency injection
 -- environments composed of records.
@@ -166,6 +169,10 @@ type family WithLeftResult_ leftResult right r where
 
 type Phases :: [Type -> Type] -> Type -> Type 
 newtype Phases ps a = Phases ((Nested ps) a)
+
+
+deriving newtype instance Functor (Phases ps)
+deriving newtype instance Applicative (Phases ps)
 
 type Nested :: [Type -> Type] -> (Type -> Type)
 type family Nested ps where
