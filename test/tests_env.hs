@@ -157,11 +157,11 @@ type Allocation = ContT () IO
 type Construction env_ m = ((->) (env_ Identity m)) `Compose` Identity
 type Phases env_ m = Configuration `Compose` Allocation `Compose` Construction env_ m
 
-wrap :: Configuration (Allocation (Construction env_ m (r_ m)))-> Phases env_ m (r_ m)
-wrap = coerce
+phases :: Configuration (Allocation (Construction env_ m (r_ m))) -> Phases env_ m (r_ m)
+phases = coerce
 
 constructor :: forall env_ m r_ . (env_ Identity m -> r_ m) -> Construction env_ m (r_ m)
-constructor f = Compose (fmap Identity f)
+constructor = coerce
 
 parseConf :: FromJSON a => Configuration a
 parseConf = Kleisli parseJSON
@@ -169,17 +169,17 @@ parseConf = Kleisli parseJSON
 env :: EnvHKD (Phases EnvHKD IO) IO
 env = EnvHKD {
       logger = 
-        wrap $ parseConf 
-           <&> \conf -> pure @Allocation 
-             $ constructor (makeStdoutLogger conf)
+        phases $ parseConf 
+             <&> \conf -> pure @Allocation 
+               $ constructor (makeStdoutLogger conf)
     , repository = 
-        wrap $ pure @Configuration 
-             $ allocateMap
-           <&> \ref -> constructor (makeInMemoryRepository ref)
+        phases $ pure @Configuration 
+               $ allocateMap
+             <&> \ref -> constructor (makeInMemoryRepository ref)
     , controller = 
-        wrap $ pure @Configuration 
-             $ pure @Allocation 
-             $ constructor makeController
+        phases $ pure @Configuration 
+               $ pure @Allocation 
+               $ constructor makeController
 }
 
 --
