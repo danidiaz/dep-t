@@ -177,8 +177,8 @@ data EnvHKD2 h m = EnvHKD2
   } deriving stock Generic
     deriving anyclass FieldsFindableByType 
 
-deriving via (Autowire (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
-deriving via (Autowire (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
+deriving via (Autowired (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
+deriving via (Autowired (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
 
 -- findLogger2 :: EnvHKD2 Identity m -> Logger m
 -- findLogger2 env = dep env
@@ -191,7 +191,7 @@ data EnvHKD3 h m = EnvHKD3
   } deriving stock Generic
     deriving anyclass FieldsFindableByType
     
-deriving via Autowire                            (EnvHKD3 Identity m) 
+deriving via Autowired                           (EnvHKD3 Identity m) 
     instance Autowireable (Identity (r_ m)) r_ m (EnvHKD3 Identity m) 
                                      => Has r_ m (EnvHKD3 Identity m)
 
@@ -219,7 +219,7 @@ type family Correspondence4 r :: Symbol where
 instance FieldsFindableByType                    (EnvHKD4 Identity m) where
     type FindFieldByType                         (EnvHKD4 Identity m) r = Correspondence4 r
 
-deriving via Autowire                            (EnvHKD4 Identity m) 
+deriving via Autowired                           (EnvHKD4 Identity m) 
     instance Autowireable (Identity (r_ m)) r_ m (EnvHKD4 Identity m) 
                                      => Has r_ m (EnvHKD4 Identity m)
 
@@ -241,7 +241,7 @@ data EnvHKD5 m = EnvHKD5
   } deriving stock Generic
     deriving anyclass FieldsFindableByType 
 
-deriving via Autowire                 (EnvHKD5 m) 
+deriving via Autowired                (EnvHKD5 m) 
     instance Autowireable (r_ m) r_ m (EnvHKD5 m) 
                           => Has r_ m (EnvHKD5 m)
 

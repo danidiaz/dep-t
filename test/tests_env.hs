@@ -46,54 +46,74 @@ import Test.Tasty.HUnit
 import Prelude hiding (log)
 import Data.Functor.Identity
 import GHC.TypeLits
+import Control.Monad.Trans.Cont
 import Data.Aeson
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
+import Data.IORef
+import System.IO
+import Control.Exception
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
 type Logger :: (Type -> Type) -> Type
-newtype Logger d = Logger {log :: String -> d ()} deriving stock Generic
-
-instance Dep Logger where
-  type DefaultFieldName Logger = "logger"
+newtype Logger d = Logger {
+    info :: String -> d ()
+  }
+  deriving stock Generic
 
 data Repository d = Repository
-  { select :: String -> d [Int],
-    insert :: [Int] -> d ()
+  { findById :: Int -> d (Maybe String)
+  , insert :: String -> d Int
   }
-  deriving (Generic)
+  deriving stock Generic
 
-instance Dep Repository where
-  type DefaultFieldName Repository = "repository"
-
-newtype Controller d = Controller {serve :: Int -> d String} deriving stock Generic
-
-instance Dep Controller where
-  type DefaultFieldName Controller = "controller"
-
+data Controller d = Controller 
+  { create :: d Int
+  , append :: Int -> String -> d Bool 
+  } 
+  deriving stock Generic
 
 -- A "real" logger implementation that interacts with the external world.
 makeStdoutLogger :: MonadIO m => env -> Logger m
 makeStdoutLogger _ = Logger (\msg -> liftIO (putStrLn msg))
 
-makeStdoutRepository :: (Has Logger m env, Monad m) => env -> Repository m
-makeStdoutRepository (asCall -> call) = Repository {
-          select = \key -> do
-            call log "I'm going to get the entity!"
-            pure [1,2,3]
-            
-        , insert = \keys -> do
-            call log "I'm going to insert!"
-            pure ()
-  }
+makeStdoutRepository 
+    :: Has Logger IO env 
+    => ((env -> Repository IO) -> IO ()) -> IO () 
+makeStdoutRepository callback = do
+    bracket 
+        (newIORef Map.empty)
+        pure
+        (\ref -> callback (\(asCall -> call) -> 
+            Repository {
+               findById = \key -> do
+                    call info "I'm going to do a lookup in the map!"
+                    theMap <- readIORef ref
+                    pure (Map.lookup key theMap),
+               insert = \content -> do 
+                    call info "I'm going to insert in the map!"
+                    theMap <- readIORef ref
+                    let next = Map.size theMap
+                    writeIORef ref $ Map.insert next content theMap 
+                    pure next
+            }))
 
 makeController :: (Has Logger m env, Has Repository m env, Monad m) => env -> Controller m
 makeController (asCall -> call) = Controller {
-        serve = \resourceId -> do
-            call log "Hi I'm the controller!"
-            call insert [resourceId]
-            result <- call select "somekey"
-            pure $ show result
-
+      create = do
+          call info "Creating a new empty resource."
+          key <- call insert ""
+          pure key
+    , append = \key extra -> do
+          call info "Appending to a resource"
+          mresource <- call findById key
+          case mresource of
+            Nothing -> do
+                pure False
+            Just resource -> do
+                call insert (resource ++ extra) 
+                pure True
     }
 
 -- makeController :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
@@ -111,18 +131,15 @@ data EnvHKD h m = EnvHKD
   { logger :: h (Logger m),
     repository :: h (Repository m),
     controller :: h (Controller m)
-  } deriving Generic
+  } deriving stock Generic
+    deriving anyclass (Phased, DemotableFieldNames, FieldsFindableByType)
 
-deriving anyclass instance Phased EnvHKD
-deriving anyclass instance DemotableFieldNames EnvHKD
-
-deriving anyclass instance Has Logger m (EnvHKD Identity m)
-deriving anyclass instance Has Repository m (EnvHKD Identity m)
-deriving anyclass instance Has Controller m (EnvHKD Identity m)
+deriving via Autowired (EnvHKD Identity m) instance Has Logger m (EnvHKD Identity m)
+deriving via Autowired (EnvHKD Identity m) instance Has Repository m (EnvHKD Identity m)
+deriving via Autowired (EnvHKD Identity m) instance Has Controller m (EnvHKD Identity m)
 
 fieldNames :: EnvHKD (Compose (Constant String) Identity) IO
 fieldNames = demoteFieldNames
-
 
 --
 --

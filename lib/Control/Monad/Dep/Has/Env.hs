@@ -32,7 +32,7 @@ module Control.Monad.Dep.Has.Env (
     , TheFieldName (..)
       -- ** via Autowiring
     , FieldsFindableByType (..)
-    , Autowire (..)
+    , Autowired (..)
     , Autowireable
       -- * Managing phases
     , Phased (..)
@@ -103,8 +103,8 @@ class FieldsFindableByType (env :: Type) where
 --
 -- __BEWARE__: for large records with many components, this technique might
 -- incur in long compilation times.
-type Autowire :: Type -> Type
-newtype Autowire env = Autowire env
+type Autowired :: Type -> Type
+newtype Autowired env = Autowired env
 
 -- | Constraints required when @DerivingVia@ all possible instances of 'Has' in
 -- a single definition.
@@ -119,8 +119,8 @@ instance (
            FieldsFindableByType (env_ m),
            Autowireable wrapping r_ m (env_ m) 
          ) 
-         => Has r_ m (Autowire (env_ m)) where
-   dep (Autowire env) = coerce (getField @(FindFieldByType (env_ m) (r_ m)) env)
+         => Has r_ m (Autowired (env_ m)) where
+   dep (Autowired env) = coerce (getField @(FindFieldByType (env_ m) (r_ m)) env)
 
 type FindFieldByType_ :: Type -> Type -> Symbol
 type family FindFieldByType_ env r where
