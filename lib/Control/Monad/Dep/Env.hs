@@ -36,6 +36,7 @@ module Control.Monad.Dep.Env (
     , Autowireable
       -- * Managing phases
     , Phased (..)
+    , mapPhase
       -- ** Working with field names
     , DemotableFieldNames (..)
     , mapPhaseWithFieldNames
@@ -173,14 +174,14 @@ class Phased env_ where
            , Applicative f )
         => env_ (Compose f g) m -> f (env_ g m)
     pullPhase env = G.to <$> gPullPhase (G.from env)
-    mapPhase :: (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
-    default mapPhase 
-        :: ( G.Generic (env_ (Compose f g) m)
-           , G.Generic (env_ (Compose f' g) m)
-           , GMapPhase f f' (G.Rep (env_ (Compose f g) m)) (G.Rep (env_ (Compose f' g) m))
+    mapH :: (forall x. f x -> f' x) -> env_ f m -> env_ f' m
+    default mapH 
+        :: ( G.Generic (env_ f m)
+           , G.Generic (env_ f' m)
+           , GMapPhase f f' (G.Rep (env_ f m)) (G.Rep (env_ f' m))
            )
-        => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
-    mapPhase f env = G.to (gMapPhase f (G.from env))
+        => (forall x. f x -> f' x) -> env_ f m -> env_ f' m
+    mapH f env = G.to (gMapPhase f (G.from env))
     liftA2Phase ::  (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
     default liftA2Phase 
         :: ( G.Generic (env_ (Compose a g) m)
@@ -191,6 +192,8 @@ class Phased env_ where
         => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
     liftA2Phase f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
 
+mapPhase :: Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
+mapPhase f = mapH (\(Compose fg) -> Compose (f fg))
 
 class GPullPhase f g env env' | env -> env' f g where
     gPullPhase :: env x -> f (env' x)
@@ -239,10 +242,10 @@ instance ( GMapPhase f f' left left',
             right' = gMapPhase @f @f' f right
          in (G.:*:) left' right'
 
-instance  GMapPhase f f' (G.S1 metaSel (G.Rec0 (Compose f g bean))) 
-                      (G.S1 metaSel (G.Rec0 (Compose f' g bean))) where
-     gMapPhase f (G.M1 (G.K1 (Compose fgbean))) =
-         G.M1 (G.K1 (Compose (f fgbean)))
+instance  GMapPhase f f' (G.S1 metaSel (G.Rec0 (f bean))) 
+                      (G.S1 metaSel (G.Rec0 (f' bean))) where
+     gMapPhase f (G.M1 (G.K1 fgbean)) =
+         G.M1 (G.K1 (f fgbean))
 
 --
 --
