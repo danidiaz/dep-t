@@ -74,9 +74,10 @@ data Controller d = Controller
   } 
   deriving stock Generic
 
--- A "real" logger implementation that interacts with the external world.
-makeStdoutLogger :: MonadIO m => env -> Logger m
-makeStdoutLogger _ = Logger (\msg -> liftIO (putStrLn msg))
+type MessagePrefix = String
+
+makeStdoutLogger :: MonadIO m => MessagePrefix -> env -> Logger m
+makeStdoutLogger prefix _ = Logger (\msg -> liftIO (putStrLn (prefix ++ msg)))
 
 makeStdoutRepository 
     :: Has Logger IO env 
