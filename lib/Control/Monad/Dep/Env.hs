@@ -22,7 +22,7 @@
 --
 -- It's not necessary when defining the record components themselves, in that
 -- case 'Control.Monad.Dep.Has' should suffice.
-module Control.Monad.Dep.Has.Env (
+module Control.Monad.Dep.Env (
       -- * A general-purpose Has
       Has
       -- * Helpers for deriving Has

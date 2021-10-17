@@ -29,7 +29,7 @@ library
   exposed-modules:     Control.Monad.Dep
                        Control.Monad.Dep.Class
                        Control.Monad.Dep.Has
-                       Control.Monad.Dep.Has.Env
+                       Control.Monad.Dep.Env
   hs-source-dirs:      lib 
 
 test-suite dep-t-test
