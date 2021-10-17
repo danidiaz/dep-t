@@ -37,6 +37,7 @@ module Control.Monad.Dep.Env (
       -- * Managing phases
     , Phased (..)
     , mapPhase
+    , liftA2Phase
       -- ** Working with field names
     , DemotableFieldNames (..)
     , mapPhaseWithFieldNames
@@ -195,8 +196,8 @@ class Phased env_ where
 mapPhase :: Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 mapPhase f env = mapH (\(Compose fg) -> Compose (f fg)) env
 
-liftA2Phase :: Phased env_ => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ (Compose f g) m -> env_ (Compose f' g) m
-liftA2Phase f = liftA2H (\fa (Compose fg) -> Compose (f fa fg))
+liftA2Phase :: Phased env_ => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
+liftA2Phase f = liftA2H (\(Compose fa) (Compose fg) -> Compose (f fa fg))
 
 class GPullPhase f g env env' | env -> env' f g where
     gPullPhase :: env x -> f (env' x)
@@ -311,7 +312,7 @@ instance KnownSymbol name => GDemotableFieldNames (G.S1 (G.MetaSel ('Just name) 
 mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_) 
     => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 mapPhaseWithFieldNames  f env =
-    liftA2Phase (\(Constant name) z -> f name z) demoteFieldNames env
+    liftA2Phase (\(Constant name) z -> f name z) (mapH (\(Constant z) -> Compose (Constant z)) demoteFieldNames) env
 
 fixEnv :: Phased env_ => env_ (Compose ((->) (env_ Identity m)) Identity) m -> env_ Identity m
 fixEnv env = fix (pullPhase env)

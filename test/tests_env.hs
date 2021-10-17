@@ -199,14 +199,14 @@ tests =
     "All"
     [
           testCase "fieldNames" $
-            let fieldNames :: EnvHKD (Compose (Constant String) Identity) IO
+            let fieldNames :: EnvHKD (Constant String) IO
                 fieldNames = demoteFieldNames
              in
              assertEqual "" "logger repository controller" $
-                 let EnvHKD { logger = Compose (Constant loggerField),
-                              repository = Compose (Constant repositoryField),  
-                              controller = Compose (Constant controllerField)  
-                             } = fieldNames
+                 let EnvHKD { logger = Constant loggerField
+                            , repository = Constant repositoryField  
+                            , controller = Constant controllerField  
+                            } = fieldNames
                   in intercalate " " [loggerField, repositoryField, controllerField]
         , testCase "environmentConstruction" $ do
             let parseResult = eitherDecode' (fromString "{ \"logger\" : { \"messagePrefix\" : \"[foo]\" }, \"repository\" : null, \"controller\" : null }")
