@@ -24,6 +24,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ApplicativeDo #-}
 
 module Main (main) where
 
@@ -56,6 +57,8 @@ import System.IO
 import Control.Exception
 import Control.Arrow (Kleisli (..))
 import Data.Text qualified as Text
+import Data.Function ((&))
+import Data.Functor ((<&>))
 
 type Logger :: (Type -> Type) -> Type
 newtype Logger d = Logger {
@@ -154,26 +157,29 @@ type Allocation = ContT () IO
 type Construction env_ m = ((->) (env_ Identity m)) `Compose` Identity
 type Phases env_ m = Configuration `Compose` Allocation `Compose` Construction env_ m
 
-constructor :: (env_ Identity m -> r m) -> Construction env_ m (r m)
+wrap :: Configuration (Allocation (Construction env_ m (r_ m)))-> Phases env_ m (r_ m)
+wrap = coerce
+
+constructor :: forall env_ m r_ . (env_ Identity m -> r_ m) -> Construction env_ m (r_ m)
 constructor f = Compose (fmap Identity f)
 
-parseConf :: FromJSON a => (a -> f x) -> Compose Configuration f x
-parseConf f = Compose (f <$> Kleisli parseJSON)
-
-configless :: f a -> Compose Configuration f a
-configless f = Compose (pure f)
-
-alloc :: Allocation a -> (a -> f x) -> Compose Allocation f x
-alloc allocator f = Compose (f <$> allocator)
-
-noAlloc :: f a -> Compose Allocation f a
-noAlloc f = Compose (pure f)
+parseConf :: FromJSON a => Configuration a
+parseConf = Kleisli parseJSON
 
 env :: EnvHKD (Phases EnvHKD IO) IO
 env = EnvHKD {
-    logger = parseConf $ noAlloc $ constructor <$> makeStdoutLogger,
-    repository = configless $ undefined,
-    controller = configless $ noAlloc $ constructor makeController
+      logger = 
+        wrap $ parseConf 
+           <&> \conf -> pure @Allocation 
+             $ constructor (makeStdoutLogger conf)
+    , repository = 
+        wrap $ pure @Configuration 
+             $ allocateMap
+           <&> \ref -> constructor (makeInMemoryRepository ref)
+    , controller = 
+        wrap $ pure @Configuration 
+             $ pure @Allocation 
+             $ constructor makeController
 }
 
 --
