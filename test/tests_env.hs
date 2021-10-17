@@ -145,8 +145,7 @@ data EnvHKD h m = EnvHKD
   } deriving stock Generic
     deriving anyclass (Phased, DemotableFieldNames, FieldsFindableByType)
 
-deriving via Autowired (EnvHKD Identity m) instance 
-    Autowireable (Identity (r_ m)) r_ m (EnvHKD Identity m) => Has r_ m (EnvHKD Identity m)
+deriving via Autowired (EnvHKD Identity m) instance Autowireable r_ m (EnvHKD Identity m) => Has r_ m (EnvHKD Identity m)
 
 -- deriving via Autowired (EnvHKD Identity m) instance Has Logger m (EnvHKD Identity m)
 -- deriving via Autowired (EnvHKD Identity m) instance Has Repository m (EnvHKD Identity m)

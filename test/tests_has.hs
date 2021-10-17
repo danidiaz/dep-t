@@ -191,9 +191,7 @@ data EnvHKD3 h m = EnvHKD3
   } deriving stock Generic
     deriving anyclass FieldsFindableByType
     
-deriving via Autowired                           (EnvHKD3 Identity m) 
-    instance Autowireable (Identity (r_ m)) r_ m (EnvHKD3 Identity m) 
-                                     => Has r_ m (EnvHKD3 Identity m)
+deriving via Autowired (EnvHKD3 Identity m) instance Autowireable r_ m (EnvHKD3 Identity m) => Has r_ m (EnvHKD3 Identity m)
 
 findLogger3 :: EnvHKD3 Identity m -> Logger m
 findLogger3 env = dep env
@@ -219,9 +217,7 @@ type family Correspondence4 r :: Symbol where
 instance FieldsFindableByType                    (EnvHKD4 Identity m) where
     type FindFieldByType                         (EnvHKD4 Identity m) r = Correspondence4 r
 
-deriving via Autowired                           (EnvHKD4 Identity m) 
-    instance Autowireable (Identity (r_ m)) r_ m (EnvHKD4 Identity m) 
-                                     => Has r_ m (EnvHKD4 Identity m)
+deriving via Autowired (EnvHKD4 Identity m) instance Autowireable r_ m (EnvHKD4 Identity m) => Has r_ m (EnvHKD4 Identity m)
 
 findLogger4 :: EnvHKD4 Identity m -> Logger m
 findLogger4 env = dep env
@@ -230,27 +226,24 @@ findRepository4 env = dep env
 findController4 :: EnvHKD4 Identity m -> Controller m
 findController4 env = dep env
 
-
-
-
-type EnvHKD5 :: (Type -> Type) -> Type
-data EnvHKD5 m = EnvHKD5
-  { loggerx :: Logger m,
-    repositoryx :: Repository m,
-    controllerx :: Controller m
-  } deriving stock Generic
-    deriving anyclass FieldsFindableByType 
-
-deriving via Autowired                (EnvHKD5 m) 
-    instance Autowireable (r_ m) r_ m (EnvHKD5 m) 
-                          => Has r_ m (EnvHKD5 m)
-
-findLogger5 :: EnvHKD5 m -> Logger m
-findLogger5 env = dep env
-findRepository5 :: EnvHKD5 m -> Repository m
-findRepository5 env = dep env
-findController5 :: EnvHKD5 m -> Controller m
-findController5 env = dep env
+-- type EnvHKD5 :: (Type -> Type) -> Type
+-- data EnvHKD5 m = EnvHKD5
+--   { loggerx :: Logger m,
+--     repositoryx :: Repository m,
+--     controllerx :: Controller m
+--   } deriving stock Generic
+--     deriving anyclass FieldsFindableByType 
+-- 
+-- deriving via Autowired
+--     instance Autowireable (r_ m) r_ m (EnvHKD5 m) 
+--                           => Has r_ m (EnvHKD5 m)
+-- 
+-- findLogger5 :: EnvHKD5 m -> Logger m
+-- findLogger5 env = dep env
+-- findRepository5 :: EnvHKD5 m -> Repository m
+-- findRepository5 env = dep env
+-- findController5 :: EnvHKD5 m -> Controller m
+-- findController5 env = dep env
 
 -- Test TheFieldName
 type EnvHKD6 :: (Type -> Type) -> Type

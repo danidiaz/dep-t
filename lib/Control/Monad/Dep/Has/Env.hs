@@ -111,13 +111,15 @@ newtype Autowired env = Autowired env
 --
 -- @wrapping@ should be @r_ m@ when the components don't come wrapped in some
 -- newtype, and @somenewtype (r_ m)@ otherwise.
-type Autowireable wrapping r_ m env =
-         ( HasField (FindFieldByType env (r_ m)) env wrapping
-         , Coercible wrapping (r_ m) )
+type Autowireable r_ m env =
+         ( HasField (FindFieldByType env (r_ m)) env (Identity (r_ m))
+         -- Worth having this?
+         -- , Coercible wrapping (r_ m) 
+         )
 
 instance (
            FieldsFindableByType (env_ m),
-           Autowireable wrapping r_ m (env_ m) 
+           Autowireable r_ m (env_ m) 
          ) 
          => Has r_ m (Autowired (env_ m)) where
    dep (Autowired env) = coerce (getField @(FindFieldByType (env_ m) (r_ m)) env)
