@@ -83,7 +83,8 @@ test-suite dep-t-test-env
     tasty-hunit        >=  0.10.0.2,
     sop-core           ^>= 0.5.0.0,
     aeson              ^>= 2.0,
-    containers         
+    text,
+    containers,
 
 
 -- VERY IMPORTANT for doctests to work: https://stackoverflow.com/a/58027909/1364288

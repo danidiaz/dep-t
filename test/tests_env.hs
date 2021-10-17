@@ -48,14 +48,15 @@ import Data.Functor.Identity
 import GHC.TypeLits
 import Control.Monad.Trans.Cont
 import Data.Aeson
+import Data.Aeson.Types
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.IORef
 import System.IO
 import Control.Exception
+import Control.Arrow (Kleisli (..))
+import Data.Text qualified as Text
 
--- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
--- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
 type Logger :: (Type -> Type) -> Type
 newtype Logger d = Logger {
     info :: String -> d ()
@@ -74,31 +75,37 @@ data Controller d = Controller
   } 
   deriving stock Generic
 
-type MessagePrefix = String
+type MessagePrefix = Text.Text
+
+data LoggerConfiguration = LoggerConfiguration { 
+        messagePrefix :: MessagePrefix
+    } deriving stock (Show, Generic)
+      deriving anyclass FromJSON
 
 makeStdoutLogger :: MonadIO m => MessagePrefix -> env -> Logger m
-makeStdoutLogger prefix _ = Logger (\msg -> liftIO (putStrLn (prefix ++ msg)))
+makeStdoutLogger prefix _ = Logger (\msg -> liftIO (putStrLn (Text.unpack prefix ++ msg)))
 
-makeStdoutRepository 
+allocateMap :: ContT () IO (IORef (Map Int String))
+allocateMap = ContT $ bracket (newIORef Map.empty) pure
+
+makeInMemoryRepository 
     :: Has Logger IO env 
-    => ((env -> Repository IO) -> IO ()) -> IO () 
-makeStdoutRepository callback = do
-    bracket 
-        (newIORef Map.empty)
-        pure
-        (\ref -> callback (\(asCall -> call) -> 
-            Repository {
-               findById = \key -> do
-                    call info "I'm going to do a lookup in the map!"
-                    theMap <- readIORef ref
-                    pure (Map.lookup key theMap),
-               insert = \content -> do 
-                    call info "I'm going to insert in the map!"
-                    theMap <- readIORef ref
-                    let next = Map.size theMap
-                    writeIORef ref $ Map.insert next content theMap 
-                    pure next
-            }))
+    => IORef (Map Int String) 
+    -> env 
+    -> Repository IO
+makeInMemoryRepository ref (asCall -> call) = do
+    Repository {
+       findById = \key -> do
+            call info "I'm going to do a lookup in the map!"
+            theMap <- readIORef ref
+            pure (Map.lookup key theMap),
+       insert = \content -> do 
+            call info "I'm going to insert in the map!"
+            theMap <- readIORef ref
+            let next = Map.size theMap
+            writeIORef ref $ Map.insert next content theMap 
+            pure next
+    }
 
 makeController :: (Has Logger m env, Has Repository m env, Monad m) => env -> Controller m
 makeController (asCall -> call) = Controller {
@@ -135,12 +142,39 @@ data EnvHKD h m = EnvHKD
   } deriving stock Generic
     deriving anyclass (Phased, DemotableFieldNames, FieldsFindableByType)
 
-deriving via Autowired (EnvHKD Identity m) instance Has Logger m (EnvHKD Identity m)
-deriving via Autowired (EnvHKD Identity m) instance Has Repository m (EnvHKD Identity m)
-deriving via Autowired (EnvHKD Identity m) instance Has Controller m (EnvHKD Identity m)
+deriving via Autowired (EnvHKD Identity m) instance 
+    Autowireable (Identity (r_ m)) r_ m (EnvHKD Identity m) => Has r_ m (EnvHKD Identity m)
 
-fieldNames :: EnvHKD (Compose (Constant String) Identity) IO
-fieldNames = demoteFieldNames
+-- deriving via Autowired (EnvHKD Identity m) instance Has Logger m (EnvHKD Identity m)
+-- deriving via Autowired (EnvHKD Identity m) instance Has Repository m (EnvHKD Identity m)
+-- deriving via Autowired (EnvHKD Identity m) instance Has Controller m (EnvHKD Identity m)
+
+type Configuration = Kleisli Parser Value 
+type Allocation = ContT () IO
+type Construction env_ m = ((->) (env_ Identity m)) `Compose` Identity
+type Phases env_ m = Configuration `Compose` Allocation `Compose` Construction env_ m
+
+constructor :: (env_ Identity m -> r m) -> Construction env_ m (r m)
+constructor f = Compose (fmap Identity f)
+
+parseConf :: FromJSON a => (a -> f x) -> Compose Configuration f x
+parseConf f = Compose (f <$> Kleisli parseJSON)
+
+configless :: f a -> Compose Configuration f a
+configless f = Compose (pure f)
+
+alloc :: Allocation a -> (a -> f x) -> Compose Allocation f x
+alloc allocator f = Compose (f <$> allocator)
+
+noAlloc :: f a -> Compose Allocation f a
+noAlloc f = Compose (pure f)
+
+env :: EnvHKD (Phases EnvHKD IO) IO
+env = EnvHKD {
+    logger = parseConf $ noAlloc $ constructor <$> makeStdoutLogger,
+    repository = configless $ undefined,
+    controller = configless $ noAlloc $ constructor makeController
+}
 
 --
 --
@@ -151,12 +185,15 @@ tests =
     "All"
     [
         testCase "fieldNames" $
-        assertEqual "" "logger repository controller" $
-            let EnvHKD { logger = Compose (Constant loggerField),
-                         repository = Compose (Constant repositoryField),  
-                         controller = Compose (Constant controllerField)  
-                        } = fieldNames
-             in intercalate " " [loggerField, repositoryField, controllerField]
+            let fieldNames :: EnvHKD (Compose (Constant String) Identity) IO
+                fieldNames = demoteFieldNames
+             in
+             assertEqual "" "logger repository controller" $
+                 let EnvHKD { logger = Compose (Constant loggerField),
+                              repository = Compose (Constant repositoryField),  
+                              controller = Compose (Constant controllerField)  
+                             } = fieldNames
+                  in intercalate " " [loggerField, repositoryField, controllerField]
     ]
 
 main :: IO ()
