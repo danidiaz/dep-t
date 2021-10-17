@@ -173,13 +173,13 @@ parseConf = Kleisli parseJSON
 env :: EnvHKD (Phases EnvHKD IO) IO
 env = EnvHKD {
       logger = 
-        phases $ parseConf 
-             <&> \conf -> pure @Allocation 
-               $ constructor (makeStdoutLogger conf)
+        phases $ parseConf <&> \(LoggerConfiguration {messagePrefix}) 
+              -> pure @Allocation 
+               $ constructor (makeStdoutLogger messagePrefix)
     , repository = 
         phases $ pure @Configuration 
-               $ allocateMap
-             <&> \ref -> constructor (makeInMemoryRepository ref)
+               $ allocateMap <&> \ref 
+              -> constructor (makeInMemoryRepository ref)
     , controller = 
         phases $ pure @Configuration 
                $ pure @Allocation 
@@ -205,13 +205,19 @@ tests =
                              } = fieldNames
                   in intercalate " " [loggerField, repositoryField, controllerField]
         , testCase "environmentConstruction" $ do
-            let Just (value :: Value) = decode' (fromString "{ \"logger\" : { \"messagePrefix\" : \"[foo]\" } }")
+            let parseResult = eitherDecode' (fromString "{ \"logger\" : { \"messagePrefix\" : \"[foo]\" }, \"repository\" : null, \"controller\" : null }")
+            print parseResult 
+            let Right value = parseResult 
                 Kleisli parser = 
                       pullPhase  
                     $ mapPhaseWithFieldNames 
                         (\fieldName (Kleisli f) -> Kleisli \o -> explicitParseField f o (fromString fieldName)) 
                     $ env
-                Just allocators = parseMaybe (withObject "configuration" parser) value 
+                parseResult' = parseEither (withObject "configuration" parser) value 
+            print $ case parseResult' of
+                Left x -> x
+                Right _ -> ""
+            let Right allocators = parseResult'
             runContT (pullPhase allocators) \constructors -> do
                 let (asCall -> call) = fixEnv constructors
                 resourceId <- call create
