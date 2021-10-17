@@ -70,6 +70,7 @@ newtype Logger d = Logger {
 
 data Repository d = Repository
   { findById :: Int -> d (Maybe String)
+  , putById :: Int -> String -> d ()
   , insert :: String -> d Int
   }
   deriving stock Generic
@@ -101,11 +102,14 @@ makeInMemoryRepository
     -> Repository IO
 makeInMemoryRepository ref (asCall -> call) = do
     Repository {
-       findById = \key -> do
+         findById = \key -> do
             call info "I'm going to do a lookup in the map!"
             theMap <- readIORef ref
-            pure (Map.lookup key theMap),
-       insert = \content -> do 
+            pure (Map.lookup key theMap)
+       , putById = \key content -> do
+            theMap <- readIORef ref
+            writeIORef ref $ Map.insert key content theMap 
+       , insert = \content -> do 
             call info "I'm going to insert in the map!"
             theMap <- readIORef ref
             let next = Map.size theMap
@@ -126,7 +130,7 @@ makeController (asCall -> call) = Controller {
             Nothing -> do
                 pure False
             Just resource -> do
-                call insert (resource ++ extra) 
+                call putById key (resource ++ extra) 
                 pure True
     , inspect = \key -> do
           call findById key 
@@ -223,6 +227,8 @@ tests =
                 resourceId <- call create
                 call append resourceId "foo"
                 call append resourceId "bar"
+                x <- call inspect resourceId
+                print x
                 Just result <- call inspect resourceId
                 assertEqual "" "foobar" $ result
     ]
