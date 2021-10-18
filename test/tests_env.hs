@@ -162,14 +162,10 @@ deriving via Autowired (EnvHKD Identity m) instance Autowireable r_ m (EnvHKD Id
 
 type Configurator = Kleisli Parser Value 
 type Allocator = ContT () IO
-type Constructor env_ m = ((->) (env_ Identity m)) `Compose` Identity
 type Phases env_ m = Configurator `Compose` Allocator `Compose` Constructor env_ m
 
 phases :: Configurator (Allocator (Constructor env_ m (r_ m))) -> Phases env_ m (r_ m)
 phases = coerce
-
-constructor :: forall env_ m r_ . (env_ Identity m -> r_ m) -> Constructor env_ m (r_ m)
-constructor = coerce
 
 parseConf :: FromJSON a => Configurator a
 parseConf = Kleisli parseJSON

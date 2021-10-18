@@ -44,6 +44,8 @@ module Control.Monad.Dep.Env (
     , demoteFieldNames
     , mapPhaseWithFieldNames
       -- * Injecting dependencies by tying the knot
+    , Constructor
+    , constructor
     , fixEnv
     ) where
 
@@ -59,6 +61,7 @@ import Data.Functor.Compose
 import Data.Functor.Constant
 import Data.Functor.Identity
 import Data.Function (fix)
+import Data.String
 -- import Control.Monad.Reader
 -- import Control.Monad.Dep.Class
 
@@ -285,6 +288,11 @@ mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_)
 mapPhaseWithFieldNames  f env =
     liftA2Phase (\(Constant name) z -> f name z) (runIdentity $ traverseH (\(Constant z) -> Identity (Compose (Constant z))) demoteFieldNames) env
 
-fixEnv :: Phased env_ => env_ (Compose ((->) (env_ Identity m)) Identity) m -> env_ Identity m
+type Constructor env_ m = ((->) (env_ Identity m)) `Compose` Identity
+
+constructor :: forall env_ m r_ . (env_ Identity m -> r_ m) -> Constructor env_ m (r_ m)
+constructor = coerce
+
+fixEnv :: Phased env_ => env_ (Constructor env_ m) m -> env_ Identity m
 fixEnv env = fix (pullPhase env)
 
