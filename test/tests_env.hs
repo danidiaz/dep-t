@@ -176,17 +176,14 @@ env = EnvHKD {
         Compose $ parseConf <&> \(LoggerConfiguration {messagePrefix}) -> 
         Compose $ pure @Allocator () <&> \_ ->
         constructor (makeStdoutLogger messagePrefix)
---        phases $ parseConf <&> \(LoggerConfiguration {messagePrefix}) 
---              -> pure @Allocator 
---               $ constructor (makeStdoutLogger messagePrefix)
     , repository = 
-        phases $ pure @Configurator () <&> \_ ->
-                 allocateMap <&> \ref ->
-                 constructor (makeInMemoryRepository ref)
+        Compose $ pure @Configurator () <&> \_ ->
+        Compose $ allocateMap <&> \ref ->
+        constructor (makeInMemoryRepository ref)
     , controller = 
-        phases $ pure @Configurator 
-               $ pure @Allocator 
-               $ constructor makeController
+        Compose $ pure @Configurator () <&> \_ ->
+        Compose $ pure @Allocator () <&> \_ ->
+        constructor makeController
 }
 
 --
