@@ -113,18 +113,15 @@ newtype Autowired env = Autowired env
 --
 -- @wrapping@ should be @r_ m@ when the components don't come wrapped in some
 -- newtype, and @somenewtype (r_ m)@ otherwise.
-type Autowireable r_ m env =
-         ( HasField (FindFieldByType env (r_ m)) env (Identity (r_ m))
-         -- Worth having this?
-         -- , Coercible wrapping (r_ m) 
-         )
+type Autowireable r_ m env = HasField (FindFieldByType env (r_ m)) env (Identity (r_ m))
 
 instance (
            FieldsFindableByType (env_ m),
-           Autowireable r_ m (env_ m) 
+           HasField (FindFieldByType (env_ m) (r_ m)) (env_ m) u,
+           Coercible u (r_ m) 
          ) 
          => Has r_ m (Autowired (env_ m)) where
-   dep (Autowired env) = coerce (getField @(FindFieldByType (env_ m) (r_ m)) env)
+   dep (Autowired env) = coerce @u $ getField @(FindFieldByType (env_ m) (r_ m)) env
 
 type FindFieldByType_ :: Type -> Type -> Symbol
 type family FindFieldByType_ env r where
@@ -167,6 +164,8 @@ type family WithLeftResult_ leftResult right r where
 
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased env_ where
+    traverseH :: Applicative f => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
+    traverseH t = undefined
     pullPhase :: Applicative f => env_ (Compose f g) m -> f (env_ g m)
     default pullPhase 
         :: ( G.Generic (env_ (Compose f g) m)
@@ -192,6 +191,9 @@ class Phased env_ where
            )
         => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     liftA2H f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
+
+pullPhase' :: forall f g env_ m . (Applicative f, Phased env_) => env_ (Compose f g) m -> f (env_ g m)
+pullPhase' = traverseH getCompose
 
 mapPhase :: Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 mapPhase f env = mapH (\(Compose fg) -> Compose (f fg)) env
