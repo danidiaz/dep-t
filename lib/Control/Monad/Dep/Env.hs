@@ -16,6 +16,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE GADTs #-}
 
 -- | This module provides helpers for defining dependency injection
 -- environments composed of records.
@@ -295,4 +296,17 @@ constructor = coerce
 
 fixEnv :: Phased env_ => env_ (Constructor env_ m) m -> env_ Identity m
 fixEnv env = fix (pullPhase env)
+
+--
+--
+data InductiveEnv rs h m where
+    Cons :: h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r : rs) h m
+    Last :: h (r_ m) -> InductiveEnv '[r_] h m
+
+instance Phased (InductiveEnv rs) where
+    traverseH t (Last hx) = Last <$> t hx
+    traverseH t (Cons hx rest) = undefined
+    liftA2H t (Last fx) (Last hx) = undefined
+    liftA2H t (Cons fx frest) (Cons hx rest) = undefined
+ 
 
