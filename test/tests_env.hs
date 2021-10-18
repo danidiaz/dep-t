@@ -177,9 +177,13 @@ parseConf = Kleisli parseJSON
 env :: EnvHKD (Phases EnvHKD IO) IO
 env = EnvHKD {
       logger = 
-        phases $ parseConf <&> \(LoggerConfiguration {messagePrefix}) 
-              -> pure @Allocator 
-               $ constructor (makeStdoutLogger messagePrefix)
+        Compose $
+        parseConf <&> \(LoggerConfiguration {messagePrefix}) -> Compose $
+        pure @Allocator () <&> \() -> 
+        constructor (makeStdoutLogger messagePrefix)
+--        phases $ parseConf <&> \(LoggerConfiguration {messagePrefix}) 
+--              -> pure @Allocator 
+--               $ constructor (makeStdoutLogger messagePrefix)
     , repository = 
         phases $ pure @Configurator 
                $ allocateMap <&> \ref 
