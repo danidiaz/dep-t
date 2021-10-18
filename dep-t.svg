@@ -147,24 +147,24 @@
          id="tspan5085-9-3-6"
          sodipodi:role="line">Control.Monad.Dep.Has</tspan></text>
     <rect
-       y="101.5379"
-       x="139.39749"
+       y="101.84697"
+       x="143.10628"
        height="8.4383926"
-       width="60.879902"
+       width="54.080448"
        id="rect5083-9-5-7-0"
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.302;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     <text
        id="text5087-4-0-7-2"
-       y="101.65447"
-       x="150.39854"
+       y="101.94863"
+       x="155.59421"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.07816px;line-height:1.25;font-family:Consolas;-inkscape-font-specification:Consolas;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
        xml:space="preserve"
        transform="scale(0.95176429,1.0506803)"><tspan
          style="stroke-width:0.264583"
-         y="101.65447"
-         x="150.39854"
+         y="101.94863"
+         x="155.59421"
          id="tspan5085-9-3-6-8"
-         sodipodi:role="line">Control.Monad.Dep.Has.Env</tspan></text>
+         sodipodi:role="line">Control.Monad.Dep.Env</tspan></text>
     <rect
        y="115.04467"
        x="77.940292"
@@ -222,11 +222,11 @@
        inkscape:connection-end="#rect5083-9" />
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1.05833, 1.05833;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
-       d="M 169.98488,101.5379 170.4333,88.70517"
+       d="m 170.2314,101.84697 0.26443,-13.1418"
        id="path4241"
        inkscape:connector-type="polyline"
        inkscape:connector-curvature="0"
-       inkscape:connection-start="#rect5083-9-5-7-0"
-       inkscape:connection-end="#rect5083-9-5-7" />
+       inkscape:connection-end="#rect5083-9-5-7"
+       inkscape:connection-start="#rect5083-9-5-7-0" />
   </g>
 </svg>
