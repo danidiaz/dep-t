@@ -36,6 +36,7 @@ module Control.Monad.Dep.Env (
     , Autowireable
       -- * Managing phases
     , Phased (..)
+    , pullPhase
     , mapPhase
     , liftA2Phase
       -- ** Working with field names
@@ -164,16 +165,24 @@ type family WithLeftResult_ leftResult right r where
 
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased env_ where
-    traverseH :: Applicative f => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
-    traverseH t = undefined
-    pullPhase :: Applicative f => env_ (Compose f g) m -> f (env_ g m)
-    default pullPhase 
-        :: ( G.Generic (env_ (Compose f g) m)
+    traverseH :: 
+        Applicative f 
+        => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
+    default traverseH 
+        :: ( G.Generic (env_ h m)
            , G.Generic (env_ g m)
-           , GPullPhase f g (G.Rep (env_ (Compose f g) m)) (G.Rep (env_ g m))
+           , GTraverseH h g (G.Rep (env_ h m)) (G.Rep (env_ g m))
            , Applicative f )
-        => env_ (Compose f g) m -> f (env_ g m)
-    pullPhase env = G.to <$> gPullPhase (G.from env)
+        => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
+    traverseH t env = G.to <$> gTraverseH t (G.from env)
+--     pullPhase :: Applicative f => env_ (Compose f g) m -> f (env_ g m)
+--     default pullPhase 
+--         :: ( G.Generic (env_ (Compose f g) m)
+--            , G.Generic (env_ g m)
+--            , GTraverseH f g (G.Rep (env_ (Compose f g) m)) (G.Rep (env_ g m))
+--            , Applicative f )
+--         => env_ (Compose f g) m -> f (env_ g m)
+--     pullPhase env = G.to <$> gTraverseH (G.from env)
     mapH :: (forall x. f x -> f' x) -> env_ f m -> env_ f' m
     default mapH 
         :: ( G.Generic (env_ f m)
@@ -192,40 +201,39 @@ class Phased env_ where
         => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     liftA2H f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
 
-pullPhase' :: forall f g env_ m . (Applicative f, Phased env_) => env_ (Compose f g) m -> f (env_ g m)
-pullPhase' = traverseH getCompose
+pullPhase :: (Applicative f, Phased env_) => env_ (Compose f g) m -> f (env_ g m)
+pullPhase = traverseH getCompose
 
 mapPhase :: Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
-mapPhase f env = mapH (\(Compose fg) -> Compose (f fg)) env
+-- mapPhase f env = mapH (\(Compose fg) -> Compose (f fg)) env
+mapPhase f env = runIdentity $ traverseH (\(Compose fg) -> Identity (Compose (f fg))) env
 
 liftA2Phase :: Phased env_ => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
 liftA2Phase f = liftA2H (\(Compose fa) (Compose fg) -> Compose (f fa fg))
 
-class GPullPhase f g env env' | env -> env' f g where
-    gPullPhase :: env x -> f (env' x)
+class GTraverseH h g env env' | env -> h, env' -> g where
+    gTraverseH :: Applicative f => (forall x . h x -> f (g x)) -> env x -> f (env' x)
 
-instance (Functor f , GPullPhase f g fields fields')
-    => GPullPhase f 
+instance (GTraverseH h g fields fields')
+    => GTraverseH h 
                g
                (G.D1 metaData (G.C1 metaCons fields)) 
                (G.D1 metaData (G.C1 metaCons fields')) where
-    gPullPhase (G.M1 (G.M1 fields)) = 
-        G.M1 . G.M1 <$> gPullPhase @f @g fields
+    gTraverseH t (G.M1 (G.M1 fields)) = 
+        G.M1 . G.M1 <$> gTraverseH @h @g t fields
 
-instance (Applicative f,
-          GPullPhase f g left left',
-          GPullPhase f g right right') 
-        => GPullPhase f g (left G.:*: right) (left' G.:*: right') where
-     gPullPhase (left G.:*: right) = 
-        let left' = gPullPhase @f @g left
-            right' = gPullPhase @f @g right
+instance (GTraverseH h g left left',
+          GTraverseH h g right right') 
+        => GTraverseH h g (left G.:*: right) (left' G.:*: right') where
+     gTraverseH t (left G.:*: right) = 
+        let left' = gTraverseH @h @g t left
+            right' = gTraverseH @h @g t right
          in liftA2 (G.:*:) left' right'
 
-instance (Functor f) 
-    => GPullPhase f g (G.S1 metaSel (G.Rec0 (Compose f g bean))) 
+instance GTraverseH h g (G.S1 metaSel (G.Rec0 (h bean))) 
                    (G.S1 metaSel (G.Rec0 (g bean))) where
-     gPullPhase (G.M1 (G.K1 (Compose fgbean))) =
-         G.M1 . G.K1 <$> fgbean 
+     gTraverseH t (G.M1 (G.K1 (hbean))) =
+         G.M1 . G.K1 <$> t hbean 
 
 -- 
 --
