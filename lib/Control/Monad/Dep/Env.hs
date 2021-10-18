@@ -175,22 +175,6 @@ class Phased env_ where
            , Applicative f )
         => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
     traverseH t env = G.to <$> gTraverseH t (G.from env)
---     pullPhase :: Applicative f => env_ (Compose f g) m -> f (env_ g m)
---     default pullPhase 
---         :: ( G.Generic (env_ (Compose f g) m)
---            , G.Generic (env_ g m)
---            , GTraverseH f g (G.Rep (env_ (Compose f g) m)) (G.Rep (env_ g m))
---            , Applicative f )
---         => env_ (Compose f g) m -> f (env_ g m)
---     pullPhase env = G.to <$> gTraverseH (G.from env)
-    mapH :: (forall x. f x -> f' x) -> env_ f m -> env_ f' m
-    default mapH 
-        :: ( G.Generic (env_ f m)
-           , G.Generic (env_ f' m)
-           , GMapPhase f f' (G.Rep (env_ f m)) (G.Rep (env_ f' m))
-           )
-        => (forall x. f x -> f' x) -> env_ f m -> env_ f' m
-    mapH f env = G.to (gMapPhase f (G.from env))
     liftA2H ::  (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     default liftA2H
         :: ( G.Generic (env_ a m)
@@ -205,7 +189,6 @@ pullPhase :: (Applicative f, Phased env_) => env_ (Compose f g) m -> f (env_ g m
 pullPhase = traverseH getCompose
 
 mapPhase :: Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
--- mapPhase f env = mapH (\(Compose fg) -> Compose (f fg)) env
 mapPhase f env = runIdentity $ traverseH (\(Compose fg) -> Identity (Compose (f fg))) env
 
 liftA2Phase :: Phased env_ => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
@@ -234,33 +217,6 @@ instance GTraverseH h g (G.S1 metaSel (G.Rec0 (h bean)))
                    (G.S1 metaSel (G.Rec0 (g bean))) where
      gTraverseH t (G.M1 (G.K1 (hbean))) =
          G.M1 . G.K1 <$> t hbean 
-
--- 
---
-class GMapPhase f f' env env' | env -> f, env' -> f' where
-    gMapPhase :: (forall r. f r -> f' r) -> env x -> env' x
-
-instance (GMapPhase f f' fields fields')
-    => GMapPhase f 
-               f'
-               (G.D1 metaData (G.C1 metaCons fields)) 
-               (G.D1 metaData (G.C1 metaCons fields')) where
-    gMapPhase f (G.M1 (G.M1 fields)) = 
-        G.M1 (G.M1 (gMapPhase @f @f' f fields))
-
-instance ( GMapPhase f f' left left',
-           GMapPhase f f' right right') 
-        => GMapPhase f f' (left G.:*: right) (left' G.:*: right') where
-     gMapPhase f (left G.:*: right) = 
-        let left' = gMapPhase @f @f' f left
-            right' = gMapPhase @f @f' f right
-         in (G.:*:) left' right'
-
-instance  GMapPhase f f' (G.S1 metaSel (G.Rec0 (f bean))) 
-                      (G.S1 metaSel (G.Rec0 (f' bean))) where
-     gMapPhase f (G.M1 (G.K1 fgbean)) =
-         G.M1 (G.K1 (f fgbean))
-
 --
 --
 class GLiftA2Phase a f f' enva env env' | enva -> a, env -> f, env' -> f' where
@@ -322,7 +278,7 @@ instance KnownSymbol name => GDemotableFieldNames (G.S1 (G.MetaSel ('Just name) 
 mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_) 
     => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 mapPhaseWithFieldNames  f env =
-    liftA2Phase (\(Constant name) z -> f name z) (mapH (\(Constant z) -> Compose (Constant z)) demoteFieldNames) env
+    liftA2Phase (\(Constant name) z -> f name z) (runIdentity $ traverseH (\(Constant z) -> Identity (Compose (Constant z))) demoteFieldNames) env
 
 fixEnv :: Phased env_ => env_ (Compose ((->) (env_ Identity m)) Identity) m -> env_ Identity m
 fixEnv env = fix (pullPhase env)
