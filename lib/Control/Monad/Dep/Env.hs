@@ -41,6 +41,7 @@ module Control.Monad.Dep.Env (
     , liftA2Phase
       -- ** Working with field names
     , DemotableFieldNames (..)
+    , demoteFieldNames
     , mapPhaseWithFieldNames
       -- * Injecting dependencies by tying the knot
     , fixEnv
@@ -251,29 +252,33 @@ instance   GLiftA2Phase a f f' (G.S1 metaSel (G.Rec0 (a bean)))
 -- Demotable field names
 type DemotableFieldNames :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class DemotableFieldNames env_ where
-    demoteFieldNames :: env_ (Constant String) m
-    default demoteFieldNames 
-        :: ( G.Generic (env_ (Constant String) m)
-           , GDemotableFieldNames (G.Rep (env_ (Constant String) m)))
-           => env_ (Constant String) m
-    demoteFieldNames = G.to gDemoteFieldNames
+    demoteFieldNamesH :: (forall x. String -> h String x) -> env_ (h String) m
+    default demoteFieldNamesH 
+        :: ( G.Generic (env_ (h String) m)
+           , GDemotableFieldNamesH h (G.Rep (env_ (h String) m)))
+           => (forall x. String -> h String x) 
+           -> env_ (h String) m
+    demoteFieldNamesH f = G.to (gDemoteFieldNamesH f)
 
-class GDemotableFieldNames env where
-    gDemoteFieldNames :: env x
+demoteFieldNames :: DemotableFieldNames env_ => env_ (Constant String) m
+demoteFieldNames = demoteFieldNamesH Constant
+
+class GDemotableFieldNamesH h env | env -> h where
+    gDemoteFieldNamesH :: (forall x. String -> h String x) -> env x
             
-instance GDemotableFieldNames fields
-    => GDemotableFieldNames (G.D1 metaData (G.C1 metaCons fields)) where
-    gDemoteFieldNames = G.M1 (G.M1 gDemoteFieldNames)
+instance GDemotableFieldNamesH h fields
+    => GDemotableFieldNamesH h (G.D1 metaData (G.C1 metaCons fields)) where
+    gDemoteFieldNamesH f = G.M1 (G.M1 (gDemoteFieldNamesH f))
 
-instance ( GDemotableFieldNames left,
-           GDemotableFieldNames right) 
-        => GDemotableFieldNames (left G.:*: right) where
-     gDemoteFieldNames = 
-         gDemoteFieldNames G.:*: gDemoteFieldNames
+instance ( GDemotableFieldNamesH h left,
+           GDemotableFieldNamesH h right) 
+        => GDemotableFieldNamesH h (left G.:*: right) where
+     gDemoteFieldNamesH f = 
+         gDemoteFieldNamesH f G.:*: gDemoteFieldNamesH f
 
-instance KnownSymbol name => GDemotableFieldNames (G.S1 (G.MetaSel ('Just name) u v w) (G.Rec0 (Constant String bean))) where
-     gDemoteFieldNames = 
-         G.M1 (G.K1 (Constant (symbolVal (Proxy @name))))
+instance KnownSymbol name => GDemotableFieldNamesH h (G.S1 (G.MetaSel ('Just name) u v w) (G.Rec0 (h String bean))) where
+     gDemoteFieldNamesH f = 
+         G.M1 (G.K1 (f (symbolVal (Proxy @name))))
 
 mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_) 
     => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
