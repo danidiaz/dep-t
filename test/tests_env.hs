@@ -59,7 +59,7 @@ import Control.Arrow (Kleisli (..))
 import Data.Text qualified as Text
 import Data.ByteString.Lazy qualified as Bytes
 import Data.Function ((&))
-import Data.Functor ((<&>))
+import Data.Functor ((<&>), ($>))
 import Data.String
 
 type Logger :: (Type -> Type) -> Type
@@ -177,17 +177,16 @@ parseConf = Kleisli parseJSON
 env :: EnvHKD (Phases EnvHKD IO) IO
 env = EnvHKD {
       logger = 
-        Compose $
-        parseConf <&> \(LoggerConfiguration {messagePrefix}) -> Compose $
-        pure @Allocator () <&> \() -> 
+        Compose $ parseConf <&> \(LoggerConfiguration {messagePrefix}) -> 
+        Compose $ pure @Allocator () $>
         constructor (makeStdoutLogger messagePrefix)
 --        phases $ parseConf <&> \(LoggerConfiguration {messagePrefix}) 
 --              -> pure @Allocator 
 --               $ constructor (makeStdoutLogger messagePrefix)
     , repository = 
-        phases $ pure @Configurator 
-               $ allocateMap <&> \ref 
-              -> constructor (makeInMemoryRepository ref)
+        phases $ pure @Configurator () <&> \_ ->
+                 allocateMap <&> \ref ->
+                 constructor (makeInMemoryRepository ref)
     , controller = 
         phases $ pure @Configurator 
                $ pure @Allocator 
