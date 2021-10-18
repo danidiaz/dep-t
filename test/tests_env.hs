@@ -178,7 +178,7 @@ env :: EnvHKD (Phases EnvHKD IO) IO
 env = EnvHKD {
       logger = 
         Compose $ parseConf <&> \(LoggerConfiguration {messagePrefix}) -> 
-        Compose $ pure @Allocator () $>
+        Compose $ pure @Allocator () <&> \_ ->
         constructor (makeStdoutLogger messagePrefix)
 --        phases $ parseConf <&> \(LoggerConfiguration {messagePrefix}) 
 --              -> pure @Allocator 
