@@ -303,7 +303,7 @@ fixEnv env = fix (pullPhase env)
 --
 --
 data InductiveEnv rs h m where
-    AddDep :: h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r_ : rs) h m
+    AddDep :: forall r_ h m rs. h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r_ : rs) h m
     EmptyEnv :: InductiveEnv '[] h m
 
 instance Phased (InductiveEnv rs) where
