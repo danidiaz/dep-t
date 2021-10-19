@@ -160,13 +160,12 @@ deriving via Autowired (EnvHKD Identity m) instance Autowireable r_ m (EnvHKD Id
 -- deriving via Autowired (EnvHKD Identity m) instance Has Repository m (EnvHKD Identity m)
 -- deriving via Autowired (EnvHKD Identity m) instance Has Controller m (EnvHKD Identity m)
 
-type Configurator = Kleisli Parser Value 
-type Allocator = ContT () IO
-type Phases env_ m = Configurator `Compose` Allocator `Compose` Constructor env_ m
-
 -- phases :: Configurator (Allocator (Constructor env_ m (r_ m))) -> Phases env_ m (r_ m)
 -- phases = coerce
 
+type Configurator = Kleisli Parser Value 
+type Allocator = ContT () IO
+type Phases env_ m = Configurator `Compose` Allocator `Compose` Constructor env_ m
 
 parseConf :: FromJSON a => Configurator a
 parseConf = Kleisli parseJSON
@@ -186,7 +185,6 @@ env = EnvHKD {
         skipPhase @Allocator $ 
         constructor makeController
 }
-
 
 testEnvConstruction :: Assertion
 testEnvConstruction = do
