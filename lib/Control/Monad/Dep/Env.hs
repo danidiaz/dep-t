@@ -48,6 +48,8 @@ module Control.Monad.Dep.Env (
     , Constructor
     , constructor
     , fixEnv
+      -- * Inductive environment with anonymous fields
+    , InductiveEnv (..)
     ) where
 
 import Data.Kind
@@ -63,6 +65,7 @@ import Data.Functor.Constant
 import Data.Functor.Identity
 import Data.Function (fix)
 import Data.String
+import Data.Type.Equality (type (==))
 -- import Control.Monad.Reader
 -- import Control.Monad.Dep.Class
 
@@ -143,7 +146,7 @@ type family IfMissing r ms where
         TypeError (
                  Text "The component " 
             :<>: ShowType r 
-            :<>: Text " could not be found in record.")
+            :<>: Text " could not be found in environment.")
     IfMissing _ (Just name) = name
 
 -- The k -> Type alwasy trips me up
@@ -313,4 +316,28 @@ instance Phased (InductiveEnv rs) where
     liftA2H t (AddDep ax arest) (AddDep hx hrest) = 
         AddDep (t ax hx) (liftA2H t arest hrest)
  
+instance InductiveEnvFind r_ m rs => Has r_ m (InductiveEnv rs Identity m) where
+    dep = inductiveEnvDep
+
+class InductiveEnvFind r_ m rs where
+    inductiveEnvDep :: InductiveEnv rs Identity m -> r_ m
+
+instance  TypeError (
+                 Text "The component " 
+            :<>: ShowType r_ 
+            :<>: Text " could not be found in environment.") => InductiveEnvFind r_ m '[] where
+    inductiveEnvDep = error "never happens"
+
+instance InductiveEnvFind' (r_ == r_') r_ m (r_' : rs) => InductiveEnvFind r_ m (r_' : rs) where
+    inductiveEnvDep = inductiveEnvDep' @(r_ == r_')
+
+class InductiveEnvFind' (matches :: Bool) r_ m rs where
+    inductiveEnvDep' :: InductiveEnv rs Identity m -> r_ m
+
+instance InductiveEnvFind' True r_ m (r_ : rs) where
+    inductiveEnvDep' (AddDep (Identity r) _) = r
+
+instance InductiveEnvFind r_ m rs => InductiveEnvFind' False r_ m (x : rs) where
+    inductiveEnvDep' (AddDep _ rest) = inductiveEnvDep rest
+
 
