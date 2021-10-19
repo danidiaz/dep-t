@@ -300,13 +300,17 @@ fixEnv env = fix (pullPhase env)
 --
 --
 data InductiveEnv rs h m where
-    Cons :: h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r : rs) h m
-    Last :: h (r_ m) -> InductiveEnv '[r_] h m
+    AddDep :: h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r_ : rs) h m
+    EmptyEnv :: InductiveEnv '[] h m
 
 instance Phased (InductiveEnv rs) where
-    traverseH t (Last hx) = Last <$> t hx
-    traverseH t (Cons hx rest) = undefined
-    liftA2H t (Last fx) (Last hx) = undefined
-    liftA2H t (Cons fx frest) (Cons hx rest) = undefined
+    traverseH t EmptyEnv = pure EmptyEnv
+    traverseH t (AddDep hx rest) = 
+        let headF = t hx
+            restF = traverseH t rest
+         in AddDep <$> headF <*> restF
+    liftA2H t EmptyEnv EmptyEnv = EmptyEnv
+    liftA2H t (AddDep ax arest) (AddDep hx hrest) = 
+        AddDep (t ax hx) (liftA2H t arest hrest)
  
 
