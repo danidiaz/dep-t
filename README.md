@@ -232,6 +232,16 @@ The companion package
 general method of extending the behaviour of `DepT`-effectful functions, in a
 way reminiscent of aspect-oriented programming.
 
+## What if I don't want to use DepT, or any other monad transformer for that matter?
+
+Check out the function `fixEnv` in module `Control.Monad.Dep.Env`, which
+provides a transformer-less way to perform dependency injection, instead based
+on knot-tying.
+
+That method requires an environment parameterized by _two_ type constructors:
+one that wraps each field, and another that works as the effect monad for the
+components.
+
 ## Caveats
 
 The structure of the `DepT` type might be prone to trigger a [known infelicity
@@ -258,7 +268,7 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   [Adventures assembling records of
   capabilities](https://discourse.haskell.org/t/adventures-assembling-records-of-capabilities/623)
   which relies on having "open" and "closed" versions of the environment
-  record. 
+  record, and getting the latter from the former by means of knot-tying. 
 
   It seems that, with `DepT`, functions in the environment obtain their
   dependencies anew every time they are invoked. If we change a function in the
@@ -274,13 +284,12 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   Context](http://logback.qos.ch/manual/mdc.html).
 
   So perhaps `DepT` will be overkill in a lot of cases, offering unneeded
-  flexibility. [This
-  gist](https://gist.github.com/danidiaz/358fdccdef51ad37bbec932631dcc4d2)
-  contains an example of `DepT`-less and `ReaderT`-less dependency injection.
-  It does use `Control.Monad.Dep.Has`, in combination with "open" and "closed"
-  versions of the environment record. Unlike in "Adventures..." the gist
-  doesn't use an extensible record for the environment but, to keep things
-  simple, a suitably parameterized conventional one.
+  flexibility. Perhaps using `fixEnv` from `Control.Monad.Dep.Env` will end up
+  being simpler.
+
+  Unlike in "Adventures..." the `fixEnv` method doesn't use an extensible
+  record for the environment but, to keep things simple, a suitably
+  parameterized conventional one.
 
 - Another exploration of dependency injection with `ReaderT`:
   [ReaderT-OpenProduct-Environment](https://github.com/keksnicoh/ReaderT-OpenProduct-Environment).
