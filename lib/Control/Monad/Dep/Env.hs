@@ -31,7 +31,7 @@ module Control.Monad.Dep.Env (
     , TheDefaultFieldName (..)
       -- ** via arbitrary field name
     , TheFieldName (..)
-      -- ** via Autowiring
+      -- ** via autowiring
     , FieldsFindableByType (..)
     , Autowired (..)
     , Autowireable
@@ -44,6 +44,9 @@ module Control.Monad.Dep.Env (
     , DemotableFieldNames (..)
     , demoteFieldNames
     , mapPhaseWithFieldNames
+      -- ** Constructing phases
+    , bindPhase
+    , skipPhase  
       -- * Injecting dependencies by tying the knot
     , Constructor
     , constructor
@@ -62,6 +65,7 @@ import GHC.Generics qualified as G
 import Control.Applicative
 import Control.Monad.Dep.Has 
 import Data.Proxy
+import Data.Functor ((<&>), ($>))
 import Data.Functor.Compose
 import Data.Functor.Constant
 import Data.Functor.Identity
@@ -293,6 +297,17 @@ mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_)
     => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 mapPhaseWithFieldNames  f env =
     liftA2Phase (\(Constant name) z -> f name z) (runIdentity $ traverseH (\(Constant z) -> Identity (Compose (Constant z))) demoteFieldNames) env
+
+
+-- constructing phases
+
+bindPhase :: forall f g a b . Functor f => f a -> (a -> g b) -> Compose f g b 
+bindPhase f k = Compose (f <&> k)
+
+skipPhase :: forall f g a . Applicative f => g a -> Compose f g a 
+skipPhase g = Compose (pure g)
+
+--
 
 type Constructor env_ m = ((->) (env_ Identity m)) `Compose` Identity
 

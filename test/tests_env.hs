@@ -167,11 +167,6 @@ type Phases env_ m = Configurator `Compose` Allocator `Compose` Constructor env_
 -- phases :: Configurator (Allocator (Constructor env_ m (r_ m))) -> Phases env_ m (r_ m)
 -- phases = coerce
 
-bindPhase :: forall f g a b . Functor f => f a -> (a -> g b) -> Compose f g b 
-bindPhase f k = Compose (f <&> k)
-
-skipPhase :: forall f g a . Applicative f => g a -> Compose f g a 
-skipPhase g = Compose (pure g)
 
 parseConf :: FromJSON a => Configurator a
 parseConf = Kleisli parseJSON
