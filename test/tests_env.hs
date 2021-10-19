@@ -189,12 +189,12 @@ testEnvConstruction = do
     let parseResult = eitherDecode' (fromString "{ \"logger\" : { \"messagePrefix\" : \"[foo]\" }, \"repository\" : null, \"controller\" : null }")
     print parseResult 
     let Right value = parseResult 
-        Kleisli parser = 
+        Kleisli (withObject "configuration" -> parser) = 
               pullPhase @(Kleisli Parser Object) 
             $ mapPhaseWithFieldNames 
                 (\fieldName (Kleisli f) -> Kleisli \o -> explicitParseField f o (fromString fieldName)) 
             $ env
-        Right allocators = parseEither (withObject "configuration" parser) value 
+        Right allocators = parseEither parser value 
     runContT (pullPhase @Allocator allocators) \constructors -> do
         let (asCall -> call) = fixEnv constructors
         resourceId <- call create
