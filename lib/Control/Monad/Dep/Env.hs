@@ -181,7 +181,7 @@ type family WithLeftResult_ leftResult right r where
 
 -- see also https://github.com/haskell/cabal/issues/7394#issuecomment-861767980
 
--- | This typeclass resembles [TraversableT](https://hackage.haskell.org/package/barbies-2.0.3.0/docs/Data-Functor-Transformer.html#t:TraversableT) from the [barbies](https://hackage.haskell.org/package/barbies) library.
+-- | 'Phased' resembles [FunctorT, TraversableT and ApplicativeT](https://hackage.haskell.org/package/barbies-2.0.3.0/docs/Data-Functor-Transformer.html) from the [barbies](https://hackage.haskell.org/package/barbies) library. 'Phased' instances can be written in terms of them.
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased env_ where
     traverseH :: 
@@ -338,8 +338,11 @@ constructor = coerce
 fixEnv :: Phased env_ => env_ (Constructor env_ m) m -> env_ Identity m
 fixEnv env = fix (pullPhase env)
 
+-- | An inductively constructed environment with anonymous fields.
 --
---
+-- Can be useful for simple tests, and also for converting `Has`-based
+-- components into functions that take their dependencies as separate
+-- positional parameters.
 data InductiveEnv rs h m where
     AddDep :: forall r_ m rs h . h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r_ : rs) h m
     EmptyEnv :: forall m h . InductiveEnv '[] h m

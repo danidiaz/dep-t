@@ -44,7 +44,9 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
 import Data.Functor.Identity
+import Data.Functor.Product
 import GHC.TypeLits
+import Barbies
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
@@ -263,6 +265,29 @@ findRepository6 :: EnvHKD6 m -> Repository m
 findRepository6 env = dep env
 findController6 :: EnvHKD6 m -> Controller m
 findController6 env = dep env
+
+
+-- Deriving Phased using the barbies library, to check that they are compatible
+-- typeclasses
+
+-- newtype B e_ h m = B (e_ h m)
+
+-- instance (FunctorT e_, TraversableT e_, ApplicativeT e_) => Phased (B e_) where
+--     traverseH f (B e) = B <$> ttraverse f e
+--     liftA2H f (B ax) (B hx) = B $ tmap (\(Pair az hz) -> f az hz) $ tprod ax hx
+
+type EnvHKD7 :: (Type -> Type) -> (Type -> Type) -> Type
+data EnvHKD7 h m = EnvHKD7
+  { logger :: h (Logger m),
+    repository :: h (Repository m),
+    controller :: h (Controller m)
+  } deriving stock Generic
+    deriving anyclass (FunctorT, TraversableT, ApplicativeT)
+
+instance Phased EnvHKD7 where
+    traverseH f e = ttraverse f e
+    liftA2H f ax hx = tmap (\(Pair az hz) -> f az hz) $ tprod ax hx
+
 
 --
 --

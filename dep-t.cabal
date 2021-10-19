@@ -69,6 +69,7 @@ test-suite dep-t-test-has
     tasty              >=  1.3.1,
     tasty-hunit        >=  0.10.0.2,
     sop-core           ^>= 0.5.0.0,
+    barbies            ^>= 2.0
 
 test-suite dep-t-test-env
   import: common
@@ -85,7 +86,7 @@ test-suite dep-t-test-env
     aeson              ^>= 2.0,
     bytestring,
     text,
-    containers,
+    containers
 
 
 -- VERY IMPORTANT for doctests to work: https://stackoverflow.com/a/58027909/1364288
