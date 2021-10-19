@@ -136,13 +136,9 @@ makeController (asCall -> call) = Controller {
           call findById key 
     }
 
--- makeController :: MonadDep '[HasLogger, HasRepository] d e m => Int -> m String
--- makeController x = do
---   e <- ask
---   liftD $ logger e "I'm going to insert in the db!"
---   liftD $ repository e x
---   return "view"
--- 
+-- positional version of the controller constructor
+makeControllerPositionalArgs :: Monad m => Logger m -> Repository m -> Controller m
+makeControllerPositionalArgs a b = makeController $ addDep @Logger a $ addDep @Repository b $ emptyEnv
 
 --
 -- to test the coercible in the definition of Has
@@ -192,16 +188,12 @@ testEnvConstruction = do
     print parseResult 
     let Right value = parseResult 
         Kleisli parser = 
-              pullPhase  
+              pullPhase @(Kleisli Parser Object) 
             $ mapPhaseWithFieldNames 
                 (\fieldName (Kleisli f) -> Kleisli \o -> explicitParseField f o (fromString fieldName)) 
             $ env
-        parseResult' = parseEither (withObject "configuration" parser) value 
-    print $ case parseResult' of
-        Left x -> x
-        Right _ -> ""
-    let Right allocators = parseResult'
-    runContT (pullPhase allocators) \constructors -> do
+        Right allocators = parseEither (withObject "configuration" parser) value 
+    runContT (pullPhase @Allocator allocators) \constructors -> do
         let (asCall -> call) = fixEnv constructors
         resourceId <- call create
         call append resourceId "foo"

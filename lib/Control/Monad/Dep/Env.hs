@@ -183,7 +183,7 @@ type family WithLeftResult_ leftResult right r where
 
 -- | 'Phased' resembles [FunctorT, TraversableT and ApplicativeT](https://hackage.haskell.org/package/barbies-2.0.3.0/docs/Data-Functor-Transformer.html) from the [barbies](https://hackage.haskell.org/package/barbies) library. 'Phased' instances can be written in terms of them.
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
-class Phased env_ where
+class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
     traverseH :: 
         Applicative f 
         => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
