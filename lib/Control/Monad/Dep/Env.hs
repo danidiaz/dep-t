@@ -18,11 +18,43 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 
--- | This module provides helpers for defining dependency injection
+-- | This module provides helpers for building dependency injection
 -- environments composed of records.
 --
 -- It's not necessary when defining the record components themselves, in that
 -- case 'Control.Monad.Dep.Has' should suffice.
+--
+-- >>> :{
+-- type Logger :: (Type -> Type) -> Type
+-- newtype Logger d = Logger {
+--     info :: String -> d ()
+--   }
+-- --
+-- data Repository d = Repository
+--   { findById :: Int -> d (Maybe String)
+--   , putById :: Int -> String -> d ()
+--   , insert :: String -> d Int
+--   }
+-- --
+-- data Controller d = Controller 
+--   { create :: d Int
+--   , append :: Int -> String -> d Bool 
+--   , inspect :: Int -> d (Maybe String)
+--   } 
+-- --
+-- type EnvHKD :: (Type -> Type) -> (Type -> Type) -> Type
+-- data EnvHKD h m = EnvHKD
+--   { logger :: h (Logger m),
+--     repository :: h (Repository m),
+--     controller :: h (Controller m)
+--   } deriving stock Generic
+-- -- deriving anyclass (FieldsFindableByType, DemotableFieldNames, Phased)
+-- -- deriving via Autowired (EnvHKD Identity m) instance Autowireable r_ m (EnvHKD Identity m) => Has r_ m (EnvHKD Identity m)
+-- :}
+--
+-- The module also provides a monad transformer-less way of performing dependency
+-- injection, by means of 'fixEnv'.
+--
 module Control.Monad.Dep.Env (
       -- * A general-purpose Has
       Has
@@ -45,6 +77,7 @@ module Control.Monad.Dep.Env (
     , demoteFieldNames
     , mapPhaseWithFieldNames
       -- ** Constructing phases
+      -- $phasehelpers
     , bindPhase
     , skipPhase  
       -- * Injecting dependencies by tying the knot
@@ -76,8 +109,34 @@ import Data.Functor.Identity
 import Data.Function (fix)
 import Data.String
 import Data.Type.Equality (type (==))
--- import Control.Monad.Reader
--- import Control.Monad.Dep.Class
+
+-- $setup
+--
+-- >>> :set -XTypeApplications
+-- >>> :set -XMultiParamTypeClasses
+-- >>> :set -XImportQualifiedPost
+-- >>> :set -XTemplateHaskell
+-- >>> :set -XStandaloneKindSignatures
+-- >>> :set -XNamedFieldPuns
+-- >>> :set -XFunctionalDependencies
+-- >>> :set -XFlexibleContexts
+-- >>> :set -XDataKinds
+-- >>> :set -XBlockArguments
+-- >>> :set -XFlexibleInstances
+-- >>> :set -XTypeFamilies
+-- >>> :set -XDeriveGeneric
+-- >>> :set -XViewPatterns
+-- >>> :set -XDerivingStrategies
+-- >>> :set -XDerivingVia
+-- >>> :set -XDeriveAnyClass
+-- >>> :set -XStandaloneDeriving
+-- >>> :set -XUndecidableInstances
+-- >>> import Data.Kind
+-- >>> import Control.Monad.Dep.Has
+-- >>> import Control.Monad.Dep.Env
+-- >>> import GHC.Generics (Generic)
+--
+
 
 -- via the default field name
 
@@ -89,7 +148,7 @@ import Data.Type.Equality (type (==))
 -- This is the same behavior as the @DefaultSignatures@ implementation for
 -- 'Has', so maybe it doesn't make much sense to use it, except for
 -- explicitness.
-newtype TheDefaultFieldName env = TheDefaultFieldName env
+newtype TheDefaultFieldName (env :: Type) = TheDefaultFieldName env
 
 instance (Dep r_, HasField (DefaultFieldName r_) (env_ m) u, Coercible u (r_ m)) 
          => Has r_ m (TheDefaultFieldName (env_ m)) where
@@ -99,7 +158,7 @@ instance (Dep r_, HasField (DefaultFieldName r_) (env_ m) u, Coercible u (r_ m))
 --
 -- The field name is specified as a 'Symbol'.
 type TheFieldName :: Symbol -> Type -> Type
-newtype TheFieldName name env = TheFieldName env
+newtype TheFieldName (name :: Symbol) (env :: Type) = TheFieldName env
 
 instance (HasField name (env_ m) u, Coercible u (r_ m)) 
          => Has r_ m (TheFieldName name (env_ m)) where
@@ -125,14 +184,14 @@ class FieldsFindableByType (env :: Type) where
 -- __BEWARE__: for large records with many components, this technique might
 -- incur in long compilation times.
 type Autowired :: Type -> Type
-newtype Autowired env = Autowired env
+newtype Autowired (env :: Type) = Autowired env
 
 -- | Constraints required when @DerivingVia@ /all/ possible instances of 'Has' in
 -- a single definition.
 --
 -- This only works for environments where all the fields come wrapped in
 -- "Data.Functor.Identity".
-type Autowireable r_ m env = HasField (FindFieldByType env (r_ m)) env (Identity (r_ m))
+type Autowireable r_ (m :: Type -> Type) (env :: Type) = HasField (FindFieldByType env (r_ m)) env (Identity (r_ m))
 
 instance (
            FieldsFindableByType (env_ m),
@@ -181,9 +240,19 @@ type family WithLeftResult_ leftResult right r where
 
 -- see also https://github.com/haskell/cabal/issues/7394#issuecomment-861767980
 
--- | 'Phased' resembles [FunctorT, TraversableT and ApplicativeT](https://hackage.haskell.org/package/barbies-2.0.3.0/docs/Data-Functor-Transformer.html) from the [barbies](https://hackage.haskell.org/package/barbies) library. 'Phased' instances can be written in terms of them.
+-- | Class of 2-parameter environments for which the first parameter @h@ wraps
+-- each field and corresponds to phases in the construction of the environment,
+-- and the second parameter @m@ is the effect monad used by each component.
+--
+-- @h@ will typically be a composition of applicative functors, each one
+-- representing a phase. We advance through the phases by \"pulling out\" the
+-- outermost phase and running it in some way, until we are are left with a
+-- 'Constructor' phase, which we can remove using 'fixEnv'.
+--
+-- 'Phased' resembles [FunctorT, TraversableT and ApplicativeT](https://hackage.haskell.org/package/barbies-2.0.3.0/docs/Data-Functor-Transformer.html) from the [barbies](https://hackage.haskell.org/package/barbies) library. 'Phased' instances can be written in terms of them.
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
+    -- | Used to implement 'pullPhase' and 'mapPhase',  typically you should use those functions instead.
     traverseH :: 
         Applicative f 
         => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
@@ -194,6 +263,7 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
            , Applicative f )
         => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
     traverseH t env = G.to <$> gTraverseH t (G.from env)
+    -- | Used to implement 'liftA2Phase', typically you should use that function instead.
     liftA2H ::  (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     default liftA2H
         :: ( G.Generic (env_ a m)
@@ -204,14 +274,18 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
         => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     liftA2H f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
 
+-- | Take the outermost phase wrapping each component and \"pull it outwards\",
+-- aggregating the phase's applicative effects.
 pullPhase :: forall f g env_ m . (Applicative f, Phased env_) => env_ (Compose f g) m -> f (env_ g m)
 -- f first to help annotate the phase
 pullPhase = traverseH getCompose
 
+-- | Modify the outermost phase wrapping each component.
 mapPhase :: forall f' f g env_ m . Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
 mapPhase f env = runIdentity $ traverseH (\(Compose fg) -> Identity (Compose (f fg))) env
 
+-- | Combine two environments with a function that works on their outermost phases.
 liftA2Phase :: forall f' a f g env_ m . Phased env_ => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
 liftA2Phase f = liftA2H (\(Compose fa) (Compose fg) -> Compose (f fa fg))
@@ -270,7 +344,8 @@ instance   GLiftA2Phase a f f' (G.S1 metaSel (G.Rec0 (a bean)))
      gLiftA2Phase f (G.M1 (G.K1 abean)) (G.M1 (G.K1 fgbean)) =
          G.M1 (G.K1 (f abean fgbean))
 
--- Demotable field names
+-- | Class of 2-parameter environments for which it's possible to obtain the
+-- names of each field as values.
 type DemotableFieldNames :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class DemotableFieldNames env_ where
     demoteFieldNamesH :: (forall x. String -> h String x) -> env_ (h String) m
@@ -281,6 +356,8 @@ class DemotableFieldNames env_ where
            -> env_ (h String) m
     demoteFieldNamesH f = G.to (gDemoteFieldNamesH f)
 
+-- | Bring down the field names of the environment to the term level and store
+-- them in the accumulator of "Data.Functor.Constant".
 demoteFieldNames :: forall env_ m . DemotableFieldNames env_ => env_ (Constant String) m
 demoteFieldNames = demoteFieldNamesH Constant
 
@@ -301,6 +378,12 @@ instance KnownSymbol name => GDemotableFieldNamesH h (G.S1 (G.MetaSel ('Just nam
      gDemoteFieldNamesH f = 
          G.M1 (G.K1 (f (symbolVal (Proxy @name))))
 
+-- | Modify the outermost phase wrapping each component, while having access to
+-- the field name of the component.
+--
+-- A typical usage is modifying a \"parsing the configuration\" phase so that
+-- each component looks into a different section of the global configuration
+-- field.
 mapPhaseWithFieldNames :: forall f' f g env_ m. (Phased env_, DemotableFieldNames env_) 
     => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
@@ -310,19 +393,33 @@ mapPhaseWithFieldNames  f env =
 
 -- constructing phases
 
+-- $phasehelpers
+--
+-- Small convenience functions to help build nested compositions of functors.
+--
+
+-- | Use the result of the previous phase to build the next one.
+--
+-- Can be useful infix.
 bindPhase :: forall f g a b . Functor f => f a -> (a -> g b) -> Compose f g b 
 -- f as first type parameter to help annotate the current phase
 bindPhase f k = Compose (f <&> k)
 
+-- | Don't do anything for the current phase, just wrap the next one.
 skipPhase :: forall f g a . Applicative f => g a -> Compose f g a 
 -- f as first type parameter to help annotate the current phase
 skipPhase g = Compose (pure g)
 
+-- | A phase with the effect of \"constructing each component by reading its
+-- dependencies from a completed environment\". 
 --
+-- The 'Constructor' phase for an environment will typically be parameterized
+-- with the environment itself.
+type Constructor (env_ :: (Type -> Type) -> (Type -> Type) -> Type) (m :: Type -> Type) = ((->) (env_ Identity m)) `Compose` Identity
 
-type Constructor env_ m = ((->) (env_ Identity m)) `Compose` Identity
 
-
+-- | Turn an environment-consuming function into a 'Constructor' that can be slotted 
+-- into some field of a 'Phased' environment.
 constructor :: forall r_ env_ m . (env_ Identity m -> r_ m) -> Constructor env_ m (r_ m)
 -- same order of type parameters as Has
 constructor = coerce
@@ -351,7 +448,15 @@ fixEnv env = fix (pullPhase env)
 -- Can be useful for simple tests, and also for converting `Has`-based
 -- components into functions that take their dependencies as separate
 -- positional parameters.
-data InductiveEnv rs h m where
+--
+-- > makeController :: (Monad m, Has Logger m env, Has Repository m env) => env -> Controller m
+-- > makeController = undefined
+-- > makeControllerPositional :: Monad m => Logger m -> Repository m -> Controller m
+-- > makeControllerPositional a b = makeController $ addDep @Logger a $ addDep @Repository b $ emptyEnv
+-- 
+--
+--
+data InductiveEnv (rs :: [(Type -> Type) -> Type]) (h :: Type -> Type) (m :: Type -> Type) where
     AddDep :: forall r_ m rs h . h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r_ : rs) h m
     EmptyEnv :: forall m h . InductiveEnv '[] h m
 

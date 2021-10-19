@@ -8,6 +8,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE KindSignatures #-}
 
 -- |
 --    This package provides 'DepT', a monad transformer similar to 'ReaderT'.
@@ -74,7 +75,7 @@ type DepT ::
   (Type -> Type) ->
   Type ->
   Type
-newtype DepT e_ m r = DepT {toReaderT :: ReaderT (e_ (DepT e_ m)) m r}
+newtype DepT (e_ :: (Type -> Type) -> Type) (m :: Type -> Type) (r :: Type) = DepT {toReaderT :: ReaderT (e_ (DepT e_ m)) m r}
   deriving
     ( Functor,
       Applicative,

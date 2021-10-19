@@ -28,20 +28,15 @@
 
 module Main (main) where
 
-import Control.Monad.Dep
 import Control.Monad.Dep.Has
 import Control.Monad.Dep.Env
-import Control.Monad.Dep.Class
 import Control.Monad.Reader
-import Control.Monad.Writer
 import Data.Functor.Constant
 import Data.Functor.Compose
 import Data.Coerce
 import Data.Kind
 import Data.List (intercalate)
 import GHC.Generics (Generic)
-import Rank2 qualified
-import Rank2.TH qualified
 import Test.Tasty
 import Test.Tasty.HUnit
 import Prelude hiding (log)
@@ -66,21 +61,18 @@ type Logger :: (Type -> Type) -> Type
 newtype Logger d = Logger {
     info :: String -> d ()
   }
-  deriving stock Generic
 
 data Repository d = Repository
   { findById :: Int -> d (Maybe String)
   , putById :: Int -> String -> d ()
   , insert :: String -> d Int
   }
-  deriving stock Generic
 
 data Controller d = Controller 
   { create :: d Int
   , append :: Int -> String -> d Bool 
   , inspect :: Int -> d (Maybe String)
   } 
-  deriving stock Generic
 
 type MessagePrefix = Text.Text
 
@@ -141,7 +133,6 @@ makeControllerPositionalArgs :: Monad m => Logger m -> Repository m -> Controlle
 makeControllerPositionalArgs a b = makeController $ addDep @Logger a $ addDep @Repository b $ emptyEnv
 
 --
--- to test the coercible in the definition of Has
 type EnvHKD :: (Type -> Type) -> (Type -> Type) -> Type
 data EnvHKD h m = EnvHKD
   { logger :: h (Logger m),

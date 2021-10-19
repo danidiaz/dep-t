@@ -136,7 +136,7 @@ type MonadDep ::
   Type ->
   (Type -> Type) ->
   Constraint
-type family MonadDep dependencies d e m where
+type family MonadDep (dependencies :: [(Type -> Type) -> Type -> Constraint]) (d :: Type -> Type) (e :: Type) (m :: Type -> Type) where
   MonadDep '[] d e m = (LiftDep d m, MonadReader e m)
   MonadDep (dependency ': dependencies) d e m = (dependency d e, MonadDep dependencies d e m)
 

@@ -235,8 +235,8 @@ way reminiscent of aspect-oriented programming.
 ## What if I don't want to use DepT, or any other monad transformer for that matter?
 
 Check out the function `fixEnv` in module `Control.Monad.Dep.Env`, which
-provides a transformer-less way to perform dependency injection, instead based
-on knot-tying.
+provides a transformer-less way to perform dependency injection, based on
+knot-tying.
 
 That method requires an environment parameterized by _two_ type constructors:
 one that wraps each field, and another that works as the effect monad for the

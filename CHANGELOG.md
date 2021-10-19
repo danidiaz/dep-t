@@ -2,7 +2,7 @@
 
 ## 0.4.6.0
 
-* added new module Control.Monad.Dep.Has.Env with helpers for defining environments of records.
+* added new module Control.Monad.Dep.Env with helpers for defining environments of records.
 
 ## 0.4.5.0
 
