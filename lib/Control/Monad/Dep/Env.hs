@@ -204,13 +204,16 @@ class Phased env_ where
         => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     liftA2H f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
 
-pullPhase :: (Applicative f, Phased env_) => env_ (Compose f g) m -> f (env_ g m)
+pullPhase :: forall f g m env_ . (Applicative f, Phased env_) => env_ (Compose f g) m -> f (env_ g m)
+-- f first to help annotate the phase
 pullPhase = traverseH getCompose
 
-mapPhase :: Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
+mapPhase :: forall f' f g m env_ . Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
+-- f' first to help annotate the *target* of the transform?
 mapPhase f env = runIdentity $ traverseH (\(Compose fg) -> Identity (Compose (f fg))) env
 
-liftA2Phase :: Phased env_ => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
+liftA2Phase :: forall f' a f g m env_ . Phased env_ => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
+-- f' first to help annotate the *target* of the transform?
 liftA2Phase f = liftA2H (\(Compose fa) (Compose fg) -> Compose (f fa fg))
 
 class GTraverseH h g env env' | env -> h, env' -> g where
@@ -298,8 +301,9 @@ instance KnownSymbol name => GDemotableFieldNamesH h (G.S1 (G.MetaSel ('Just nam
      gDemoteFieldNamesH f = 
          G.M1 (G.K1 (f (symbolVal (Proxy @name))))
 
-mapPhaseWithFieldNames :: (Phased env_, DemotableFieldNames env_) 
+mapPhaseWithFieldNames :: forall f' f g m env_ . (Phased env_, DemotableFieldNames env_) 
     => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
+-- f' first to help annotate the *target* of the transform?
 mapPhaseWithFieldNames  f env =
     liftA2Phase (\(Constant name) z -> f name z) (runIdentity $ traverseH (\(Constant z) -> Identity (Compose (Constant z))) demoteFieldNames) env
 
@@ -307,16 +311,20 @@ mapPhaseWithFieldNames  f env =
 -- constructing phases
 
 bindPhase :: forall f g a b . Functor f => f a -> (a -> g b) -> Compose f g b 
+-- f as first type parameter to help annotate the current phase
 bindPhase f k = Compose (f <&> k)
 
 skipPhase :: forall f g a . Applicative f => g a -> Compose f g a 
+-- f as first type parameter to help annotate the current phase
 skipPhase g = Compose (pure g)
 
 --
 
 type Constructor env_ m = ((->) (env_ Identity m)) `Compose` Identity
 
-constructor :: forall env_ m r_ . (env_ Identity m -> r_ m) -> Constructor env_ m (r_ m)
+
+constructor :: forall r_ m env_ . (env_ Identity m -> r_ m) -> Constructor env_ m (r_ m)
+-- same order of type parameters as Has
 constructor = coerce
 
 -- | This is a method of performing dependency injection that doesn't require
