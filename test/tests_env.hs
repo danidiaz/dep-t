@@ -187,6 +187,30 @@ env = EnvHKD {
         constructor makeController
 }
 
+
+testEnvConstruction :: Assertion
+testEnvConstruction = do
+    let parseResult = eitherDecode' (fromString "{ \"logger\" : { \"messagePrefix\" : \"[foo]\" }, \"repository\" : null, \"controller\" : null }")
+    print parseResult 
+    let Right value = parseResult 
+        Kleisli parser = 
+              pullPhase  
+            $ mapPhaseWithFieldNames 
+                (\fieldName (Kleisli f) -> Kleisli \o -> explicitParseField f o (fromString fieldName)) 
+            $ env
+        parseResult' = parseEither (withObject "configuration" parser) value 
+    print $ case parseResult' of
+        Left x -> x
+        Right _ -> ""
+    let Right allocators = parseResult'
+    runContT (pullPhase allocators) \constructors -> do
+        let (asCall -> call) = fixEnv constructors
+        resourceId <- call create
+        call append resourceId "foo"
+        call append resourceId "bar"
+        Just result <- call inspect resourceId
+        assertEqual "" "foobar" $ result
+
 --
 --
 --
@@ -205,29 +229,7 @@ tests =
                             , controller = Constant controllerField  
                             } = fieldNames
                   in intercalate " " [loggerField, repositoryField, controllerField]
-        , testCase "environmentConstruction" $ do
-            let parseResult = eitherDecode' (fromString "{ \"logger\" : { \"messagePrefix\" : \"[foo]\" }, \"repository\" : null, \"controller\" : null }")
-            print parseResult 
-            let Right value = parseResult 
-                Kleisli parser = 
-                      pullPhase  
-                    $ mapPhaseWithFieldNames 
-                        (\fieldName (Kleisli f) -> Kleisli \o -> explicitParseField f o (fromString fieldName)) 
-                    $ env
-                parseResult' = parseEither (withObject "configuration" parser) value 
-            print $ case parseResult' of
-                Left x -> x
-                Right _ -> ""
-            let Right allocators = parseResult'
-            runContT (pullPhase allocators) \constructors -> do
-                let (asCall -> call) = fixEnv constructors
-                resourceId <- call create
-                call append resourceId "foo"
-                call append resourceId "bar"
-                x <- call inspect resourceId
-                print x
-                Just result <- call inspect resourceId
-                assertEqual "" "foobar" $ result
+        , testCase "environmentConstruction" testEnvConstruction
     ]
 
 main :: IO ()
