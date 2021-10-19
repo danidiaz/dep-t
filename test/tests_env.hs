@@ -164,8 +164,14 @@ type Configurator = Kleisli Parser Value
 type Allocator = ContT () IO
 type Phases env_ m = Configurator `Compose` Allocator `Compose` Constructor env_ m
 
-phases :: Configurator (Allocator (Constructor env_ m (r_ m))) -> Phases env_ m (r_ m)
-phases = coerce
+-- phases :: Configurator (Allocator (Constructor env_ m (r_ m))) -> Phases env_ m (r_ m)
+-- phases = coerce
+
+bindPhase :: forall f g a b . Functor f => f a -> (a -> g b) -> Compose f g b 
+bindPhase f k = Compose (f <&> k)
+
+skipPhase :: forall f g a . Applicative f => g a -> Compose f g a 
+skipPhase g = Compose (pure g)
 
 parseConf :: FromJSON a => Configurator a
 parseConf = Kleisli parseJSON
@@ -173,16 +179,16 @@ parseConf = Kleisli parseJSON
 env :: EnvHKD (Phases EnvHKD IO) IO
 env = EnvHKD {
       logger = 
-        Compose $ parseConf <&> \(LoggerConfiguration {messagePrefix}) -> 
-        Compose $ pure @Allocator () <&> \_ ->
+        parseConf `bindPhase` \(LoggerConfiguration {messagePrefix}) -> 
+        skipPhase @Allocator $
         constructor (makeStdoutLogger messagePrefix)
     , repository = 
-        Compose $ pure @Configurator () <&> \_ ->
-        Compose $ allocateMap <&> \ref ->
+        skipPhase @Configurator $
+        allocateMap `bindPhase` \ref -> 
         constructor (makeInMemoryRepository ref)
     , controller = 
-        Compose $ pure @Configurator () <&> \_ ->
-        Compose $ pure @Allocator () <&> \_ ->
+        skipPhase @Configurator $
+        skipPhase @Allocator $ 
         constructor makeController
 }
 
