@@ -48,13 +48,17 @@ module Control.Monad.Dep.Env (
     , bindPhase
     , skipPhase  
       -- * Injecting dependencies by tying the knot
+    , fixEnv
     , Constructor
     , constructor
-    , fixEnv
       -- * Inductive environment with anonymous fields
     , InductiveEnv (..)
     , addDep
     , emptyEnv
+    -- * Re-exports
+    , Identity (..)
+    , Constant (..)
+    , Compose (..)
     ) where
 
 import Data.Kind
@@ -123,11 +127,11 @@ class FieldsFindableByType (env :: Type) where
 type Autowired :: Type -> Type
 newtype Autowired env = Autowired env
 
--- | Constraints required when @DerivingVia@ all possible instances of 'Has' in
+-- | Constraints required when @DerivingVia@ /all/ possible instances of 'Has' in
 -- a single definition.
 --
--- @wrapping@ should be @r_ m@ when the components don't come wrapped in some
--- newtype, and @somenewtype (r_ m)@ otherwise.
+-- This only works for environments where all the fields come wrapped in
+-- "Data.Functor.Identity".
 type Autowireable r_ m env = HasField (FindFieldByType env (r_ m)) env (Identity (r_ m))
 
 instance (
@@ -177,6 +181,7 @@ type family WithLeftResult_ leftResult right r where
 
 -- see also https://github.com/haskell/cabal/issues/7394#issuecomment-861767980
 
+-- | This typeclass resembles [TraversableT](https://hackage.haskell.org/package/barbies-2.0.3.0/docs/Data-Functor-Transformer.html#t:TraversableT) from the [barbies](https://hackage.haskell.org/package/barbies) library.
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased env_ where
     traverseH :: 
@@ -314,6 +319,22 @@ type Constructor env_ m = ((->) (env_ Identity m)) `Compose` Identity
 constructor :: forall env_ m r_ . (env_ Identity m -> r_ m) -> Constructor env_ m (r_ m)
 constructor = coerce
 
+-- | This is a method of performing dependency injection that doesn't require
+-- "Control.Monad.Dep.DepT" at all. In fact, it doesn't require the use of
+-- /any/ monad transformer!
+--
+-- If we have a environment whose fields are functions that construct each
+-- component by searching for its dependencies in a \"fully built\" version of
+-- the environment, we can \"tie the knot\" to obtain the \"fully built\"
+-- environment. This works as long as there aren't any circular dependencies
+-- between components.
+--
+-- Think of it as a version of "Data.Function.fix" that, instead of \"tying\" a single
+-- function, ties a whole record of them.
+--
+-- The @env_ (Constructor env_ m) m@ parameter might be the result of peeling
+-- away successive layers of applicative functor composition using 'pullPhase',
+-- until only the wiring phase remains.
 fixEnv :: Phased env_ => env_ (Constructor env_ m) m -> env_ Identity m
 fixEnv env = fix (pullPhase env)
 
@@ -341,6 +362,7 @@ instance Phased (InductiveEnv rs) where
     liftA2H t (AddDep ax arest) (AddDep hx hrest) = 
         AddDep (t ax hx) (liftA2H t arest hrest)
  
+-- | Works by searching on the list of types.
 instance InductiveEnvFind r_ m rs => Has r_ m (InductiveEnv rs Identity m) where
     dep = inductiveEnvDep
 
