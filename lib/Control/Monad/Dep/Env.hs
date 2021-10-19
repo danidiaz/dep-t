@@ -50,6 +50,8 @@ module Control.Monad.Dep.Env (
     , fixEnv
       -- * Inductive environment with anonymous fields
     , InductiveEnv (..)
+    , addDep
+    , emptyEnv
     ) where
 
 import Data.Kind
@@ -303,8 +305,16 @@ fixEnv env = fix (pullPhase env)
 --
 --
 data InductiveEnv rs h m where
-    AddDep :: forall r_ h m rs. h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r_ : rs) h m
-    EmptyEnv :: InductiveEnv '[] h m
+    AddDep :: forall r_ m rs h . h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r_ : rs) h m
+    EmptyEnv :: forall m h . InductiveEnv '[] h m
+
+-- | Unlike the 'AddDep' constructor, this sets @h@ to 'Identity'.
+addDep :: forall r_ m rs . r_ m -> InductiveEnv rs Identity m -> InductiveEnv (r_ : rs) Identity m
+addDep = AddDep @r_ @m @rs . Identity
+
+-- | Unlike the 'EmptyEnv' constructor, this sets @h@ to 'Identity'.
+emptyEnv :: forall m . InductiveEnv '[] Identity m
+emptyEnv = EmptyEnv @m @Identity
 
 instance Phased (InductiveEnv rs) where
     traverseH t EmptyEnv = pure EmptyEnv
