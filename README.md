@@ -314,6 +314,8 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 > can be lifted by composing the van Laarhoven free monad with suitable
 > projection functions that pick out the requisite primitive operations. 
 
+  [Another post](https://www.tweag.io/blog/2019-03-20-capability-free-monad/van) about the van Laarhoven Free Monad. Is it related to the final encoding of Free monads described [here](https://blog.poisson.chat/posts/2021-10-20-initial-final-free-monad.html)?
+
 - [Interesting SO response](https://stackoverflow.com/a/634754/1364288) (from
   2009) about the benefits of autowiring in Spring. The record-of-functions
   approach in Haskell can't be said to provide true autowiring. You still need
