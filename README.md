@@ -296,9 +296,9 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 
 - [The ReaderT design pattern](https://www.fpcomplete.com/blog/2017/06/readert-design-pattern/).
 
-> Your application code will, in general, live in ReaderT Env IO. Define it as type App = ReaderT Env IO if you wish, or use a newtype wrapper instead of ReaderT directly.
+  > Your application code will, in general, live in ReaderT Env IO. Define it as type App = ReaderT Env IO if you wish, or use a newtype wrapper instead of ReaderT directly.
 
-> Optional: instead of directly using the App datatype, write your functions in terms of mtl-style typeclasses like MonadReader and MonadIO
+  > Optional: instead of directly using the App datatype, write your functions in terms of mtl-style typeclasses like MonadReader and MonadIO
 
 - [RIO](http://hackage.haskell.org/package/rio) is a featureful ReaderT-like /
   prelude replacement library which favors monomorphic environments.
