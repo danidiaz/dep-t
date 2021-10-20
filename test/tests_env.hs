@@ -128,9 +128,12 @@ makeController (asCall -> call) = Controller {
           call findById key 
     }
 
--- positional version of the controller constructor
-makeControllerPositionalArgs :: Monad m => Logger m -> Repository m -> Controller m
-makeControllerPositionalArgs a b = makeController $ addDep @Logger a $ addDep @Repository b $ emptyEnv
+-- from Has-using to positional
+makeControllerPositional :: Monad m => Logger m -> Repository m -> Controller m
+makeControllerPositional a b = makeController $ addDep a $ addDep b $ emptyEnv
+-- from positional to Has-using
+makeController' :: (Has Logger m env, Has Repository m env, Monad m) => env -> Controller m
+makeController' env = makeControllerPositional (dep env) (dep env)
 
 --
 type EnvHKD :: (Type -> Type) -> (Type -> Type) -> Type
