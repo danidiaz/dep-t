@@ -20,4 +20,4 @@ jobs:
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
-      - run: cabal test
+      - run: cabal test --write-ghc-environment-files=always
