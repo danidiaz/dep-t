@@ -20,4 +20,7 @@ jobs:
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
-      - run: cabal test --write-ghc-environment-files=always
+      # Writing the ghc environments seems to be necessary
+      # for the finicky doctest tests to work.
+      - run: cabal build --write-ghc-environment-files=always
+      - run: cabal test
