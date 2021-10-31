@@ -36,7 +36,7 @@ import Control.Monad.Writer
 import Data.Coerce
 import Data.Kind
 import Data.List (intercalate)
-import Data.SOP
+import Data.SOP hiding (Compose)
 import GHC.Generics
 import Rank2 qualified
 import Rank2.TH qualified
@@ -47,6 +47,13 @@ import Data.Functor.Identity
 import Data.Functor.Product
 import GHC.TypeLits
 import Barbies
+import Control.Monad.Trans.Cont
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
+import Data.IORef
+import Data.Functor.Compose
+import Control.Exception hiding (TypeError)
+import System.IO
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
@@ -78,13 +85,11 @@ data Env m = Env
   }
 
 instance Has Logger m (Env m)
-
 instance Has Repository m (Env m)
-
 instance Has Controller m (Env m)
 
-mkController :: forall d e m. MonadDep [Has Logger, Has Repository] d e m => Controller m
-mkController =
+makeController :: forall d e m. MonadDep [Has Logger, Has Repository] d e m => Controller m
+makeController =
   Controller \url -> 
     useEnv \(asCall -> call) -> do
       call log "I'm going to insert in the db!"
@@ -99,8 +104,8 @@ mkController =
 --   liftD (f e)
 
 -- better than with all that liftD spam... although slightly less flexible
-mkController' :: forall d e m. MonadDep [Has Logger, Has Repository] d e m => Controller m
-mkController' =
+makeController' :: forall d e m. MonadDep [Has Logger, Has Repository] d e m => Controller m
+makeController' =
   Controller \url ->
     useEnv \e -> do
       let (asCall -> call) = e
@@ -121,11 +126,11 @@ instance Has Repository IO EnvIO
 
 type TestTrace = ([String], [Int])
 
-mkFakeLogger :: MonadWriter TestTrace m => Logger m
-mkFakeLogger = Logger \msg -> tell ([msg], [])
+makeFakeLogger :: MonadWriter TestTrace m => Logger m
+makeFakeLogger = Logger \msg -> tell ([msg], [])
 
-mkFakeRepository :: (MonadDep '[Has Logger] d e m, MonadWriter TestTrace m) => Repository m
-mkFakeRepository =
+makeFakeRepository :: (MonadDep '[Has Logger] d e m, MonadWriter TestTrace m) => Repository m
+makeFakeRepository =
   Repository
     { select = \_ -> do
         e <- ask
@@ -139,9 +144,9 @@ mkFakeRepository =
 
 env :: Env (DepT Env (Writer TestTrace))
 env =
-  let logger = mkFakeLogger
-      repository = mkFakeRepository
-      controller = mkController
+  let logger = makeFakeLogger
+      repository = makeFakeRepository
+      controller = makeController
    in Env {logger, repository, controller}
 
 --
@@ -181,6 +186,7 @@ data EnvHKD2 h m = EnvHKD2
 
 deriving via (Autowired (EnvHKD2 Identity m)) instance Has Logger m (EnvHKD2 Identity m)
 deriving via (Autowired (EnvHKD2 Identity m)) instance Has Repository m (EnvHKD2 Identity m)
+deriving via (Autowired (EnvHKD2 Identity m)) instance Has Controller m (EnvHKD2 Identity m)
 
 -- findLogger2 :: EnvHKD2 Identity m -> Logger m
 -- findLogger2 env = dep env
@@ -292,11 +298,40 @@ instance Phased EnvHKD7 where
 --
 --
 --
+
+type Allocator = ContT () IO
+
+type Phases = Allocator `Compose` Identity
+
+allocateMap :: ContT () IO (IORef (Map Int String))
+allocateMap = ContT $ bracket (newIORef Map.empty) pure
+
+-- trying to combine phases and DepT, not going very well...
+-- envHKD :: EnvHKD Phases (DepT (EnvHKD Identity) (Writer TestTrace))
+-- envHKD =  EnvHKD {
+--       logger = 
+--         skipPhase @Allocator $
+--         pure $ makeFakeLogger
+--     , repository = 
+--         allocateMap `bindPhase` \_ -> 
+--         pure $ makeFakeRepository
+--     , controller = 
+--         skipPhase @Allocator $ 
+--         pure $ makeController
+-- }
+
+--
+--
+--
 tests :: TestTree
 tests =
   testGroup
     "All"
-    []
+    [
+      testCase "non HKD, pure" $
+              assertEqual "" (["I'm going to insert in the db!","I'm going to select an entity","I'm going to write the entity!"],[1,2,3,4]) $
+              execWriter $ runDepT (do env <- ask; serve (dep env) 7) env
+    ]
 
 main :: IO ()
 main = defaultMain tests
