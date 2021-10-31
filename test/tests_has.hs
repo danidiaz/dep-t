@@ -54,6 +54,7 @@ import Data.IORef
 import Data.Functor.Compose
 import Control.Exception hiding (TypeError)
 import System.IO
+import Data.Function
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
 -- There are indeed some higher kinded types for which GHC can currently derive Generic1 instances, but the feature is so limited it's hardly worth mentioning. This is mostly an artifact of taking the original implementation of Generic1 intended for * -> * (which already has serious limitations), turning on PolyKinds, and keeping whatever sticks, which is not much.
@@ -332,6 +333,24 @@ testEnvHKD = do
         assertEqual "" (["I'm going to insert in the db!","I'm going to select an entity","I'm going to write the entity!"],[1,2,3,4]) r
 
 --
+-- Phased Approach + DepT, with an InductiveEnv
+-- InductiveEnv requires Identity as the final wrapping type, I doesn't work :(
+
+testEnvInductive :: Assertion
+testEnvInductive = do
+    let envInductive =
+              EmptyEnv 
+            & AddDep (skipPhase @Allocator $
+                      Identity $ makeFakeLogger) 
+            & AddDep (allocateMap `bindPhase` \_ -> 
+                      Identity $ makeFakeRepository)
+            & AddDep (skipPhase @Allocator $ 
+                      Identity $ makeController)
+    runContT (pullPhase @Allocator envInductive) \env -> do
+        let r = execWriter $ runDepT (do env <- ask; serve (dep env) 7) env
+        assertEqual "" (["I'm going to insert in the db!","I'm going to select an entity","I'm going to write the entity!"],[1,2,3,4]) r
+
+--
 --
 --
 tests :: TestTree
@@ -343,6 +362,7 @@ tests =
               assertEqual "" (["I'm going to insert in the db!","I'm going to select an entity","I'm going to write the entity!"],[1,2,3,4]) $
               execWriter $ runDepT (do env <- ask; serve (dep env) 7) env
     , testCase "HKD, phased, uses I, pure" $ testEnvHKD
+    , testCase "HKD, InductiveEnv, uses Identity" $ testEnvInductive
     ]
 
 main :: IO ()
