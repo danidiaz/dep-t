@@ -157,6 +157,8 @@ data EnvHKD h m = EnvHKD
     repository :: h (Repository m),
     controller :: h (Controller m)
   }
+  deriving stock Generic
+  deriving anyclass (Phased)
 
 instance Has Logger m (EnvHKD I m)
 instance Has Repository m (EnvHKD I m)
@@ -295,30 +297,39 @@ instance Phased EnvHKD7 where
     liftA2H f ax hx = tmap (\(Pair az hz) -> f az hz) $ tprod ax hx
 
 
+-- This is an example of how to combine the "Phased" approach 
+-- with DepT.
 --
+-- Notice that the "allocator" works in IO but the ultimate
+-- effect monad is a Writer.
 --
---
-
+-- Also the identity monad is I instead of Identity, 
+-- code works with both.
 type Allocator = ContT () IO
 
-type Phases = Allocator `Compose` Identity
+type Phases = Allocator `Compose` I
 
 allocateMap :: ContT () IO (IORef (Map Int String))
 allocateMap = ContT $ bracket (newIORef Map.empty) pure
 
--- trying to combine phases and DepT, not going very well...
--- envHKD :: EnvHKD Phases (DepT (EnvHKD Identity) (Writer TestTrace))
--- envHKD =  EnvHKD {
---       logger = 
---         skipPhase @Allocator $
---         pure $ makeFakeLogger
---     , repository = 
---         allocateMap `bindPhase` \_ -> 
---         pure $ makeFakeRepository
---     , controller = 
---         skipPhase @Allocator $ 
---         pure $ makeController
--- }
+envHKD :: EnvHKD Phases (DepT (EnvHKD I) (Writer TestTrace))
+envHKD =  EnvHKD {
+      logger = 
+        skipPhase @Allocator $
+        pure $ makeFakeLogger
+    , repository = 
+        allocateMap `bindPhase` \_ -> 
+        pure $ makeFakeRepository
+    , controller = 
+        skipPhase @Allocator $ 
+        pure $ makeController
+    } 
+
+testEnvHKD :: Assertion
+testEnvHKD = do
+    runContT (pullPhase @Allocator envHKD) \env -> do
+        let r = execWriter $ runDepT (do env <- ask; serve (dep env) 7) env
+        assertEqual "" (["I'm going to insert in the db!","I'm going to select an entity","I'm going to write the entity!"],[1,2,3,4]) r
 
 --
 --
@@ -331,6 +342,7 @@ tests =
       testCase "non HKD, pure" $
               assertEqual "" (["I'm going to insert in the db!","I'm going to select an entity","I'm going to write the entity!"],[1,2,3,4]) $
               execWriter $ runDepT (do env <- ask; serve (dep env) 7) env
+    , testCase "HKD, phased, uses I, pure" $ testEnvHKD
     ]
 
 main :: IO ()
