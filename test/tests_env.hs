@@ -28,6 +28,7 @@
 
 module Main (main) where
 
+import Control.Monad.Dep.Class
 import Control.Monad.Dep.Has
 import Control.Monad.Dep.Env
 import Control.Monad.Reader
@@ -131,9 +132,19 @@ makeController (asCall -> call) = Controller {
 -- from Has-using to positional
 makeControllerPositional :: Monad m => Logger m -> Repository m -> Controller m
 makeControllerPositional a b = makeController $ addDep a $ addDep b $ emptyEnv
+
 -- from positional to Has-using
 makeController' :: (Has Logger m env, Has Repository m env, Monad m) => env -> Controller m
 makeController' env = makeControllerPositional (dep env) (dep env)
+
+-- from purely Has-using to MonadDep-using
+-- this is very verbose, how to automate it?
+makeController'' :: MonadDep [Has Logger, Has Repository] d e m => Controller m
+makeController'' = Controller {
+        create = useEnv \env -> create (makeController env)
+      , append = \a b -> useEnv \env -> append (makeController env) a b 
+      , inspect = \a -> useEnv \env -> inspect (makeController env) a  
+    }
 
 --
 type EnvHKD :: (Type -> Type) -> (Type -> Type) -> Type
