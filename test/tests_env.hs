@@ -53,7 +53,6 @@ import System.IO
 import Control.Exception
 import Control.Arrow (Kleisli (..))
 import Data.Text qualified as Text
-import Data.ByteString.Lazy qualified as Bytes
 import Data.Function ((&))
 import Data.Functor ((<&>), ($>))
 import Data.String
@@ -138,7 +137,8 @@ makeController' :: (Has Logger m env, Has Repository m env, Monad m) => env -> C
 makeController' env = makeControllerPositional (dep env) (dep env)
 
 -- from purely Has-using to MonadDep-using
--- this is very verbose, how to automate it?
+-- but this is very verbose. See 'component' in "Control.Monad.Dep.Advice" of package dep-t-advice
+-- for an alternative.
 makeController'' :: MonadDep [Has Logger, Has Repository] d e m => Controller m
 makeController'' = Controller {
         create = useEnv \env -> create (makeController env)
@@ -161,13 +161,10 @@ deriving via Autowired (EnvHKD Identity m) instance Autowireable r_ m (EnvHKD Id
 -- deriving via Autowired (EnvHKD Identity m) instance Has Repository m (EnvHKD Identity m)
 -- deriving via Autowired (EnvHKD Identity m) instance Has Controller m (EnvHKD Identity m)
 
--- phases :: Configurator (Allocator (Constructor env_ m (r_ m))) -> Phases env_ m (r_ m)
--- phases = coerce
+type Configurator = Kleisli Parser Value 
 
 parseConf :: FromJSON a => Configurator a
 parseConf = Kleisli parseJSON
-
-type Configurator = Kleisli Parser Value 
 
 type Allocator = ContT () IO
 
