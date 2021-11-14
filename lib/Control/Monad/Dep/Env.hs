@@ -255,7 +255,7 @@ type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
     -- | Used to implement 'pullPhase' and 'mapPhase',  typically you should use those functions instead.
     traverseH 
-        :: forall env_ h f (g :: Type -> Type) m. 
+        :: forall (h :: Type -> Type) (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type). 
         ( Applicative f 
         , Typeable f
         , Typeable g
@@ -264,7 +264,7 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
         )
         => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
     default traverseH 
-        :: forall env_ h f (g :: Type -> Type) m. 
+        :: forall (h :: Type -> Type) (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type). 
         ( Applicative f 
         , Typeable f
         , Typeable g
@@ -278,7 +278,7 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
     traverseH t env = G.to <$> gTraverseH t (G.from env)
     -- | Used to implement 'liftA2Phase', typically you should use that function instead.
     liftA2H
-        :: forall env_ (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) m .
+        :: forall (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) m .
         ( Typeable a
         , Typeable f
         , Typeable f'
@@ -286,7 +286,7 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
         )
         => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     default liftA2H
-        :: forall env_ (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) m .
+        :: forall (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) m .
         ( Typeable a
         , Typeable f
         , Typeable f'
