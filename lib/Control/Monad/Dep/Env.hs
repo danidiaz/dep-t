@@ -109,6 +109,7 @@ import Data.Functor.Identity
 import Data.Function (fix)
 import Data.String
 import Data.Type.Equality (type (==))
+import Data.Typeable
 
 -- $setup
 --
@@ -253,42 +254,66 @@ type family WithLeftResult_ leftResult right r where
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
     -- | Used to implement 'pullPhase' and 'mapPhase',  typically you should use those functions instead.
-    traverseH :: 
-        Applicative f 
+    traverseH 
+        :: forall env_ h f (g :: Type -> Type) m. 
+        ( Applicative f 
+        , Typeable f
+        , Typeable g
+        , Typeable h
+        , Typeable m
+        )
         => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
     default traverseH 
-        :: ( G.Generic (env_ h m)
-           , G.Generic (env_ g m)
-           , GTraverseH h g (G.Rep (env_ h m)) (G.Rep (env_ g m))
-           , Applicative f )
+        :: forall env_ h f (g :: Type -> Type) m. 
+        ( Applicative f 
+        , Typeable f
+        , Typeable g
+        , Typeable h
+        , Typeable m
+        , G.Generic (env_ h m)
+        , G.Generic (env_ g m)
+        , GTraverseH h g (G.Rep (env_ h m)) (G.Rep (env_ g m))
+        )
         => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
     traverseH t env = G.to <$> gTraverseH t (G.from env)
     -- | Used to implement 'liftA2Phase', typically you should use that function instead.
-    liftA2H ::  (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
+    liftA2H
+        :: forall env_ (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) m .
+        ( Typeable a
+        , Typeable f
+        , Typeable f'
+        , Typeable m
+        )
+        => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     default liftA2H
-        :: ( G.Generic (env_ a m)
-           , G.Generic (env_ f m)
-           , G.Generic (env_ f' m)
-           , GLiftA2Phase a f f' (G.Rep (env_ a m)) (G.Rep (env_ f m)) (G.Rep (env_ f' m))
-           )
+        :: forall env_ (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) m .
+        ( Typeable a
+        , Typeable f
+        , Typeable f'
+        , Typeable m
+        , G.Generic (env_ a m)
+        , G.Generic (env_ f m)
+        , G.Generic (env_ f' m)
+        , GLiftA2Phase a f f' (G.Rep (env_ a m)) (G.Rep (env_ f m)) (G.Rep (env_ f' m))
+        )
         => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
     liftA2H f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
 
 -- | Take the outermost phase wrapping each component and \"pull it outwards\",
 -- aggregating the phase's applicative effects.
-pullPhase :: forall f g env_ m . (Applicative f, Phased env_) => env_ (Compose f g) m -> f (env_ g m)
+pullPhase :: forall env_ f (g :: Type -> Type) m . (Applicative f, Phased env_, Typeable f, Typeable g, Typeable m) => env_ (Compose f g) m -> f (env_ g m)
 -- f first to help annotate the phase
-pullPhase = traverseH getCompose
+pullPhase = traverseH @env_ getCompose
 
 -- | Modify the outermost phase wrapping each component.
-mapPhase :: forall f' f g env_ m . Phased env_ => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
+mapPhase :: forall env_ f' f (g :: Type -> Type) m . (Phased env_ , Typeable f', Typeable f, Typeable g, Typeable m) => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
-mapPhase f env = runIdentity $ traverseH (\(Compose fg) -> Identity (Compose (f fg))) env
+mapPhase f env = runIdentity $ traverseH @env_ (\(Compose fg) -> Identity (Compose (f fg))) env
 
 -- | Combine two environments with a function that works on their outermost phases.
-liftA2Phase :: forall f' a f g env_ m . Phased env_ => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
+liftA2Phase :: forall env_ f' (a :: Type -> Type) (f :: Type -> Type) (g :: Type -> Type) m . (Phased env_, Typeable f', Typeable a, Typeable f, Typeable g, Typeable m) => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
-liftA2Phase f = liftA2H (\(Compose fa) (Compose fg) -> Compose (f fa fg))
+liftA2Phase f = liftA2H @env_ (\(Compose fa) (Compose fg) -> Compose (f fa fg))
 
 class GTraverseH h g env env' | env -> h, env' -> g where
     gTraverseH :: Applicative f => (forall x . h x -> f (g x)) -> env x -> f (env' x)
@@ -384,11 +409,18 @@ instance KnownSymbol name => GDemotableFieldNamesH h (G.S1 (G.MetaSel ('Just nam
 -- A typical usage is modifying a \"parsing the configuration\" phase so that
 -- each component looks into a different section of the global configuration
 -- field.
-mapPhaseWithFieldNames :: forall f' f g env_ m. (Phased env_, DemotableFieldNames env_) 
+mapPhaseWithFieldNames :: 
+    forall env_ (f :: Type -> Type) (f' :: Type -> Type) (g :: Type -> Type) m. 
+    ( Phased env_ 
+    , DemotableFieldNames env_
+    , Typeable f
+    , Typeable f'
+    , Typeable g 
+    , Typeable m ) 
     => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
 mapPhaseWithFieldNames  f env =
-    liftA2Phase (\(Constant name) z -> f name z) (runIdentity $ traverseH (\(Constant z) -> Identity (Compose (Constant z))) demoteFieldNames) env
+    liftA2Phase @env_ (\(Constant name) z -> f name z) (runIdentity $ traverseH @env_ (\(Constant z) -> Identity (Compose (Constant z))) demoteFieldNames) env
 
 
 -- constructing phases
@@ -440,7 +472,7 @@ constructor = coerce
 -- The @env_ (Constructor env_ m) m@ parameter might be the result of peeling
 -- away successive layers of applicative functor composition using 'pullPhase',
 -- until only the wiring phase remains.
-fixEnv :: Phased env_ => env_ (Constructor env_ m) m -> env_ Identity m
+fixEnv :: (Phased env_, Typeable env_, Typeable m) => env_ (Constructor env_ m) m -> env_ Identity m
 fixEnv env = fix (pullPhase env)
 
 -- | An inductively constructed environment with anonymous fields.
