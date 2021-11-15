@@ -255,16 +255,27 @@ type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
     -- | Used to implement 'pullPhase' and 'mapPhase',  typically you should use those functions instead.
     traverseH 
-        :: forall (h :: Type -> Type) (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type). 
+        :: forall (h :: Type -> Type) 
+                  (f :: Type -> Type) 
+                  (g :: Type -> Type) 
+                  (m :: Type -> Type). 
         ( Applicative f 
         , Typeable f
         , Typeable g
         , Typeable h
         , Typeable m
         )
-        => (forall x . h x -> f (g x)) -> env_ h m -> f (env_ g m)
+        -- | 
+        => (forall x . h x -> f (g x)) 
+        -- |
+        -> env_ h m 
+        -- |
+        -> f (env_ g m)
     default traverseH 
-        :: forall (h :: Type -> Type) (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type). 
+        :: forall (h :: Type -> Type) 
+                  (f :: Type -> Type) 
+                  (g :: Type -> Type) 
+                  (m :: Type -> Type). 
         ( Applicative f 
         , Typeable f
         , Typeable g
@@ -278,13 +289,20 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
     traverseH t env = G.to <$> gTraverseH t (G.from env)
     -- | Used to implement 'liftA2Phase', typically you should use that function instead.
     liftA2H
-        :: forall (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) m .
+        :: forall (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) (m :: Type -> Type) .
         ( Typeable a
         , Typeable f
         , Typeable f'
         , Typeable m
         )
-        => (forall x. a x -> f x -> f' x) -> env_ a m -> env_ f m -> env_ f' m
+        -- | 
+        => (forall x. a x -> f x -> f' x) 
+        -- |
+        -> env_ a m 
+        -- |
+        -> env_ f m 
+        -- |
+        -> env_ f' m
     default liftA2H
         :: forall (a :: Type -> Type) (f :: Type -> Type) (f' :: Type -> Type) m .
         ( Typeable a
@@ -301,17 +319,36 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
 
 -- | Take the outermost phase wrapping each component and \"pull it outwards\",
 -- aggregating the phase's applicative effects.
-pullPhase :: forall env_ f (g :: Type -> Type) m . (Applicative f, Phased env_, Typeable f, Typeable g, Typeable m) => env_ (Compose f g) m -> f (env_ g m)
+pullPhase :: forall env_ (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type) . (Phased env_, Applicative f, Typeable f, Typeable g, Typeable m) 
+          -- |
+          => env_ (Compose f g) m 
+          -- |
+          -> f (env_ g m)
 -- f first to help annotate the phase
 pullPhase = traverseH @env_ getCompose
 
 -- | Modify the outermost phase wrapping each component.
-mapPhase :: forall env_ f' f (g :: Type -> Type) m . (Phased env_ , Typeable f', Typeable f, Typeable g, Typeable m) => (forall x. f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
+mapPhase :: forall env_ (f' :: Type -> Type) (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type) . (Phased env_ , Typeable f, Typeable f', Typeable g, Typeable m) 
+         -- |
+         => (forall x. f x -> f' x) 
+         -- |
+         -> env_ (Compose f g) m 
+         -- |
+         -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
 mapPhase f env = runIdentity $ traverseH @env_ (\(Compose fg) -> Identity (Compose (f fg))) env
 
 -- | Combine two environments with a function that works on their outermost phases.
-liftA2Phase :: forall env_ f' (a :: Type -> Type) (f :: Type -> Type) (g :: Type -> Type) m . (Phased env_, Typeable f', Typeable a, Typeable f, Typeable g, Typeable m) => (forall x. a x -> f x -> f' x) -> env_ (Compose a g) m -> env_ (Compose f g) m -> env_ (Compose f' g) m
+liftA2Phase 
+    :: forall env_ (f' :: Type -> Type) (a :: Type -> Type) (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type) . (Phased env_, Typeable a, Typeable f, Typeable f', Typeable g, Typeable m) 
+    -- |
+    => (forall x. a x -> f x -> f' x) 
+    -- |
+    -> env_ (Compose a g) m 
+    -- |
+    -> env_ (Compose f g) m 
+    -- |
+    -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
 liftA2Phase f = liftA2H @env_ (\(Compose fa) (Compose fg) -> Compose (f fa fg))
 
@@ -410,14 +447,19 @@ instance KnownSymbol name => GDemotableFieldNamesH h (G.S1 (G.MetaSel ('Just nam
 -- each component looks into a different section of the global configuration
 -- field.
 mapPhaseWithFieldNames :: 
-    forall env_ (f :: Type -> Type) (f' :: Type -> Type) (g :: Type -> Type) m. 
+    forall env_ (f :: Type -> Type) (f' :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type). 
     ( Phased env_ 
     , DemotableFieldNames env_
     , Typeable f
     , Typeable f'
     , Typeable g 
     , Typeable m ) 
-    => (forall x. String -> f x -> f' x) -> env_ (Compose f g) m -> env_ (Compose f' g) m
+    -- |
+    => (forall x. String -> f x -> f' x) 
+    -- |
+    -> env_ (Compose f g) m 
+    -- |
+    -> env_ (Compose f' g) m
 -- f' first to help annotate the *target* of the transform?
 mapPhaseWithFieldNames  f env =
     liftA2Phase @env_ (\(Constant name) z -> f name z) (runIdentity $ traverseH @env_ (\(Constant z) -> Identity (Compose (Constant z))) demoteFieldNames) env
