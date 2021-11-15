@@ -2,7 +2,7 @@
 
 ## 0.5.0.0
 
-* Now `Has` has `Typeable` requirements.
+* `Phased` now has `Typeable` requirements.
 
 ## 0.4.6.0
 
