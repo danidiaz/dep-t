@@ -340,6 +340,6 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 
 - [Lessons learned while writing a Haskell
   application](https://gvolpe.com/blog/lessons-learned-while-writing-a-haskell-app/).
-  This post recommends a "parameterized records-of-functions" style, which
-  matches the philosophy of this library.
+  This post recommends a "polymorphic record of functions" style, which fits
+  the philosophy of this library.
 
