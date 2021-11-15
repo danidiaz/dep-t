@@ -334,5 +334,12 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 
 - [Printf("%s %s", dependency, injection)](https://www.fredrikholmqvist.com/posts/print-dependency-injection/). Commented on [HN](https://news.ycombinator.com/item?id=28915630), [Lobsters](https://lobste.rs/s/4axrt6/printf_s_s_dependency_injection).
 
-- [This book](https://www.goodreads.com/book/show/44416307-dependency-injection-principles-practices-and-patterns) about DI is good.
+- [Dependency Injection Principles, Practices, and
+  Patterns](https://www.goodreads.com/book/show/44416307-dependency-injection-principles-practices-and-patterns)
+  This is a good book on the general princples of DI. 
+
+- [Lessons learned while writing a Haskell
+  application](https://gvolpe.com/blog/lessons-learned-while-writing-a-haskell-app/).
+  This post recommends a "polymorphic record of functions" style, which fits
+  the philosophy of this library.
 

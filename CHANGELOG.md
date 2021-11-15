@@ -1,5 +1,12 @@
 # Revision history for dep-t
 
+## 0.5.0.0
+
+* `Phased` now has `Typeable` constraints. Should be a mostly backwards compatible
+  change, as `Typeable` instances are automagically generated for most types.
+
+  Motivated by https://github.com/danidiaz/dep-t-dynamic/issues/1
+
 ## 0.4.6.0
 
 * added new module Control.Monad.Dep.Env with helpers for defining environments of records.

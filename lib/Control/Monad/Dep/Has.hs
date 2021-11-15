@@ -47,9 +47,9 @@
 --      repository :: Repository m,
 --      controller :: Controller m
 --    }
---  -- instance Has Logger m (Env m)
---  -- instance Has Repository m (Env m)
---  -- instance Has Controller m (Env m)
+--  instance Has Logger m (Env m)
+--  instance Has Repository m (Env m)
+--  instance Has Controller m (Env m)
 --  :}
 --  
 -- 'Has' can be used in combination with 'MonadDep', like this:
