@@ -1,5 +1,11 @@
 # Revision history for dep-t
 
+## 0.5.1.0
+
+* `Control.Monad.Dep.Has` and `Control.Monad.Dep.Env` renamed as `Dep.Has` and `Dep.Env`.
+
+  The old modules still remain, but deprecated.
+
 ## 0.5.0.0
 
 * `Phased` now has `Typeable` constraints. Should be a mostly backwards compatible

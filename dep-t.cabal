@@ -1,7 +1,7 @@
 cabal-version:       3.0
 
 name:                dep-t
-version:             0.5.0.0
+version:             0.5.1.0
 synopsis:            Dependency injection for records-of-functions.
 description:         Put all your functions in the environment record! Let all
                      your functions read from the environment record! No favorites!
@@ -26,7 +26,9 @@ common common
 
 library
   import: common
-  exposed-modules:     Control.Monad.Dep
+  exposed-modules:     Dep.Has
+                       Dep.Env
+                       Control.Monad.Dep
                        Control.Monad.Dep.Class
                        Control.Monad.Dep.Has
                        Control.Monad.Dep.Env
