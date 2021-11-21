@@ -172,8 +172,8 @@ the compiler.
 
 - __Control.Monad.Dep.Class__ can be used to program against both `ReaderT` and `DepT`.
 - __Control.Monad.Dep__ contains the actual `DepT` monad transformer.
-- __Control.Monad.Dep.Has__ can be useful independently of `ReaderT`, `DepT` or any monad transformer.
-- __Control.Monad.Dep.Env__ provides extra definitions that help when building environments of records.
+- __Dep.Has__ can be useful independently of `ReaderT`, `DepT` or any monad transformer.
+- __Dep.Env__ provides extra definitions that help when building environments of records.
 
 ## So how do we invoke the controller now?
 
