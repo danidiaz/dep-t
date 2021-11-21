@@ -63,7 +63,7 @@
      inkscape:current-layer="layer1"
      inkscape:document-units="mm"
      inkscape:cy="92.865775"
-     inkscape:cx="512.22192"
+     inkscape:cx="510.46973"
      inkscape:zoom="0.85607426"
      inkscape:pageshadow="2"
      inkscape:pageopacity="1"
@@ -136,16 +136,16 @@
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.302;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     <text
        id="text5087-4-0-7"
-       y="81.409378"
-       x="155.76144"
+       y="81.303825"
+       x="171.43988"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.07816px;line-height:1.25;font-family:Consolas;-inkscape-font-specification:Consolas;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
        xml:space="preserve"
        transform="scale(0.95176429,1.0506803)"><tspan
          style="stroke-width:0.264583"
-         y="81.409378"
-         x="155.76144"
+         y="81.303825"
+         x="171.43988"
          id="tspan5085-9-3-6"
-         sodipodi:role="line">Control.Monad.Dep.Has</tspan></text>
+         sodipodi:role="line">Dep.Has</tspan></text>
     <rect
        y="101.84697"
        x="143.10628"
@@ -155,16 +155,16 @@
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.302;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     <text
        id="text5087-4-0-7-2"
-       y="101.94863"
-       x="155.59421"
+       y="101.84309"
+       x="170.88606"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.07816px;line-height:1.25;font-family:Consolas;-inkscape-font-specification:Consolas;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
        xml:space="preserve"
        transform="scale(0.95176429,1.0506803)"><tspan
          style="stroke-width:0.264583"
-         y="101.94863"
-         x="155.59421"
+         y="101.84309"
+         x="170.88606"
          id="tspan5085-9-3-6-8"
-         sodipodi:role="line">Control.Monad.Dep.Env</tspan></text>
+         sodipodi:role="line">Dep.Env</tspan></text>
     <rect
        y="115.04467"
        x="77.940292"

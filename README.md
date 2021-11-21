@@ -168,7 +168,7 @@ the compiler.
 
 ## Inter-module dependencies
 
-[![dep-t.png](https://i.postimg.cc/KcwgCBWv/dep-t.png)](https://postimg.cc/bd0JtD8K)
+[![dep-t.png](https://i.postimg.cc/HxTdTCq6/dep-t.png)](https://postimg.cc/xkpWPBTm)
 
 - __Control.Monad.Dep.Class__ can be used to program against both `ReaderT` and `DepT`.
 - __Control.Monad.Dep__ contains the actual `DepT` monad transformer.
