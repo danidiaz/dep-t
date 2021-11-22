@@ -28,9 +28,9 @@
 
 module Main (main) where
 
+import Dep.Has
+import Dep.Env
 import Control.Monad.Dep.Class
-import Control.Monad.Dep.Has
-import Control.Monad.Dep.Env
 import Control.Monad.Reader
 import Data.Functor.Constant
 import Data.Functor.Compose

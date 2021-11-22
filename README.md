@@ -168,12 +168,12 @@ the compiler.
 
 ## Inter-module dependencies
 
-[![dep-t.png](https://i.postimg.cc/KcwgCBWv/dep-t.png)](https://postimg.cc/bd0JtD8K)
+[![dep-t.png](https://i.postimg.cc/HxTdTCq6/dep-t.png)](https://postimg.cc/xkpWPBTm)
 
 - __Control.Monad.Dep.Class__ can be used to program against both `ReaderT` and `DepT`.
 - __Control.Monad.Dep__ contains the actual `DepT` monad transformer.
-- __Control.Monad.Dep.Has__ can be useful independently of `ReaderT`, `DepT` or any monad transformer.
-- __Control.Monad.Dep.Env__ provides extra definitions that help when building environments of records.
+- __Dep.Has__ can be useful independently of `ReaderT`, `DepT` or any monad transformer.
+- __Dep.Env__ provides extra definitions that help when building environments of records.
 
 ## So how do we invoke the controller now?
 
@@ -234,7 +234,7 @@ way reminiscent of aspect-oriented programming.
 
 ## What if I don't want to use DepT, or any other monad transformer for that matter?
 
-Check out the function `fixEnv` in module `Control.Monad.Dep.Env`, which
+Check out the function `fixEnv` in module `Dep.Env`, which
 provides a transformer-less way to perform dependency injection, based on
 knot-tying.
 
@@ -278,14 +278,13 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
 
   With `DepT` a function might use `local` if it knows enough about the
   environment. That doesn't seem very useful for program logic; if fact it
-  sounds like a recipe for confusion. It could perhaps be useful for [AOP-ish
-  things](http://hackage.haskell.org/package/dep-t-advice), to keep a synthetic
-  "call stack", or to implement something like Logback's [Mapped Diagnostic
-  Context](http://logback.qos.ch/manual/mdc.html).
+  sounds like a recipe for confusion. But it enables [complex
+  scenarios](https://www.baeldung.com/spring-abstract-routing-data-source) for
+  which the dependency graph needs to change in the middle of a request.
 
-  So perhaps `DepT` will be overkill in a lot of cases, offering unneeded
-  flexibility. Perhaps using `fixEnv` from `Control.Monad.Dep.Env` will end up
-  being simpler.
+  All in all, perhaps `DepT` will be overkill in a lot of cases, offering
+  unneeded flexibility. Perhaps using `fixEnv` from `Dep.Env` will end up being
+  simpler.
 
   Unlike in "Adventures..." the `fixEnv` method doesn't use an extensible
   record for the environment but, to keep things simple, a suitably
