@@ -22,7 +22,7 @@
 -- environments composed of records.
 --
 -- It's not necessary when defining the record components themselves, in that
--- case 'Control.Monad.Dep.Has' should suffice.
+-- case "Dep.Has" should suffice.
 --
 -- >>> :{
 -- type Logger :: (Type -> Type) -> Type
