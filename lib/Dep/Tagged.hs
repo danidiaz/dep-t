@@ -7,6 +7,8 @@
 -- | Companion module to "Dep.Has" for disambiguanting record components withing an environment.
 --
 -- Similar in purpose to the [Qualifier annotation](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/beans/factory/annotation/Qualifier.html) in Java Spring.
+--
+-- When using functions from "Dep.SimpleAdvice" (which tend to depend on coercions) with 'Tagged' components, remember to import the newtype's constructor.
 module Dep.Tagged
   (
     Tagged (..),
