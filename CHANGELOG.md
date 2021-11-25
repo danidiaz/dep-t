@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+## 0.5.2.0
+
+* Added module `Dep.Tagged`.
+
 ## 0.5.1.0
 
 * `Control.Monad.Dep.Has` and `Control.Monad.Dep.Env` renamed as `Dep.Has` and `Dep.Env`.

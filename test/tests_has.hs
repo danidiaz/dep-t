@@ -54,6 +54,7 @@ import Data.IORef
 import Data.Functor.Compose
 import Control.Exception hiding (TypeError)
 import System.IO
+import Dep.Tagged
 import Data.Function
 
 -- https://stackoverflow.com/questions/53498707/cant-derive-generic-for-this-type/53499091#53499091
@@ -96,6 +97,16 @@ makeController =
       call log "I'm going to insert in the db!"
       call select "select * from ..."
       call insert [1, 2, 3, 4]
+      return "view"
+
+makeController2Loggers :: forall d e m. MonadDep [Has Logger, Has (Tagged "secondary" Logger), Has Repository] d e m => Controller m
+makeController2Loggers =
+  Controller \url -> 
+    useEnv \(asCall -> call) -> do
+      call log "I'm going to insert in the db!"
+      call select "select * from ..."
+      call insert [1, 2, 3, 4]
+      call (log . untag @"secondary")  "Logged again from secondary logger."
       return "view"
 
 -- also toss in this helper function
@@ -342,13 +353,15 @@ testEnvInductive = do
               EmptyEnv 
             & AddDep (skipPhase @Allocator $
                       Identity $ makeFakeLogger) 
+            & AddDep (skipPhase @Allocator $
+                      Identity $ tagged @"secondary" makeFakeLogger) 
             & AddDep (allocateMap `bindPhase` \_ -> 
                       Identity $ makeFakeRepository)
             & AddDep (skipPhase @Allocator $ 
-                      Identity $ makeController)
+                      Identity $ makeController2Loggers)
     runContT (pullPhase @Allocator envInductive) \env -> do
         let r = execWriter $ runDepT (do env <- ask; serve (dep env) 7) env
-        assertEqual "" (["I'm going to insert in the db!","I'm going to select an entity","I'm going to write the entity!"],[1,2,3,4]) r
+        assertEqual "" (["I'm going to insert in the db!","I'm going to select an entity","I'm going to write the entity!", "Logged again from secondary logger."],[1,2,3,4]) r
 
 --
 --
