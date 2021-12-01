@@ -168,9 +168,9 @@ parseConf = Kleisli parseJSON
 
 type Allocator = ContT () IO
 
-type Phases env_ m = Configurator `Compose` Allocator `Compose` Constructor env_ m
+type Phases env = Configurator `Compose` Allocator `Compose` Constructor env
 
-env :: EnvHKD (Phases EnvHKD IO) IO
+env :: EnvHKD (Phases (EnvHKD Identity IO)) IO
 env = EnvHKD {
       logger = 
         parseConf `bindPhase` \(LoggerConfiguration {messagePrefix}) -> 

@@ -502,12 +502,12 @@ skipPhase g = Compose (pure g)
 --
 -- The 'Constructor' phase for an environment will typically be parameterized
 -- with the environment itself.
-type Constructor (env_ :: (Type -> Type) -> (Type -> Type) -> Type) (m :: Type -> Type) = ((->) (env_ Identity m)) `Compose` Identity
+type Constructor (env :: Type) = ((->) env) `Compose` Identity
 
 
 -- | Turn an environment-consuming function into a 'Constructor' that can be slotted 
 -- into some field of a 'Phased' environment.
-constructor :: forall r_ env_ m . (env_ Identity m -> r_ m) -> Constructor env_ m (r_ m)
+constructor :: forall r_ m env . (env -> r_ m) -> Constructor env (r_ m)
 -- same order of type parameters as Has
 constructor = coerce
 
@@ -527,7 +527,7 @@ constructor = coerce
 -- The @env_ (Constructor env_ m) m@ parameter might be the result of peeling
 -- away successive layers of applicative functor composition using 'pullPhase',
 -- until only the wiring phase remains.
-fixEnv :: (Phased env_, Typeable env_, Typeable m) => env_ (Constructor env_ m) m -> env_ Identity m
+fixEnv :: (Phased env_, Typeable env_, Typeable m) => env_ (Constructor (env_ Identity m) ) m -> env_ Identity m
 fixEnv env = fix (pullPhase env)
 
 -- | An inductively constructed environment with anonymous fields.

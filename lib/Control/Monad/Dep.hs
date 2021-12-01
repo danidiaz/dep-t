@@ -11,7 +11,7 @@
 {-# LANGUAGE KindSignatures #-}
 
 -- |
---    This package provides 'DepT', a monad transformer similar to 'ReaderT'.
+--    This module provides 'DepT', a monad transformer similar to 'ReaderT'.
 --
 --    The difference is that the environment of 'DepT' must be parameterized by
 --    @DepT@'s own monad stack.
