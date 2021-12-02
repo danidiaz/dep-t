@@ -1,8 +1,18 @@
 # Revision history for dep-t
 
-## 0.5.2.0
+## 0.6.0.0
 
 * Added module `Dep.Tagged`.
+
+* Changed the `Constructor` type synonym. 
+
+  Now it takes a fully constructed environment type. 
+
+  This is a backwards-incompatible change. Type signatures might need to be modified, not so much term level code.
+
+  https://github.com/danidiaz/dep-t/issues/17
+
+* Removed deprecated modules.
 
 ## 0.5.1.0
 

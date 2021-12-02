@@ -1,7 +1,7 @@
 cabal-version:       3.0
 
 name:                dep-t
-version:             0.5.2.0
+version:             0.6.0.0
 synopsis:            Dependency injection for records-of-functions.
 description:         Put all your functions in the environment record! Let all
                      your functions read from the environment record! No favorites!
@@ -31,8 +31,6 @@ library
                        Dep.Tagged
                        Control.Monad.Dep
                        Control.Monad.Dep.Class
-                       Control.Monad.Dep.Has
-                       Control.Monad.Dep.Env
   hs-source-dirs:      lib 
 
 test-suite dep-t-test
