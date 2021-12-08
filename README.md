@@ -2,7 +2,7 @@
 
 This package provides various helpers for the "record-of-functions" style of structuring Haskell applications. The guiding idea is that record-of-functions is a form of dependency injection, and the that the environment which contains the functions is akin to an [`ApplicationContext`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/context/ApplicationContext.html) in object-oriented frameworks like [Java Spring](https://docs.spring.io/spring-framework/docs/current/reference/html/).
 
-If every dependency knew about the concrete environment, that would increase coupling. The solution is to use `Has`-style typeclasses so that each dependency knows only about those parts of the environment which it needs to function, and nothing more. Those `Has`-style classes can be tailor-made, but the package also provides a generic one. *Very* loosely speaking, `Has`-style constraints correspond to injected member variables in object-oriented frameworks.
+If every dependency knew about the concrete environment, that would increase coupling. The solution is to use `Has`-style classes so that each dependency knows only about those parts of the environment which it needs to function, and nothing more. Those `Has`-style classes can be tailor-made, but the package also provides a generic one. *Very* loosely speaking, `Has`-style constraints correspond to injected member variables in object-oriented frameworks.
 
 [![dep-t.png](https://i.postimg.cc/2j0qqkmJ/dep-t.png)](https://postimg.cc/V5bspcJB)
 
