@@ -4,7 +4,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ExplicitForAll #-}
 
--- | Companion module to "Dep.Has" for disambiguanting record components withing an environment.
+-- | Companion module to "Dep.Has" for disambiguanting record components within an environment.
 --
 -- Similar in purpose to the [Qualifier annotation](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/beans/factory/annotation/Qualifier.html) in Java Spring.
 --

@@ -168,12 +168,13 @@ the compiler.
 
 ## Inter-module dependencies
 
-[![dep-t.png](https://i.postimg.cc/HxTdTCq6/dep-t.png)](https://postimg.cc/xkpWPBTm)
+[![dep-t.png](https://i.postimg.cc/vTBp2L4W/dep-t.png)](https://postimg.cc/DJ9j8GdZ)
 
-- __Control.Monad.Dep.Class__ can be used to program against both `ReaderT` and `DepT`.
-- __Control.Monad.Dep__ contains the actual `DepT` monad transformer.
-- __Dep.Has__ can be useful independently of `ReaderT`, `DepT` or any monad transformer.
-- __Dep.Env__ provides extra definitions that help when building environments of records.
+- __Dep.Has__ contains a generic `Has` typeclass for locating dependencies in an environment. It can be useful independently of `ReaderT`, `DepT` or any monad transformer.
+- __Dep.Env__ complements __Dep.Has__, adding helpers for building environments of records.
+- __Dep.Tagged__ is a helper for disambiguating components in __Dep.Env__ environments.
+- __Control.Monad.Dep.Class__ is an extension of `MonadReader`, useful to program against both `ReaderT` and `DepT`.
+- __Control.Monad.Dep__ contains the `DepT` monad transformer.
 
 ## So how do we invoke the controller now?
 
