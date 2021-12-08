@@ -1,5 +1,19 @@
 # dep-t
 
+This package provides various helpers for the "record-of-functions" style of structuring Haskell applications. The guiding idea is that record-of-functions is a form of dependency injection, and the that the environment which contains the functions is akin to an [`ApplicationContext`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/context/ApplicationContext.html) in object-oriented frameworks like [Java Spring](https://docs.spring.io/spring-framework/docs/current/reference/html/).
+
+If every dependency knew about the concrete environment, that would increase coupling. The solution is to use `Has`-style typeclasses so that each dependency knows only about those parts of the environment which it needs to function, and nothing more. Those `Has`-style classes can be tailor-made, but the package also provides a generic one. *Very* loosely speaking, `Has`-style constraints correspond to injected member variables in object-oriented frameworks.
+
+[![dep-t.png](https://i.postimg.cc/2j0qqkmJ/dep-t.png)](https://postimg.cc/V5bspcJB)
+
+- __Dep.Has__ contains a generic `Has` typeclass for locating dependencies in an environment. It can be useful independently of `ReaderT`, `DepT` or any monad transformer.
+- __Dep.Env__ complements __Dep.Has__, adding helpers for building environments of records.
+- __Dep.Tagged__ is a helper for disambiguating dependencies in __Dep.Env__ environments.
+- __Control.Monad.Dep__ contains the `DepT` monad transformer, a variant of `ReaderT`.
+- __Control.Monad.Dep.Class__ is an extension of `MonadReader`, useful to program against both `ReaderT` and `DepT`.
+
+## The DepT transformer
+
 `DepT` is a
 [ReaderT](http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Reader.html)-like
 monad transformer for dependency injection.
@@ -7,7 +21,7 @@ monad transformer for dependency injection.
 The difference with `ReaderT` is that `DepT` takes an enviroment whose type is
 parameterized by `DepT` itself.
 
-## Rationale
+### Rationale
 
 To perform dependency injection in Haskell, a common solution is to build a
 record of functions and pass it to the program logic using some variant of
@@ -166,17 +180,7 @@ the compiler.
 `DepT` has `MonadReader` and `LiftDep` instances, so the effects of
 `mkController` can take place on it.
 
-## Inter-module dependencies
-
-[![dep-t.png](https://i.postimg.cc/2j0qqkmJ/dep-t.png)](https://postimg.cc/V5bspcJB)
-
-- __Dep.Has__ contains a generic `Has` typeclass for locating dependencies in an environment. It can be useful independently of `ReaderT`, `DepT` or any monad transformer.
-- __Dep.Env__ complements __Dep.Has__, adding helpers for building environments of records.
-- __Dep.Tagged__ is a helper for disambiguating components in __Dep.Env__ environments.
-- __Control.Monad.Dep.Class__ is an extension of `MonadReader`, useful to program against both `ReaderT` and `DepT`.
-- __Control.Monad.Dep__ contains the `DepT` monad transformer.
-
-## So how do we invoke the controller now?
+### So how do we invoke the controller now?
 
 I suggest something like
 
@@ -190,7 +194,7 @@ The companion package
 [dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) has some more
 functions for running `DepT` computations.
 
-## How to avoid using "ask" and "liftD" before invoking a dependency?
+### How to avoid using "ask" and "liftD" before invoking a dependency?
 
 One possible workaround (at the cost of more boilerplate) is to define helper
 functions like:  
@@ -207,13 +211,13 @@ Which you can invoke like this:
 
 Though perhaps this isn't worth the hassle.
 
-## How to use "pure fakes" during testing?
+### How to use "pure fakes" during testing?
 
 The [test suite](./test/tests.hs) has an example of using a `Writer` monad for
 collecting the outputs of functions working as ["test
 doubles"](https://martinfowler.com/bliki/TestDouble.html).
 
-## How to make a function "see" a different evironment from the one seen by its dependencies?
+### How to make a function "see" a different evironment from the one seen by its dependencies?
 
 Sometimes we want a function in the environment to see a slightly different
 record from the record seen by the other functions, and in particular from the
@@ -226,14 +230,14 @@ The companion package
 [dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) provides a
 `deceive` function that allows for this.
 
-## How to add AOP-ish "aspects" to functions in an environment?
+### How to add AOP-ish "aspects" to functions in an environment?
 
 The companion package
 [dep-t-advice](http://hackage.haskell.org/package/dep-t-advice) provides a
 general method of extending the behaviour of `DepT`-effectful functions, in a
 way reminiscent of aspect-oriented programming.
 
-## What if I don't want to use DepT, or any other monad transformer for that matter?
+### What if I don't want to use DepT, or any other monad transformer for that matter?
 
 Check out the function `fixEnv` in module `Dep.Env`, which
 provides a transformer-less way to perform dependency injection, based on
@@ -243,7 +247,7 @@ That method requires an environment parameterized by _two_ type constructors:
 one that wraps each field, and another that works as the effect monad for the
 components.
 
-## Caveats
+### DepT caveats
 
 The structure of the `DepT` type might be prone to trigger a [known infelicity
 of the GHC
