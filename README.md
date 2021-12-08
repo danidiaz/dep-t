@@ -343,3 +343,6 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   This post recommends a "polymorphic record of functions" style, which fits
   the philosophy of this library.
 
+- One [big disadvantage](https://www.reddit.com/r/haskell/comments/r6foxv/opinions_on_reader_continuationbased_io/hmthsoy/) of the records-of-functions approach:
+
+  > representing effects as records of functions rather than typeclasses/fused effect invocations destroys inlining, so you’ll generate significantly worse Core if you use this on a hot path.
