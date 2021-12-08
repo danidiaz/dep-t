@@ -168,7 +168,7 @@ the compiler.
 
 ## Inter-module dependencies
 
-[![dep-t.png](https://i.postimg.cc/vTBp2L4W/dep-t.png)](https://postimg.cc/DJ9j8GdZ)
+[![dep-t.png](https://i.postimg.cc/2j0qqkmJ/dep-t.png)](https://postimg.cc/V5bspcJB)
 
 - __Dep.Has__ contains a generic `Has` typeclass for locating dependencies in an environment. It can be useful independently of `ReaderT`, `DepT` or any monad transformer.
 - __Dep.Env__ complements __Dep.Has__, adding helpers for building environments of records.
