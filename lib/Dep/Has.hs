@@ -82,7 +82,8 @@
 --
 module Dep.Has (
       -- * A general-purpose Has
-      Has (..) 
+      Has (..)
+    , HasAll
       -- * call helper
     , asCall
       -- * Component defaults
@@ -97,8 +98,10 @@ import Data.Coerce
 -- import Control.Monad.Dep.Class
 
 -- | A generic \"Has\" class. When partially applied to a parametrizable
--- record-of-functions @r_@, produces a 2-place constraint that can used on its
--- own, or with "Control.Monad.Dep.Class".
+-- record-of-functions @r_@, produces a 2-place constraint 
+--  saying that the environment @e@ has the record @r_@ with effect monad @m@.
+--
+-- The constraint can used on its own, or with "Control.Monad.Dep.Class".
 type Has :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Constraint
 class Has r_ (m :: Type -> Type) (env :: Type) | env -> m where
   -- |  Given an environment @e@, produce a record-of-functions parameterized by the environment's effect monad @m@.
@@ -110,6 +113,14 @@ class Has r_ (m :: Type -> Type) (env :: Type) | env -> m where
   dep :: env -> r_ m
   default dep :: (Dep r_, HasField (DefaultFieldName r_) env u, Coercible u (r_ m)) => env -> r_ m
   dep env = coerce . getField @(DefaultFieldName r_) $ env
+
+-- | When partially applied to a type-level list @rs_@ of parametrizable records-of-functions, 
+-- produces a 2-place constraint saying that the environment @e@ has all the
+-- records @rs_@ with effect monad @m@.
+type HasAll :: [(Type -> Type) -> Type] -> (Type -> Type) -> Type -> Constraint
+type family HasAll rs_ m e where
+  HasAll '[] m e = ()
+  HasAll (r_ : rs_) m e = (Has r_ m e, HasAll rs_ m e)
 
 -- | Transforms an environment with suitable 'Has' instances into a \"helper\"
 --   function that looks in the environment for the arguments of other functions.
