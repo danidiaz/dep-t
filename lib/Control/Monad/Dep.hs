@@ -28,6 +28,9 @@ module Control.Monad.Dep
     zoomEnv,
     -- * The simplest environment
     NilEnv(NilEnv),
+    -- * The next simplest environment
+    -- $constant
+    Constant(..),
     -- * Re-exports
     module Control.Monad.Trans,
     module Control.Monad.Dep.Class,
@@ -50,6 +53,7 @@ import Control.Monad.Zip
 import Control.Monad.Dep.Class
 import Data.Kind (Type)
 import Data.Coerce
+import Data.Functor.Constant
 
 -- $setup
 --
@@ -223,3 +227,12 @@ zoomEnv mapEnv inner = mapEnv (withDepT mapEnv inner)
 type NilEnv :: (Type -> Type) -> Type
 data NilEnv m = NilEnv
 
+
+-- $constant
+--
+-- 'Constant', which has a phantom type parameter, is a valid environment for
+-- 'DepT'.
+-- 
+-- @DepT (Constant e) m@ makes 'DepT' behave similarly to @ReaderT e m@,
+-- in that the environment @e@ is independent of the base monad. 
+-- 
