@@ -524,10 +524,14 @@ constructor = coerce
 -- Think of it as a version of "Data.Function.fix" that, instead of \"tying\" a single
 -- function, ties a whole record of them.
 --
--- The @env_ (Constructor env_ m) m@ parameter might be the result of peeling
+-- The @env_ (Constructor (env_ Identity m)) m@ parameter might be the result of peeling
 -- away successive layers of applicative functor composition using 'pullPhase',
 -- until only the wiring phase remains.
-fixEnv :: (Phased env_, Typeable env_, Typeable m) => env_ (Constructor (env_ Identity m) ) m -> env_ Identity m
+fixEnv :: (Phased env_, Typeable env_, Typeable m) => 
+        -- | Environment where each field is wrapped in a 'Constructor' 
+        env_ (Constructor (env_ Identity m) ) m -> 
+        -- | Fully constructed environment, ready for use.
+        env_ Identity m
 fixEnv env = fix (pullPhase env)
 
 -- | An inductively constructed environment with anonymous fields.
