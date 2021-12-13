@@ -8,6 +8,29 @@
 --
 -- Similar in purpose to the [Qualifier annotation](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/beans/factory/annotation/Qualifier.html) in Java Spring.
 --
+--  >>> :{
+--  newtype Foo d = Foo {foo :: String -> d ()} deriving Generic
+--  makeIOFoo :: MonadIO m => Foo m
+--  makeIOFoo = Foo (liftIO . putStrLn)
+--  makeIOFoo' :: MonadIO m => Foo m
+--  makeIOFoo' = Foo (\_ -> liftIO $ putStrLn "this is secondary")
+--  env :: InductiveEnv '[Foo, Tagged "secondary" Foo] Identity IO
+--  env = AddDep @Foo (Identity makeIOFoo)
+--      $ AddDep @(Tagged "secondary" Foo) (Identity (tagged makeIOFoo'))
+--      $ EmptyEnv 
+-- :}
+--
+-- >>> :{
+--  foo (dep env) "this is foo"
+-- :}
+-- this is foo
+--
+-- >>> :{
+--  foo (untag @"secondary" (dep env)) "this is foo"
+-- :}
+-- this is secondary
+--
+--
 -- When using functions from "Dep.SimpleAdvice" (which tend to depend on coercions) with 'Tagged' components, remember to import the newtype's constructor.
 module Dep.Tagged
   (
@@ -44,3 +67,25 @@ tagged = Tagged
 untag :: Tagged s r_ m -> r_ m
 untag = unTagged
 
+-- $setup
+--
+-- >>> :set -XTypeApplications
+-- >>> :set -XMultiParamTypeClasses
+-- >>> :set -XImportQualifiedPost
+-- >>> :set -XTemplateHaskell
+-- >>> :set -XStandaloneKindSignatures
+-- >>> :set -XNamedFieldPuns
+-- >>> :set -XFunctionalDependencies
+-- >>> :set -XFlexibleContexts
+-- >>> :set -XDataKinds
+-- >>> :set -XBlockArguments
+-- >>> :set -XFlexibleInstances
+-- >>> :set -XTypeFamilies
+-- >>> :set -XDeriveGeneric
+-- >>> :set -XViewPatterns
+-- >>> import Data.Kind
+-- >>> import Control.Monad.IO.Class
+-- >>> import GHC.Generics (Generic)
+-- >>> import Dep.Has
+-- >>> import Dep.Env
+--
