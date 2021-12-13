@@ -133,6 +133,7 @@ import Data.Typeable
 -- >>> :set -XDeriveAnyClass
 -- >>> :set -XStandaloneDeriving
 -- >>> :set -XUndecidableInstances
+-- >>> :set -XTypeOperators
 -- >>> import Data.Kind
 -- >>> import Data.Function ((&))
 -- >>> import Control.Monad.IO.Class
@@ -322,6 +323,18 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
 
 -- | Take the outermost phase wrapping each component and \"pull it outwards\",
 -- aggregating the phase's applicative effects.
+--
+-- >>> :{
+--  newtype Foo d = Foo {foo :: String -> d ()} deriving Generic
+--  makeIOFoo :: MonadIO m => Foo m
+--  makeIOFoo = Foo (liftIO . putStrLn)
+--  env :: InductiveEnv '[Foo] (IO `Compose` Constructor (InductiveEnv '[Foo] Identity IO)) IO
+--  env = EmptyEnv 
+--      & AddDep @Foo (putStrLn "io phase" `bindPhase` \() -> constructor (\_ -> makeIOFoo))
+--  ioOutside :: IO (InductiveEnv '[Foo] (Constructor (InductiveEnv '[Foo] Identity IO)) IO)
+--  ioOutside = pullPhase env
+-- :}
+--
 pullPhase :: forall (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type) env_ . (Phased env_, Applicative f, Typeable f, Typeable g, Typeable m) 
           => 
           -- |
@@ -333,6 +346,19 @@ pullPhase :: forall (f :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type) 
 pullPhase = traverseH @env_ getCompose
 
 -- | Modify the outermost phase wrapping each component.
+--
+-- >>> :{
+--  newtype Foo d = Foo {foo :: String -> d ()} deriving Generic
+--  makeIOFoo :: MonadIO m => Foo m
+--  makeIOFoo = Foo (liftIO . putStrLn)
+--  env :: InductiveEnv '[Foo] ((,) Int `Compose` Constructor String) IO
+--  env = EmptyEnv 
+--      & AddDep @Foo ((2,()) `bindPhase` \() -> constructor (\_ -> makeIOFoo))
+--  env' :: InductiveEnv '[Foo] ((,) String `Compose` Constructor String) IO
+--  env' = mapPhase (\(Compose (n,x)) -> Compose (show n,x)) env
+-- :}
+--
+--
 mapPhase :: forall (f :: Type -> Type) (f' :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type) env_ . (Phased env_ , Typeable f, Typeable f', Typeable g, Typeable m) 
          => 
          -- |
