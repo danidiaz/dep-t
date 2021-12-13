@@ -355,7 +355,7 @@ pullPhase = traverseH @env_ getCompose
 --  env = EmptyEnv 
 --      & AddDep @Foo ((2,()) `bindPhase` \() -> constructor (\_ -> makeIOFoo))
 --  env' :: InductiveEnv '[Foo] ((,) String `Compose` Constructor String) IO
---  env' = mapPhase (\(Compose (n,x)) -> Compose (show n,x)) env
+--  env' = mapPhase (\(n,x) -> (show n,x)) env
 -- :}
 --
 --
@@ -516,6 +516,17 @@ mapPhaseWithFieldNames  f env =
 -- | Use the result of the previous phase to build the next one.
 --
 -- Can be useful infix.
+--
+-- >>> :{
+--  type Phases = IO `Compose` IO `Compose` Identity
+--  phased :: Phases Int
+--  phased =
+--      pure 1 `bindPhase` \i1 -> 
+--      pure 2 `bindPhase` \i2 -> 
+--      Identity (i1 + i2)
+-- :}
+--
+--  
 bindPhase :: forall f g a b . Functor f => f a -> (a -> g b) -> Compose f g b 
 -- f as first type parameter to help annotate the current phase
 bindPhase f k = Compose (f <&> k)
