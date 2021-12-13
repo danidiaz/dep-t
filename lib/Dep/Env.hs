@@ -134,7 +134,9 @@ import Data.Typeable
 -- >>> :set -XStandaloneDeriving
 -- >>> :set -XUndecidableInstances
 -- >>> import Data.Kind
--- >>> import Dep.Has
+-- >>> import Data.Function ((&))
+-- >>> import Control.Monad.IO.Class
+-- >>> import Dep.Env
 -- >>> import Dep.Env
 -- >>> import GHC.Generics (Generic)
 --
@@ -527,9 +529,30 @@ constructor = coerce
 -- The @env_ (Constructor (env_ Identity m)) m@ parameter might be the result of peeling
 -- away successive layers of applicative functor composition using 'pullPhase',
 -- until only the wiring phase remains.
+--
+--  >>> :{
+--  newtype Foo d = Foo {foo :: String -> d ()} deriving Generic
+--  newtype Bar d = Bar {bar :: String -> d ()} deriving Generic
+--  makeIOFoo :: MonadIO m => Foo m
+--  makeIOFoo = Foo (liftIO . putStrLn)
+--  makeBar :: Has Foo m env => env -> Bar m
+--  makeBar (asCall -> call) = Bar (call foo)
+--  env :: InductiveEnv [Bar,Foo] (Constructor (InductiveEnv [Bar,Foo] Identity IO)) IO
+--  env = EmptyEnv 
+--      & AddDep @Foo (constructor (\_ -> makeIOFoo))
+--      & AddDep @Bar (constructor makeBar) 
+--  envReady :: InductiveEnv [Bar,Foo] Identity IO
+--  envReady = fixEnv env
+-- :}
+--
+-- >>> :{
+--  bar (dep envReady) "this is bar"
+-- :}
+-- this is bar
+--
 fixEnv :: (Phased env_, Typeable env_, Typeable m) => 
         -- | Environment where each field is wrapped in a 'Constructor' 
-        env_ (Constructor (env_ Identity m) ) m -> 
+        env_ (Constructor (env_ Identity m)) m -> 
         -- | Fully constructed environment, ready for use.
         env_ Identity m
 fixEnv env = fix (pullPhase env)
