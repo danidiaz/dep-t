@@ -234,5 +234,5 @@ data NilEnv m = NilEnv
 -- 'DepT'.
 -- 
 -- @DepT (Constant e) m@ makes 'DepT' behave similarly to @ReaderT e m@,
--- in that the environment @e@ is independent of the base monad. 
+-- in that the environment @e@ is independent of the monad. 
 -- 

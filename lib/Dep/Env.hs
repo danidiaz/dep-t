@@ -521,7 +521,7 @@ constructor = coerce
 -- environment. This works as long as there aren't any circular dependencies
 -- between components.
 --
--- Think of it as a version of "Data.Function.fix" that, instead of \"tying\" a single
+-- Think of it as a version of 'Data.Function.fix' that, instead of \"tying\" a single
 -- function, ties a whole record of them.
 --
 -- The @env_ (Constructor (env_ Identity m)) m@ parameter might be the result of peeling
