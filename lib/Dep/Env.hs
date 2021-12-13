@@ -532,6 +532,16 @@ bindPhase :: forall f g a b . Functor f => f a -> (a -> g b) -> Compose f g b
 bindPhase f k = Compose (f <&> k)
 
 -- | Don't do anything for the current phase, just wrap the next one.
+--
+-- >>> :{
+--  type Phases = IO `Compose` IO `Compose` Identity
+--  phased :: Phases Int
+--  phased =
+--      skipPhase $
+--      skipPhase $
+--      Identity 1
+-- :}
+--
 skipPhase :: forall f g a . Applicative f => g a -> Compose f g a 
 -- f as first type parameter to help annotate the current phase
 skipPhase g = Compose (pure g)
