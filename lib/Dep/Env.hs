@@ -536,7 +536,7 @@ fixEnv env = fix (pullPhase env)
 
 -- | An inductively constructed environment with anonymous fields.
 --
--- Can be useful for simple tests, and also for converting `Has`-based
+-- Can be useful for simple tests. Also for converting `Has`-based
 -- components into functions that take their dependencies as separate
 -- positional parameters.
 --
@@ -544,7 +544,8 @@ fixEnv env = fix (pullPhase env)
 -- > makeController = undefined
 -- > makeControllerPositional :: Monad m => Logger m -> Repository m -> Controller m
 -- > makeControllerPositional a b = makeController $ addDep @Logger a $ addDep @Repository b $ emptyEnv
--- 
+-- > makeController' :: (Monad m, Has Logger m env, Has Repository m env) => env -> Controller m
+-- > makeController' env = makeControllerPositional (dep env) (dep env)
 --
 --
 data InductiveEnv (rs :: [(Type -> Type) -> Type]) (h :: Type -> Type) (m :: Type -> Type) where
