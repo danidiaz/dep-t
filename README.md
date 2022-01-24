@@ -344,6 +344,8 @@ simplifier](https://twitter.com/DiazCarrete/status/1350116413445439493).
   Patterns](https://www.goodreads.com/book/show/44416307-dependency-injection-principles-practices-and-patterns)
   This is a good book on the general princples of DI. 
 
+- A [series of posts](https://twitter.com/ploeh/status/1485514524962738179)—by one of the authors of the DI book—about building a DI container.
+
 - [Lessons learned while writing a Haskell
   application](https://gvolpe.com/blog/lessons-learned-while-writing-a-haskell-app/).
   This post recommends a "polymorphic record of functions" style, which fits
