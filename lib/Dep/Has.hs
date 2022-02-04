@@ -101,7 +101,7 @@ import Data.Coerce
 -- record-of-functions @r_@, produces a 2-place constraint 
 --  saying that the environment @e@ has the record @r_@ with effect monad @m@.
 --
--- The constraint can used on its own, or with "Control.Monad.Dep.Class".
+-- The constraint can be used on its own, or with "Control.Monad.Dep.Class".
 type Has :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Constraint
 class Has r_ (m :: Type -> Type) (env :: Type) | env -> m where
   -- |  Given an environment @e@, produce a record-of-functions parameterized by the environment's effect monad @m@.
