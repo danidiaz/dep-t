@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+##
+
+* Doc fix by @eyeinsky (PR #20)
+
 ## 0.6.1.0
 
 * Re-export `Data.Functor.Constant` from `Control.Monad.Dep`. https://github.com/danidiaz/dep-t/issues/18
