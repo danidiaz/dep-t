@@ -25,7 +25,6 @@
 -- find the correct records in the environment.
 --
 -- >>> :{
---  type Logger :: (Type -> Type) -> Type
 --  newtype Logger d = Logger {log :: String -> d ()}
 --  instance Dep Logger where
 --    type DefaultFieldName Logger = "logger"
@@ -124,13 +123,37 @@ type family HasAll rs_ m e where
 
 -- | Transforms an environment with suitable 'Has' instances into a \"helper\"
 --   function that looks in the environment for the arguments of other functions.
---   Typically, the \"helped\" functions will be record field selectors.
+--   Typically, the \"helped\" functions will be record field selectors:
 --
---   In practice, this means that you can write @call foo@ instead of @foo (dep
---   env)@.
+-- >>> :{
+--  data SomeRecord m = SomeRecord { someSelector :: String -> m () }
+--  data Env m = Env
+--    { someRecord :: SomeRecord m
+--    }
+--  instance Has SomeRecord m (Env m) where
+--    dep (Env{someRecord}) = someRecord
+--  :}
+--
+--   In practice, this means that you can write @call someSelector@ instead of @someSelector (dep
+--   env)@:
+--
+-- >>> :{
+--    twoInvocations :: (IO (), IO ()) 
+--    twoInvocations = 
+--      let env :: Env IO = Env { someRecord = SomeRecord { someSelector = putStrLn } }
+--          call = asCall env
+--       in (someSelector (dep env) "foo", call someSelector "foo")  
+-- :}
 --
 --   Using 'asCall' in a view pattern avoids having to name the
---   environment.
+--   environment:
+--
+--
+-- >>> :{
+--    functionThatCalls :: Has SomeRecord m e => e -> m ()
+--    functionThatCalls (asCall -> call) = call someSelector "foo"
+-- :}
+--
 asCall :: forall env m . env -> forall r_ x. Has r_ m env => (r_ m -> x) -> x
 asCall env = \f -> f (dep env)
 
@@ -162,6 +185,7 @@ class Dep r_ where
 -- >>> :set -XTypeFamilies
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XViewPatterns
+-- >>> :set -XScopedTypeVariables
 -- >>> import Data.Kind
 -- >>> import Control.Monad.Dep
 -- >>> import GHC.Generics (Generic)
