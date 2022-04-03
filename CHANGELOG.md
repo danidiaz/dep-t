@@ -1,6 +1,6 @@
 # Revision history for dep-t
 
-##
+## 0.6.1.1
 
 * Doc fix by @eyeinsky (PR #20)
 
