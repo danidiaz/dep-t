@@ -81,6 +81,10 @@ module Dep.Env (
       -- $phasehelpers
     , bindPhase
     , skipPhase  
+      -- $phasehelpers2
+    , Bare
+    , fromBare
+    , toBare
       -- * Injecting dependencies by tying the knot
     , fixEnv
     , Constructor
@@ -134,6 +138,7 @@ import Data.Typeable
 -- >>> :set -XStandaloneDeriving
 -- >>> :set -XUndecidableInstances
 -- >>> :set -XTypeOperators
+-- >>> :set -XScopedTypeVariables
 -- >>> import Data.Kind
 -- >>> import Data.Function ((&))
 -- >>> import Control.Monad.IO.Class
@@ -510,8 +515,14 @@ mapPhaseWithFieldNames  f env =
 
 -- $phasehelpers
 --
--- Small convenience functions to help build nested compositions of functors.
+-- 'bindPhase' and 'skipPhase' are small convenience functions to help build nested compositions of functors.
 --
+
+-- $phasehelpers2
+--
+-- 'fromBare' and 'toBare' are an alternative method to build nested compositions of functors, which relies on "coerce".
+--
+
 
 -- | Use the result of the previous phase to build the next one.
 --
@@ -545,6 +556,50 @@ bindPhase f k = Compose (f <&> k)
 skipPhase :: forall f g a . Applicative f => g a -> Compose f g a 
 -- f as first type parameter to help annotate the current phase
 skipPhase g = Compose (pure g)
+
+-- | This type family clears newtypes like 'Compose', 'Identity' and 'Constant' from a composite type,
+-- leaving you with a newtypeless nested type as result.
+--
+-- The idea is that it might be easier to construct values of the \"bare\" version of a composite type,
+-- and later coerce them to the newtyped version using 'fromBare'.
+--
+-- This is mainly intended for defining the nested 'Applicative' \"phases\" of components that live in a 'Phased'
+-- environment. It's an alternative to functions like `Dep.Env.bindPhase' and 'Dep.Env.skipPhase'.
+type Bare :: Type -> Type
+type family Bare x where
+  Bare (Compose outer inner x) = Bare (outer (Bare (inner x)))
+  Bare (Identity x) = Bare x
+  Bare (Const x k) = Bare x
+  Bare (Constant x k) = Bare x
+  Bare other = other
+
+-- | Convert a value from its bare version to the newtyped one, usually as a step
+-- towards inserting it into a 'Phased' environment.
+--
+-- >>> :{
+-- type Phases = IO `Compose` IO `Compose` IO
+-- wrapped :: Phases Int = fromBare $ pure $ pure $ pure 3
+-- :}
+--
+-- >>> :{
+-- type Phases = Constructor Int
+-- wrapped :: Phases Int
+-- wrapped = fromBare $ succ
+-- :}
+--
+-- >>> :{
+-- type Phases = IO `Compose` Constructor Int
+-- wrapped :: Phases Int
+-- wrapped = fromBare $ pure $ succ
+-- :}
+--
+fromBare :: Coercible phases (Bare phases) => Bare phases -> phases
+fromBare = coerce
+
+-- | Convert from the newtyped value to the bare one. 'fromBare' tends to be more useful.
+toBare :: Coercible phases (Bare phases) => phases -> Bare phases
+toBare = coerce
+
 
 -- | A phase with the effect of \"constructing each component by reading its
 -- dependencies from a completed environment\". 

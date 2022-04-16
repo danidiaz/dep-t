@@ -1,6 +1,8 @@
 # Revision history for dep-t
 
-## 0.6.1.1
+## 0.6.2
+
+* Moved `fromBare` and `toBare` from dep-t-dynamic.
 
 * Doc fix by @eyeinsky (PR #20)
 
