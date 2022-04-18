@@ -15,6 +15,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE CPP #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
 -- which the components of the environment, instead of being bare functions,
@@ -93,8 +94,10 @@ import Data.Kind
 import GHC.Records
 import GHC.TypeLits
 import Data.Coerce
--- import Control.Monad.Reader
--- import Control.Monad.Dep.Class
+#if MIN_VERSION_base(4,16,0)
+import Data.Tuple
+#else
+#endif
 
 -- | A generic \"Has\" class. When partially applied to a parametrizable
 -- record-of-functions @r_@, produces a 2-place constraint 
@@ -112,6 +115,39 @@ class Has r_ (m :: Type -> Type) (env :: Type) | env -> m where
   dep :: env -> r_ m
   default dep :: (Dep r_, HasField (DefaultFieldName r_) env u, Coercible u (r_ m)) => env -> r_ m
   dep env = coerce . getField @(DefaultFieldName r_) $ env
+
+#if MIN_VERSION_base(4,16,0)
+instance Has r1_ m (Solo (r1_ m)) where
+  dep (Solo r1) = r1
+#else
+#endif
+
+instance Has r1_ m (r1_ m, b) where
+  dep (r1,_) = r1
+
+instance Has r2_ m (a, r2_ m) where
+  dep (_,r2) = r2
+
+instance Has r1_ m (r1_ m, b, c) where
+  dep (r1,_,_) = r1
+
+instance Has r2_ m (a, r2_ m, c) where
+  dep (_ , r2, _) = r2
+
+instance Has r3_ m (a, b, r3_ m) where
+  dep (_,_,r3) = r3
+
+instance Has r1_ m (r1_ m, b, c, d) where
+  dep (r1,_,_,_) = r1
+
+instance Has r2_ m (a, r2_ m, c, d) where
+  dep (_ , r2, _,_) = r2
+
+instance Has r3_ m (a, b, r3_ m, d) where
+  dep (_,_,r3,_) = r3
+
+instance Has r4_ m (a, b, c, r4_ m) where
+  dep (_,_,_, r4) = r4
 
 -- | When partially applied to a type-level list @rs_@ of parametrizable records-of-functions, 
 -- produces a 2-place constraint saying that the environment @e@ has all the

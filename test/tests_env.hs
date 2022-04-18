@@ -56,6 +56,7 @@ import Data.Text qualified as Text
 import Data.Function ((&))
 import Data.Functor ((<&>), ($>))
 import Data.String
+import qualified Data.Text
 
 type Logger :: (Type -> Type) -> Type
 newtype Logger d = Logger {
@@ -205,6 +206,23 @@ testEnvConstruction = do
         Just result <- call inspect resourceId
         assertEqual "" "foobar" $ result
 
+
+testEnvTuple :: Assertion
+testEnvTuple = do
+    runContT allocateMap \ref -> do
+        let env = 
+              (
+                makeStdoutLogger @IO (Data.Text.pack "foo") env,
+                makeInMemoryRepository ref env,
+                makeController env
+              )
+        let (asCall -> call) = env         
+        resourceId <- call create
+        call append resourceId "foo"
+        call append resourceId "bar"
+        Just result <- call inspect resourceId
+        assertEqual "" "foobar" $ result
+
 --
 --
 --
@@ -224,6 +242,7 @@ tests =
                             } = fieldNames
                   in intercalate " " [loggerField, repositoryField, controllerField]
         , testCase "environmentConstruction" testEnvConstruction
+        , testCase "environmentTuple" testEnvTuple
     ]
 
 main :: IO ()
