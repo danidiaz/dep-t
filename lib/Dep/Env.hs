@@ -568,9 +568,9 @@ skipPhase g = Compose (pure g)
 type Bare :: Type -> Type
 type family Bare x where
   Bare (Compose outer inner x) = Bare (outer (Bare (inner x)))
-  Bare (Identity x) = Bare x
-  Bare (Const x k) = Bare x
-  Bare (Constant x k) = Bare x
+  Bare (Identity x) = x
+  Bare (Const x k) = x
+  Bare (Constant x k) = x
   Bare other = other
 
 -- | Convert a value from its bare version to the newtyped one, usually as a step

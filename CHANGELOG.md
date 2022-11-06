@@ -1,5 +1,20 @@
 # Revision history for dep-t
 
+## 0.6.3
+
+* Now the Bare typeclass doesn't recurse inside Identity or Const.
+
+  Strictly speaking, this is a breaking change, but the cases in which it breaks
+  are very unlikely in practice: when using Identity or Const in the *middle* of
+  a sequence of phases. Typically, these two applicatives will be used as the
+  colophon of the sequence of phases.
+  
+  The motivation for the change is that letting Bare "peek" inside Identity and
+  Const made it difficult to write fromBare-using functions polymorphic on the
+  returned component. Bare got stuck on the component type variable and the
+  functions did not compile. This led to unnecessary code duplication. Stopping
+  at Identity means Bare never touches the type variable and doesn't get stuck.
+
 ## 0.6.2
 
 * Moved `fromBare` and `toBare` from dep-t-dynamic.
