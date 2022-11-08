@@ -296,17 +296,17 @@ findController6 env = dep env
 --     traverseH f (B e) = B <$> ttraverse f e
 --     liftA2H f (B ax) (B hx) = B $ tmap (\(Pair az hz) -> f az hz) $ tprod ax hx
 
-type EnvHKD7 :: (Type -> Type) -> (Type -> Type) -> Type
-data EnvHKD7 h m = EnvHKD7
-  { logger :: h (Logger m),
-    repository :: h (Repository m),
-    controller :: h (Controller m)
-  } deriving stock Generic
-    deriving anyclass (FunctorT, TraversableT, ApplicativeT)
-
-instance Phased EnvHKD7 where
-    traverseH f e = ttraverse f e
-    liftA2H f ax hx = tmap (\(Pair az hz) -> f az hz) $ tprod ax hx
+-- type EnvHKD7 :: (Type -> Type) -> (Type -> Type) -> Type
+-- data EnvHKD7 h m = EnvHKD7
+--   { logger :: h (Logger m),
+--     repository :: h (Repository m),
+--     controller :: h (Controller m)
+--   } deriving stock Generic
+--     deriving anyclass (FunctorT, TraversableT, ApplicativeT)
+-- 
+-- instance Phased EnvHKD7 where
+--     traverseH f e = ttraverse f e
+--     liftA2H f ax hx = tmap (\(Pair az hz) -> f az hz) $ tprod ax hx
 
 
 -- This is an example of how to combine the "Phased" approach 

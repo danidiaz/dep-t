@@ -1,5 +1,20 @@
 # Revision history for dep-t
 
+## 0.6.4
+
+* Added AccumConstructor, a generalization of Constructor that threads a
+  monoidal summary along with the environment record.
+
+* Now Dep.Env.Phased.traverseH and related functions provide a 'Typeable'
+  constraint on the polymorphic field variable in the function argument.
+
+  This *should* be backwards compatible because, with the 'Typeable' constraint,
+  the HOF is providing *more* info to the caller of 'traverseH' to work with.
+
+  However it *does* cause a little breakage, because now you can't use FunctorT,
+  TraversableT and ApplicativeT from the "barbies" library to implement Phased.
+  But most of the time you would use Phased's own generic deriving anyway.
+
 ## 0.6.3
 
 * Now the Bare typeclass doesn't recurse inside Identity or Const.
