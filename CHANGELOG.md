@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+## 0.6.5
+
+* Shifted `DepT`-specific parts of the readme to `Control.Monad.Dep`.
+
 ## 0.6.4
 
 * Added AccumConstructor, a generalization of Constructor that threads a

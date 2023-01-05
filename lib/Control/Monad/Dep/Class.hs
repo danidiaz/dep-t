@@ -60,7 +60,8 @@
 -- lifted using 'liftD' instead of 'lift' or 'liftIO'. 
 --
 module Control.Monad.Dep.Class
-  ( -- * Reader-like monads carrying dependencies in their environment
+  ( 
+    -- * Reader-like monads carrying dependencies in their environment
     MonadDep,
 
     -- * Lifting effects from dependencies
