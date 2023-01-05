@@ -7,6 +7,7 @@ main = doctest [
     "lib/Control/Monad/Dep/Class.hs", 
     "lib/Dep/Has.hs", 
     "lib/Dep/Env.hs",
+    "lib/Dep/Constructor.hs",
     "lib/Dep/Tagged.hs"
     ]
 

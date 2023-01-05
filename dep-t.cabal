@@ -28,6 +28,7 @@ library
   import: common
   exposed-modules:     Dep.Has
                        Dep.Env
+                       Dep.Constructor
                        Dep.Tagged
                        Control.Monad.Dep
                        Control.Monad.Dep.Class

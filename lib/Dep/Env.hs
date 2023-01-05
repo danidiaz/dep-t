@@ -72,8 +72,14 @@ module Dep.Env
     Autowired (..),
     Autowireable,
 
+    -- * Inductive environment with anonymous fields
+    InductiveEnv (..),
+    addDep,
+    emptyEnv,
+
     -- * Managing phases
     Phased (..),
+    liftAH,
     pullPhase,
     mapPhase,
     liftA2Phase,
@@ -98,11 +104,6 @@ module Dep.Env
     constructor,
     fixEnvAccum,
     AccumConstructor,
-
-    -- * Inductive environment with anonymous fields
-    InductiveEnv (..),
-    addDep,
-    emptyEnv,
 
     -- * Re-exports
     Identity (..),
@@ -151,10 +152,10 @@ import GHC.TypeLits
 -- >>> :set -XUndecidableInstances
 -- >>> :set -XTypeOperators
 -- >>> :set -XScopedTypeVariables
+-- >>> :set -fno-warn-deprecations
 -- >>> import Data.Kind
 -- >>> import Data.Function ((&))
 -- >>> import Control.Monad.IO.Class
--- >>> import Dep.Env
 -- >>> import Dep.Env
 -- >>> import GHC.Generics (Generic)
 
@@ -169,7 +170,7 @@ import GHC.TypeLits
 -- 'Has', so maybe it doesn't make much sense to use it, except for
 -- explicitness.
 newtype TheDefaultFieldName (env :: Type) = TheDefaultFieldName env
-
+{-# DEPRECATED TheDefaultFieldName "more intrusive than useful" #-}
 instance
   (Dep r_, HasField (DefaultFieldName r_) (env_ m) u, Coercible u (r_ m)) =>
   Has r_ m (TheDefaultFieldName (env_ m))
@@ -347,6 +348,16 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
     env_ f m ->
     env_ f' m
   liftA2H f enva env = G.to (gLiftA2Phase f (G.from enva) (G.from env))
+
+-- | Slightly less powerful version of 'traverseH'.
+liftAH ::
+  forall deps_ phases phases' m.
+  (Phased deps_, Typeable phases, Typeable phases', Typeable m) =>
+  (forall x. Typeable x => phases x -> phases' x) ->
+  deps_ phases m ->
+  deps_ phases' m
+liftAH tweak =
+  runIdentity . traverseH (Identity . tweak)
 
 -- | Take the outermost phase wrapping each component and \"pull it outwards\",
 -- aggregating the phase's applicative effects.
@@ -632,10 +643,12 @@ toBare = coerce
 --
 -- The 'Constructor' phase for an environment will typically be parameterized
 -- with the environment itself.
+{-# DEPRECATED Constructor "use the one in Dep.Constructor" #-}
 type Constructor (env :: Type) = ((->) env) `Compose` Identity
 
 -- | Turn an environment-consuming function into a 'Constructor' that can be slotted
 -- into some field of a 'Phased' environment.
+{-# DEPRECATED constructor "use the one in Dep.Constructor" #-}
 constructor :: forall r_ m env. (env -> r_ m) -> Constructor env (r_ m)
 -- same order of type parameters as Has
 constructor = coerce
@@ -645,6 +658,7 @@ constructor = coerce
 -- back along with the completed environment.
 --
 -- Like 'Constructor', 'AccumConstructor' should be the final phase.
+{-# DEPRECATED AccumConstructor "use the one in Dep.Constructor" #-}
 type AccumConstructor (w :: Type) (env :: Type) = (->) (w, env) `Compose` (,) w `Compose` Identity
 
 -- | This is a method of performing dependency injection that doesn't require
@@ -683,6 +697,7 @@ type AccumConstructor (w :: Type) (env :: Type) = (->) (w, env) `Compose` (,) w 
 --  bar (dep envReady) "this is bar"
 -- :}
 -- this is bar
+{-# DEPRECATED fixEnv "use the one in Dep.Constructor" #-}
 fixEnv ::
   (Phased env_, Typeable env_, Typeable m) =>
   -- | Environment where each field is wrapped in a 'Constructor'
@@ -706,6 +721,7 @@ fixEnv env = fix (pullPhase env)
 -- (accumulator, environment) tuple needs to use a lazy pattern match like
 -- @~(w,env)@. Otherwise 'fixEnvAccum' enters an infinite loop! Such are the
 -- dangers of knot-tying.
+{-# DEPRECATED fixEnvAccum "use the one in Dep.Constructor" #-}
 fixEnvAccum ::
   (Phased env_, Typeable env_, Typeable m, Monoid w, Typeable w) =>
   -- | Environment where each field is wrapped in an 'AccumConstructor'

@@ -2,6 +2,18 @@
 
 ## 0.6.5
 
+* Deprecated `Constructor`, `fixEnv` and the `Accum-` counterparts from `Dep.Env`.
+  
+  Created new versions in `Dep.Constructor`. The new versions are newtypes, not
+  type aliases.
+
+  Users trying to migrate should hide the old `Dep.Env` versions when importing
+  the module.
+
+  > import Dep.Env hiding (AccumConstructor, Constructor, accumConstructor, constructor, fixEnv, fixEnvAccum)
+
+* Deprecated the `Dep` type family from `Dep.Has`.
+
 * Shifted `DepT`-specific parts of the readme to `Control.Monad.Dep`.
 
 ## 0.6.4

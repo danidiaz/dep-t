@@ -164,6 +164,7 @@ asCall env = \f -> f (dep env)
 -- This allows defining 'Has' instances with empty bodies, thanks to
 -- @DefaultSignatures@.
 type Dep :: ((Type -> Type) -> Type) -> Constraint
+{-# DEPRECATED Dep "more intrusive than useful" #-}
 class Dep r_ where
   -- The Char kind would be useful here, to lowercase the first letter of the
   -- k type and use it as the default preferred field name.
