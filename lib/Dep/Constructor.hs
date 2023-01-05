@@ -79,10 +79,11 @@ accumConstructor f = AccumConstructor (\(~(accum, deps)) -> f accum deps)
 
 accumConstructor_ ::
   forall accum deps component.
+  Monoid accum =>
   -- | Consumes the accumulator but doesn't produce it.
   (accum -> deps -> component) ->
   AccumConstructor accum deps component
-accumConstructor_ f = accumConstructor $ \accum deps -> (accum, f accum deps)
+accumConstructor_ f = accumConstructor $ \accum deps -> (mempty, f accum deps)
 
 _accumConstructor ::
   forall accum deps component.
