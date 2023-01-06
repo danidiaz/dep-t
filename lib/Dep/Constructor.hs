@@ -19,6 +19,40 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE BlockArguments #-}
 
+-- | This module provides a method for performing dependency injection in 'Phased'
+-- environments by means of building fixpoints.
+--
+-- To ease the reader into the concept, here's how we can define the
+-- [@factorial@](https://en.wikibooks.org/wiki/Haskell/Fix_and_recursion#Recursion)
+-- function using only 'fix' from @base@:
+-- 
+-- >>> :{
+-- type FactorialDeps = Int -> Int
+-- makeFactorial :: FactorialDeps -> Int -> Int  
+-- makeFactorial deps n = if n == 0 then 1 else n * deps (n-1)
+-- factorial :: Int -> Int
+-- factorial = fix makeFactorial
+-- :}
+--
+-- Looking at it, we can interpret it as a form of dependency injection. In the
+-- example, @makeFactorial@ depends on another function of type @FactorialDeps@
+-- for the @n > 1@ logic. So we build a fixpoint in which the resulting
+-- \"closed\" @factorial@ is passed as the dependency to @makeFactorial@.
+--
+-- Very good, but what does this have to do with dependency injection in a
+-- /real/ application? For real applications, we have a multitude of functions,
+-- not only one. Each component has potentially many functions, and there may be
+-- many components, with a complex directed acyclic graph of dependencies
+-- between components!
+--
+-- This module provides the 'Constructor' applicative. A 'Phased' dependency
+-- injection environment parameterized by 'Constructor' is like the set of all
+-- component constructors taking part in dependency injection, each one still
+-- \"open\" like @makeFactorial@, still waiting for its own dependencies.
+--
+-- And when we use the 'fixEnv' function on this \"open\" environment, we get
+-- back a \"closed\" environment parameterized by 'Identity', were all the
+-- dependencies have been resolved and the components are ready to be used.
 module Dep.Constructor
   ( -- * Constructor phase
     Constructor,
@@ -52,9 +86,10 @@ import Control.Arrow
 
 -- | A phase with the effect of \"constructing each component by reading its
 -- dependencies from a completed environment\". It should be the final phase.
---
--- The 'Constructor' phase for an environment will typically be parameterized
--- with the environment itself.
+-- 
+-- The @deps@ type parameter will typically be the \"closed\" form of the
+-- dependency injection environment. That is, the type of environment produced
+-- by 'fixEnv'. 
 newtype Constructor (deps :: Type) component
   = Constructor (deps -> component)
   deriving stock Functor

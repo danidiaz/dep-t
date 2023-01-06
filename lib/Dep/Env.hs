@@ -276,7 +276,10 @@ type family WithLeftResult_ leftResult right r where
 -- outermost phase and running it in some way, until we are are left with a
 -- 'Constructor' phase, which we can remove using 'fixEnv'.
 --
--- 'Phased' resembles [FunctorT, TraversableT and ApplicativeT](https://hackage.haskell.org/package/barbies-2.0.3.0/docs/Data-Functor-Transformer.html) from the [barbies](https://hackage.haskell.org/package/barbies) library. 'Phased' instances can be written in terms of them.
+-- 'Phased' resembles [FunctorT, TraversableT and
+-- ApplicativeT](https://hackage.haskell.org/package/barbies-2.0.3.0/docs/Data-Functor-Transformer.html)
+-- from the [barbies](https://hackage.haskell.org/package/barbies) library,
+-- although 'Phased' instances /can't/ be written in terms of them because of the extra 'Typeable' constraints.
 type Phased :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
   -- | Used to implement 'pullPhase' and 'mapPhase',  typically you should use those functions instead.
