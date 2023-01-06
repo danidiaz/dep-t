@@ -179,11 +179,11 @@ _accumConstructor_ f = accumConstructor $ \_ deps -> (mempty, f deps)
 -- :}
 -- this is bar
 fixEnv ::
-  (Phased env_, Typeable env_, Typeable m) =>
+  (Phased deps_, Typeable deps_, Typeable m) =>
   -- | Environment where each field is wrapped in a 'Constructor'
-  env_ (Constructor (env_ Identity m)) m ->
+  deps_ (Constructor (deps_ Identity m)) m ->
   -- | Fully constructed environment, ready for use.
-  env_ Identity m
+  deps_ Identity m
 fixEnv env = fix (pullPhase (liftAH decompose env))
   where
     decompose (Constructor f) = coerce f
@@ -199,11 +199,11 @@ fixEnv env = fix (pullPhase (liftAH decompose env))
 -- accumulated across all components. Think for example about a component which
 -- publishes diagnostics coming from all other components.
 fixEnvAccum ::
-  (Phased env_, Typeable env_, Typeable m, Monoid accum, Typeable accum) =>
+  (Phased deps_, Typeable deps_, Typeable m, Monoid accum, Typeable accum) =>
   -- | Environment where each field is wrapped in an 'AccumConstructor'
-  env_ (AccumConstructor accum (env_ Identity m)) m ->
+  deps_ (AccumConstructor accum (deps_ Identity m)) m ->
   -- | Fully constructed accumulator and environment, ready for use.
-  (accum, env_ Identity m)
+  (accum, deps_ Identity m)
 fixEnvAccum env =
   let f = pullPhase <$> pullPhase (liftAH decompose env)
    in fix f
