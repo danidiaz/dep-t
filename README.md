@@ -1,15 +1,57 @@
 # dep-t
 
-This package provides various helpers for the "record-of-functions" style of structuring Haskell applications. The guiding idea is that record-of-functions is a form of dependency injection, and the that the environment which contains the functions is akin to an [`ApplicationContext`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/context/ApplicationContext.html) in object-oriented frameworks like [Java Spring](https://docs.spring.io/spring-framework/docs/current/reference/html/).
+This package provides various helpers for the "record-of-functions" style of
+structuring Haskell applications. 
 
-If every dependency knew about the concrete environment, that would increase coupling. The solution is to use `Has`-style classes so that each dependency knows only about those parts of the environment which it needs to function, and nothing more. Those `Has`-style classes can be tailor-made, but the package also provides a generic one. 
+A record that groups related functions is considered a component. Hypothetical example:
 
-*Very* loosely speaking, `Has`-style constraints correspond to injected member variables in object-oriented frameworks.
+```
+data Repository m = Repository
+  { findById :: ResourceId -> m Resource,
+    save :: Resource -> m ()
+  } 
+```
 
-[![dep-t.png](https://i.postimg.cc/2j0qqkmJ/dep-t.png)](https://postimg.cc/V5bspcJB)
+The record type is the component's "interface". A component's "implementation" is
+defined by a constructor function that returns a value of the record type.
 
-- __Dep.Has__ provides a generic `Has` typeclass for locating dependencies in an environment.
-- __Dep.Env__ complements __Dep.Has__ with helpers for building dependency injection environments.
+When starting up, applications build a dependency injection environment
+which contains all the required components. And components read their *own* dependencies
+from the DI environment. The DI environment is akin to an
+[`ApplicationContext`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/context/ApplicationContext.html)
+in object-oriented frameworks like [Java
+Spring](https://docs.spring.io/spring-framework/docs/current/reference/html/).
+
+If components knew about the *concrete* DI environment, that would increase
+coupling. Everything would be tied to everything else. To avoid that, we resort
+to `Has`-style typeclasses so that each constructor function knows only about the
+parts the environment that it needs, and nothing more. Those `Has`-style classes can
+be tailor-made, but this package also provides a generic one. 
+
+Hypothetical example of constructor function:
+
+```
+makeRepository :: (Has Logger m deps, Has SomeOtherDep m deps) => deps -> Repository m
+```
+
+*Very* loosely speaking, `Has`-style constraints correspond to [injected
+constructor arguments](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-constructor-injection) in object-oriented DI frameworks.
+
+## Module structure
+
+```mermaid
+  graph TD;
+      Dep.Env-->Dep.Has;
+      Dep.Constructor-->Dep.Env;
+      Dep.Tagged;
+      Control.Monad.Dep.Class-->Control.Monad.Reader;
+      Control.Monad.Dep-->Control.Monad.Reader;
+      Control.Monad.Dep-->Control.Monad.Dep.Class;
+```
+
+- __Dep.Has__ provides a generic `Has` typeclass for locating dependencies in an
+environment. Usually, component implementations import this module.
+- __Dep.Env__ complements __Dep.Has__ with helpers for building dependency injection environments. Usually, only the [composition root](https://stackoverflow.com/questions/6277771/what-is-a-composition-root-in-the-context-of-dependency-injection) of the application imports this module.
 - __Dep.Tagged__ is a helper for disambiguating dependencies in __Dep.Env__ environments.
 - __Dep.Constructor__ enables fixpoint-based dependency injection in __Dep.Env__ environments.
 - __Control.Monad.Dep__ provides the `DepT` monad transformer, a variant of `ReaderT`. You want to use either this or __Dep.Constructor__ for dependency injection, but not both.
