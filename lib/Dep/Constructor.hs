@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DerivingVia #-}
@@ -43,6 +44,9 @@ import Data.Function (fix)
 import Data.Kind
 import Data.Typeable
 import Dep.Env hiding (AccumConstructor, Constructor, accumConstructor, constructor, fixEnv, fixEnvAccum)
+import Control.Category (Category)
+import Control.Category qualified
+import Control.Arrow
 
 -- | A phase with the effect of \"constructing each component by reading its
 -- dependencies from a completed environment\". It should be the final phase.
@@ -52,7 +56,7 @@ import Dep.Env hiding (AccumConstructor, Constructor, accumConstructor, construc
 newtype Constructor (deps :: Type) component
   = Constructor (deps -> component)
   deriving stock Functor
-  deriving newtype Applicative
+  deriving newtype (Applicative, Category, Arrow)
 
 -- | Turn an environment-consuming function into a 'Constructor' that can be slotted
 -- into some field of a 'Phased' environment.
@@ -79,6 +83,19 @@ instance Monoid accum => Applicative (AccumConstructor accum deps) where
         (acc2, component2) = v accumdeps
      in (acc1 <> acc2, f component1 component2)
 
+instance Monoid accum => Category (AccumConstructor accum) where
+  id = _accumConstructor_ id
+  (.) (AccumConstructor f) (AccumConstructor g) = AccumConstructor \(~(accum0,deps0)) -> 
+      let (accum1, deps1) = g (accum0,deps0)
+          (accum2, deps2) = f (accum0,deps1)
+       in (accum1 <> accum2, deps2)
+
+instance Monoid accum => Arrow (AccumConstructor accum) where
+  arr = _accumConstructor_
+  first (AccumConstructor f) = AccumConstructor \(~(accum,(deps,extra))) -> 
+    let (accum', component) = f (accum,deps)
+     in (accum', (component, extra))
+
 -- | Turn an environment-consuming function into a 'Constructor' that can be slotted
 -- into some field of a 'Phased' environment.
 accumConstructor ::
@@ -90,7 +107,7 @@ accumConstructor f = AccumConstructor (\(~(accum, deps)) -> f accum deps)
 accumConstructor_ ::
   forall accum deps component.
   Monoid accum =>
-  -- | Consumes the accumulator but doesn't produce it.
+  -- | Consumes the accumulator but produces 'mempty'
   (accum -> deps -> component) ->
   AccumConstructor accum deps component
 accumConstructor_ f = accumConstructor $ \accum deps -> (mempty, f accum deps)
