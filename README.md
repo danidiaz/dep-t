@@ -23,9 +23,9 @@ in object-oriented frameworks like [Java
 Spring](https://docs.spring.io/spring-framework/docs/current/reference/html/).
 
 If components knew about the *concrete* DI environment, that would increase
-coupling. Everything would be tied to everything else. To avoid that, we resort
+coupling. Everything would depend on everything else. To avoid that, we resort
 to `Has`-style typeclasses so that each constructor function knows only about the
-parts the environment that it needs, and nothing more. Those `Has`-style classes can
+parts of the environment that it needs, and nothing more. Those `Has`-style classes can
 be tailor-made, but this package also provides a generic one. 
 
 Hypothetical example of constructor function:
@@ -54,7 +54,7 @@ environment. Usually, component implementations import this module.
 - __Dep.Env__ complements __Dep.Has__ with helpers for building dependency injection environments. Usually, only the [composition root](https://stackoverflow.com/questions/6277771/what-is-a-composition-root-in-the-context-of-dependency-injection) of the application imports this module.
 - __Dep.Tagged__ is a helper for disambiguating dependencies in __Dep.Env__ environments.
 - __Dep.Constructor__ enables fixpoint-based dependency injection in __Dep.Env__ environments.
-- __Control.Monad.Dep__ provides the `DepT` monad transformer, a variant of `ReaderT`. You want to use either this or __Dep.Constructor__ for dependency injection, but not both.
+- __Control.Monad.Dep__ provides the `DepT` monad transformer, a variant of `ReaderT`. You either want to use this or __Dep.Constructor__ in your composition root, but not both.
 - __Control.Monad.Dep.Class__ is an extension of `MonadReader`, useful to program against both `ReaderT` and `DepT`.
 
 ## Links
