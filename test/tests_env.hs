@@ -29,7 +29,6 @@
 module Main (main) where
 
 import Dep.Has
-import Dep.Env
 import Control.Monad.Dep.Class
 import Control.Monad.Reader
 import Data.Functor.Constant
@@ -43,6 +42,8 @@ import Test.Tasty.HUnit
 import Prelude hiding (log)
 import Data.Functor.Identity
 import GHC.TypeLits
+import Dep.Env hiding (AccumConstructor, Constructor, accumConstructor, constructor, fixEnv, fixEnvAccum)
+import Dep.Constructor
 import Control.Monad.Trans.Cont
 import Data.Aeson
 import Data.Aeson.Types
