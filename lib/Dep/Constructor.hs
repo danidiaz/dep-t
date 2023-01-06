@@ -34,6 +34,8 @@ module Dep.Constructor
     _accumConstructor_,
     lmapAccumConstructor,
     fixEnvAccum,
+    -- * "Control.Arrow" re-exports
+    arr
   )
 where
 
@@ -56,10 +58,17 @@ import Control.Arrow
 newtype Constructor (deps :: Type) component
   = Constructor (deps -> component)
   deriving stock Functor
-  deriving newtype (Applicative, Category, Arrow)
+
+deriving newtype instance Category Constructor
+-- | Mostly useful for 'arr', which builds a 'Constructor' out of a regular function.
+deriving newtype instance Arrow Constructor
+-- | 'pure' lifts a component that doesn't require any dependencies.
+deriving newtype instance Applicative (Constructor deps)
 
 -- | Turn an environment-consuming function into a 'Constructor' that can be slotted
 -- into some field of a 'Phased' environment.
+--
+-- Equivalent to 'arr'.
 constructor ::
   forall deps component.
   (deps -> component) ->
@@ -67,8 +76,8 @@ constructor ::
 -- same order of type parameters as Has
 constructor = Constructor
 
--- | A generalization of 'Constructor' which produces, in addition to the result
--- value, a value @w@ which is then aggregated across all components and fed
+-- | A generalized 'Constructor' which produces, in addition to the result
+-- value, an @accum@ value which is then aggregated across all components and fed
 -- back along with the completed environment.
 --
 -- Like 'Constructor', 'AccumConstructor' should be the final phase.
@@ -76,6 +85,8 @@ newtype AccumConstructor (accum :: Type) (deps :: Type) component
   = AccumConstructor ((accum, deps) -> (accum, component))
   deriving stock Functor
 
+-- | 'pure' lifts a component that doesn't require any dependencies.
+-- The produced accumulator will be 'mempty'.
 instance Monoid accum => Applicative (AccumConstructor accum deps) where
   pure component = _accumConstructor_ \_ -> component
   liftA2 f (AccumConstructor u) (AccumConstructor v) = AccumConstructor \accumdeps ->
@@ -83,6 +94,7 @@ instance Monoid accum => Applicative (AccumConstructor accum deps) where
         (acc2, component2) = v accumdeps
      in (acc1 <> acc2, f component1 component2)
 
+-- |
 instance Monoid accum => Category (AccumConstructor accum) where
   id = _accumConstructor_ id
   (.) (AccumConstructor f) (AccumConstructor g) = AccumConstructor \(~(accum0,deps0)) -> 
@@ -90,14 +102,16 @@ instance Monoid accum => Category (AccumConstructor accum) where
           (accum2, deps2) = f (accum0,deps1)
        in (accum1 <> accum2, deps2)
 
+-- | Mostly useful for 'arr', which builds an 'AccumConstructor' out of a regular function. The produced accumulator will be 'mempty'.
 instance Monoid accum => Arrow (AccumConstructor accum) where
   arr = _accumConstructor_
   first (AccumConstructor f) = AccumConstructor \(~(accum,(deps,extra))) -> 
     let (accum', component) = f (accum,deps)
      in (accum', (component, extra))
 
--- | Turn an environment-consuming function into a 'Constructor' that can be slotted
--- into some field of a 'Phased' environment.
+-- | Turn an environment-consuming function into an 'AccumConstructor' that can
+-- be slotted into some field of a 'Phased' environment. The function also
+-- consumes and produces a monoidal accumulator.
 accumConstructor ::
   forall accum deps component.
   (accum -> deps -> (accum, component)) ->
@@ -107,7 +121,7 @@ accumConstructor f = AccumConstructor (\(~(accum, deps)) -> f accum deps)
 accumConstructor_ ::
   forall accum deps component.
   Monoid accum =>
-  -- | Consumes the accumulator but produces 'mempty'
+  -- | Consumes the accumulator but doesn't produce it (returns the 'mempty' accumulator.)
   (accum -> deps -> component) ->
   AccumConstructor accum deps component
 accumConstructor_ f = accumConstructor $ \accum deps -> (mempty, f accum deps)
@@ -119,6 +133,7 @@ _accumConstructor ::
   AccumConstructor accum deps component
 _accumConstructor f = accumConstructor $ \_ deps -> f deps
 
+-- | Equivalent to 'arr'.
 _accumConstructor_ ::
   forall accum deps component.
   Monoid accum =>
@@ -127,9 +142,7 @@ _accumConstructor_ ::
   AccumConstructor accum deps component
 _accumConstructor_ f = accumConstructor $ \_ deps -> (mempty, f deps)
 
--- | This is a method of performing dependency injection that doesn't require
--- "Control.Monad.Dep.DepT" at all. In fact, it doesn't require the use of
--- /any/ monad transformer!
+-- | This is a method of performing dependency injection by building fixpoints.
 --
 -- If we have a environment whose fields are functions that construct each
 -- component by searching for its dependencies in a \"fully built\" version of
@@ -140,9 +153,9 @@ _accumConstructor_ f = accumConstructor $ \_ deps -> (mempty, f deps)
 -- Think of it as a version of 'Data.Function.fix' that, instead of \"tying\" a single
 -- function, ties a whole record of them.
 --
--- The @env_ (Constructor (env_ Identity m)) m@ parameter might be the result of peeling
--- away successive layers of applicative functor composition using 'pullPhase',
--- until only the wiring phase remains.
+-- We might have arrived as this \"ready-to-wire\" environment by peeling away
+-- successive layers of applicative functor composition using 'pullPhase', until
+-- only the wiring phase remains.
 --
 --  >>> :{
 --  newtype Foo d = Foo {foo :: String -> d ()} deriving Generic
@@ -151,16 +164,18 @@ _accumConstructor_ f = accumConstructor $ \_ deps -> (mempty, f deps)
 --  makeIOFoo = Foo (liftIO . putStrLn)
 --  makeBar :: Has Foo m env => env -> Bar m
 --  makeBar (asCall -> call) = Bar (call foo)
---  env :: InductiveEnv [Bar,Foo] (Constructor (InductiveEnv [Bar,Foo] Identity IO)) IO
---  env = EmptyEnv
+--  type Deps_ = InductiveEnv [Bar,Foo]
+--  type Deps = Deps_ Identity
+--  deps_ :: Deps_ (Constructor (Deps IO)) IO
+--  deps_ = EmptyEnv
 --      & AddDep @Foo (constructor (\_ -> makeIOFoo))
 --      & AddDep @Bar (constructor makeBar)
---  envReady :: InductiveEnv [Bar,Foo] Identity IO
---  envReady = fixEnv env
+--  deps :: Deps IO
+--  deps = fixEnv deps_
 -- :}
 --
 -- >>> :{
---  bar (dep envReady) "this is bar"
+--  bar (dep deps) "this is bar"
 -- :}
 -- this is bar
 fixEnv ::
@@ -173,7 +188,7 @@ fixEnv env = fix (pullPhase (liftAH decompose env))
   where
     decompose (Constructor f) = coerce f
 
--- | A generalized version of 'fixEnv' which threads a monoidal accumulator
+-- | A generalized 'fixEnv' which threads a monoidal accumulator
 -- along with the environment.
 --
 -- Sometimes, we need constructors to produce a monoidal value along with the
@@ -182,7 +197,7 @@ fixEnv env = fix (pullPhase (liftAH decompose env))
 --
 -- And on the input side, some constructors need access to the monoidal value
 -- accumulated across all components. Think for example about a component which
--- publishes accumulated diagnostics coming from all other components.
+-- publishes diagnostics coming from all other components.
 fixEnvAccum ::
   (Phased env_, Typeable env_, Typeable m, Monoid accum, Typeable accum) =>
   -- | Environment where each field is wrapped in an 'AccumConstructor'
