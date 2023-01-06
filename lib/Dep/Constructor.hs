@@ -2,20 +2,21 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Dep.Constructor
   ( -- * Constructor phase
@@ -35,6 +36,7 @@ module Dep.Constructor
   )
 where
 
+import Control.Applicative
 import Data.Bifunctor (second)
 import Data.Coerce
 import Data.Function (fix)
@@ -49,7 +51,8 @@ import Dep.Env hiding (AccumConstructor, Constructor, accumConstructor, construc
 -- with the environment itself.
 newtype Constructor (deps :: Type) component
   = Constructor (deps -> component)
-  deriving (Functor)
+  deriving stock Functor
+  deriving newtype Applicative
 
 -- | Turn an environment-consuming function into a 'Constructor' that can be slotted
 -- into some field of a 'Phased' environment.
@@ -67,7 +70,14 @@ constructor = Constructor
 -- Like 'Constructor', 'AccumConstructor' should be the final phase.
 newtype AccumConstructor (accum :: Type) (deps :: Type) component
   = AccumConstructor ((accum, deps) -> (accum, component))
-  deriving (Functor)
+  deriving stock Functor
+
+instance Monoid accum => Applicative (AccumConstructor accum deps) where
+  pure component = _accumConstructor_ \_ -> component
+  liftA2 f (AccumConstructor u) (AccumConstructor v) = AccumConstructor \accumdeps ->
+    let (acc1, component1) = u accumdeps
+        (acc2, component2) = v accumdeps
+     in (acc1 <> acc2, f component1 component2)
 
 -- | Turn an environment-consuming function into a 'Constructor' that can be slotted
 -- into some field of a 'Phased' environment.

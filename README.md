@@ -8,10 +8,11 @@ If every dependency knew about the concrete environment, that would increase cou
 
 [![dep-t.png](https://i.postimg.cc/2j0qqkmJ/dep-t.png)](https://postimg.cc/V5bspcJB)
 
-- __Dep.Has__ contains a generic `Has` typeclass for locating dependencies in an environment. It can be useful independently of `ReaderT`, `DepT` or any monad transformer.
-- __Dep.Env__ complements __Dep.Has__, adding helpers for building environments of records.
+- __Dep.Has__ provides a generic `Has` typeclass for locating dependencies in an environment.
+- __Dep.Env__ complements __Dep.Has__ with helpers for building dependency injection environments.
 - __Dep.Tagged__ is a helper for disambiguating dependencies in __Dep.Env__ environments.
-- __Control.Monad.Dep__ contains the `DepT` monad transformer, a variant of `ReaderT`.
+- __Dep.Constructor__ enables fixpoint-based dependency injection in __Dep.Env__ environments.
+- __Control.Monad.Dep__ provides the `DepT` monad transformer, a variant of `ReaderT`. You want to use either this or __Dep.Constructor__ for dependency injection, but not both.
 - __Control.Monad.Dep.Class__ is an extension of `MonadReader`, useful to program against both `ReaderT` and `DepT`.
 
 ## Links
