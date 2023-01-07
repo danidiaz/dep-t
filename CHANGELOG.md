@@ -1,5 +1,12 @@
 # Revision history for dep-t
 
+
+## 0.6.6
+
+* Added Dep.Phases. 
+
+* Added Dep.Injects.
+
 ## 0.6.5
 
 * Deprecated `Constructor`, `fixEnv` and the `Accum-` counterparts from `Dep.Env`.
