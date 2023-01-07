@@ -36,7 +36,7 @@ type Injects :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Constraint
 class Injects r_ (m :: Type -> Type) (accum :: Type) | accum -> m where
     -- | Given a value parameterized by the accumulator's effect monad @m@,
     -- produce an accumulator.
-    inject :: r_ m -> env
+    inject :: r_ m -> accum
 
 
 
