@@ -15,6 +15,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
 -- which the components of the environment, instead of being bare functions,
@@ -69,7 +70,7 @@
 -- doesn't have any constraint other than 'Monad':
 --
 -- >>> :{
---  mkController' :: (Monad m, Has Logger m env, Has Repository m env) => env -> Controller m
+--  mkController' :: (Monad m, Has Logger m deps, Has Repository m deps) => deps -> Controller m
 --  mkController' (asCall -> call) =
 --    Controller \url -> do
 --      call log "I'm going to insert in the db!"
@@ -83,8 +84,10 @@ module Dep.Has (
       -- * A general-purpose Has
       Has (..)
     , HasAll
-      -- * call helper
+      -- * call helpers
     , asCall
+    , pattern Call
+    -- , pattern Dep
       -- * Component defaults
     , Dep (..)
     ) where
@@ -127,22 +130,22 @@ type family HasAll rs_ m e where
 --
 -- >>> :{
 --  data SomeRecord m = SomeRecord { someSelector :: String -> m () }
---  data Env m = Env
+--  data Deps m = Deps
 --    { someRecord :: SomeRecord m
 --    }
---  instance Has SomeRecord m (Env m) where
---    dep (Env{someRecord}) = someRecord
+--  instance Has SomeRecord m (Deps m) where
+--    dep (Deps {someRecord}) = someRecord
 --  :}
 --
---   In practice, this means that you can write @call someSelector@ instead of @someSelector (dep
---   env)@:
+--   In practice, this means that you can write @call someSelector@ instead of
+--   @someSelector (dep deps)@:
 --
 -- >>> :{
 --    twoInvocations :: (IO (), IO ()) 
 --    twoInvocations = 
---      let env :: Env IO = Env { someRecord = SomeRecord { someSelector = putStrLn } }
---          call = asCall env
---       in (someSelector (dep env) "foo", call someSelector "foo")  
+--      let deps :: Deps IO = Deps { someRecord = SomeRecord { someSelector = putStrLn } }
+--          call = asCall deps
+--       in (someSelector (dep deps) "foo", call someSelector "foo")  
 -- :}
 --
 --   Using 'asCall' in a view pattern avoids having to name the
@@ -150,12 +153,50 @@ type family HasAll rs_ m e where
 --
 --
 -- >>> :{
---    functionThatCalls :: Has SomeRecord m e => e -> m ()
+--    functionThatCalls :: Has SomeRecord m deps => deps -> m ()
 --    functionThatCalls (asCall -> call) = call someSelector "foo"
 -- :}
 --
-asCall :: forall env m . env -> forall r_ x. Has r_ m env => (r_ m -> x) -> x
-asCall env = \f -> f (dep env)
+asCall :: forall deps m . 
+  -- | Dependency injection context that contains the components.
+  deps -> 
+  forall component_ method. Has component_ m deps => 
+  -- | Field selector function that extracts a method from a component.
+  (component_ m -> method) -> 
+  method 
+asCall deps = \f -> f (dep deps)
+
+-- | Pattern synonym version of 'asCall'. Slightly more succinct and doesn't
+-- require @-XViewPatterns@. The synonym is unidirectional, can only be used for
+-- matching.
+--
+-- >>> :{
+--  data SomeRecord m = SomeRecord { someSelector :: String -> m () }
+--  data Deps m = Deps
+--    { someRecord :: SomeRecord m
+--    }
+--  instance Has SomeRecord m (Deps m) where
+--    dep (Deps {someRecord}) = someRecord
+--  functionThatCalls :: Has SomeRecord m deps => deps -> m ()
+--  functionThatCalls (Call call) = call someSelector "foo"
+-- :}
+--
+pattern Call :: 
+  forall deps m . (forall component_ method. Has component_ m deps => 
+  (component_ m -> method) -> method) -> 
+  -- | The dependency injection context that we want to match.
+  deps
+pattern Call call <- (asCall -> call)
+{-# COMPLETE Call #-}
+{-# INLINABLE Call #-}
+
+-- The deprecated Dep typeclass causes trouble here.
+-- -- | The @δ@ should be the first argument of the functions we want to invoke.
+-- pattern Dep :: forall env m . (forall r_ . Has r_ m env => r_ m) -> env
+-- pattern Dep δ <- ((dep :: env -> forall r_ . Has r_ m env => r_ m) -> δ)
+-- {-# COMPLETE Dep #-}
+-- {-# INLINABLE Dep #-}
+
 
 -- | Parametrizable records-of-functions can be given an instance of this
 -- typeclass to specify the default field name 'Has' expects for the component
