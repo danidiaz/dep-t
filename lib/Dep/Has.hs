@@ -41,15 +41,15 @@
 --  instance Dep Controller where
 --    type DefaultFieldName Controller = "controller"
 --  --
---  type Env :: (Type -> Type) -> Type
---  data Env m = Env
+--  type Deps :: (Type -> Type) -> Type
+--  data Deps m = Deps
 --    { logger :: Logger m,
 --      repository :: Repository m,
 --      controller :: Controller m
 --    }
---  instance Has Logger m (Env m)
---  instance Has Repository m (Env m)
---  instance Has Controller m (Env m)
+--  instance Has Logger m (Deps m)
+--  instance Has Repository m (Deps m)
+--  instance Has Controller m (Deps m)
 --  :}
 --  
 -- 'Has' can be used in combination with 'MonadDep', like this:
@@ -101,20 +101,20 @@ import Data.Coerce
 
 -- | A generic \"Has\" class. When partially applied to a parametrizable
 -- record-of-functions @r_@, produces a 2-place constraint 
---  saying that the environment @e@ has the record @r_@ with effect monad @m@.
+-- saying that the environment @deps@ has the record @r_@ with effect monad @m@.
 --
 -- The constraint can be used on its own, or with "Control.Monad.Dep.Class".
 type Has :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Constraint
-class Has r_ (m :: Type -> Type) (env :: Type) | env -> m where
-  -- |  Given an environment @env@, produce a record-of-functions parameterized by the environment's effect monad @m@.
+class Has (r_ :: (Type -> Type) -> Type) (m :: Type -> Type) (deps :: Type) | deps -> m where
+  -- |  Given an environment @deps@, produce a record-of-functions parameterized by the environment's effect monad @m@.
   --
   -- The hope is that using a selector function on the resulting record will
   -- fix the record's type without the need for type annotations.
   --
-  -- (This will likely not play well with RecordDotSyntax. See also <https://chrisdone.com/posts/import-aliases-field-names/ this import alias trick for avoiding name collisions>.)
-  dep :: env -> r_ m
-  default dep :: (Dep r_, HasField (DefaultFieldName r_) env u, Coercible u (r_ m)) => env -> r_ m
-  dep env = coerce . getField @(DefaultFieldName r_) $ env
+  -- See also <https://chrisdone.com/posts/import-aliases-field-names/ this import alias trick for avoiding name collisions>.
+  dep :: deps -> r_ m
+  default dep :: (Dep r_, HasField (DefaultFieldName r_) deps u, Coercible u (r_ m)) => deps -> r_ m
+  dep deps = coerce . getField @(DefaultFieldName r_) $ deps
 
 -- | When partially applied to a type-level list @rs_@ of parametrizable records-of-functions, 
 -- produces a 2-place constraint saying that the environment @e@ has all the
@@ -125,10 +125,16 @@ type family HasAll rs_ m e where
   HasAll '[] m e = ()
   HasAll (r_ : rs_) m e = (Has r_ m e, HasAll rs_ m e)
 
--- | Transforms an environment with suitable 'Has' instances into a \"helper\"
---   function that looks in the environment for the arguments of other functions.
---   Typically, the \"helped\" functions will be record field selectors:
+-- | A record-of-functions @r_@ might play the role of a \"component\"
+-- taking part in dependency injection.
 --
+-- Each function field is then a \"method\". And the record field selectors are functions
+-- which take the component and return the method corresponding to that field.
+-- 
+-- Given a dependency injection context, 'asCall' produces a reusable helper
+-- that returns the the method corresponding to a field selector, on the condition that
+-- the required 'Has' instance exists for the selectors' record.
+-- 
 -- >>> :{
 --  data SomeRecord m = SomeRecord { someSelector :: String -> m () }
 --  data Deps m = Deps
@@ -138,7 +144,7 @@ type family HasAll rs_ m e where
 --    dep (Deps {someRecord}) = someRecord
 --  :}
 --
---   In practice, this means that you can write @call someSelector@ instead of
+--   In practice, this just means that you can write @call someSelector@ instead of
 --   @someSelector (dep deps)@:
 --
 -- >>> :{
@@ -161,14 +167,14 @@ type family HasAll rs_ m e where
 asCall :: forall deps m . 
   -- | Dependency injection context that contains the components.
   deps -> 
-  forall component_ method. Has component_ m deps => 
+  forall r_ method. Has r_ m deps => 
   -- | Field selector function that extracts a method from a component.
-  (component_ m -> method) -> 
+  (r_ m -> method) -> 
   method 
 asCall deps = \f -> f (dep deps)
 
 -- | Pattern synonym version of 'asCall'. Slightly more succinct and doesn't
--- require @-XViewPatterns@. The synonym is unidirectional, can only be used for
+-- require @-XViewPatterns@. The synonym is unidirectional: it can only be used for
 -- matching.
 --
 -- >>> :{
@@ -183,8 +189,8 @@ asCall deps = \f -> f (dep deps)
 -- :}
 --
 pattern Call :: 
-  forall deps m . (forall component_ method. Has component_ m deps => 
-  (component_ m -> method) -> method) -> 
+  forall deps m . (forall r_ method. Has r_ m deps => 
+  (r_ m -> method) -> method) -> 
   -- | The dependency injection context that we want to match.
   deps
 pattern Call call <- (asCall -> call)
