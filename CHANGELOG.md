@@ -1,11 +1,16 @@
 # Revision history for dep-t
 
+## 0.6.7
+
+* Deprecated `HasAll`.
+
+* Added `Call` pattern synonym to `Dep.Has`.
 
 ## 0.6.6
 
-* Added Dep.Phases. 
+* Added `Dep.Phases`. 
 
-* Added Dep.Injects.
+* Added `Dep.Injects`.
 
 ## 0.6.5
 

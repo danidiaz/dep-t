@@ -119,6 +119,7 @@ class Has r_ (m :: Type -> Type) (env :: Type) | env -> m where
 -- | When partially applied to a type-level list @rs_@ of parametrizable records-of-functions, 
 -- produces a 2-place constraint saying that the environment @e@ has all the
 -- records @rs_@ with effect monad @m@.
+{-# DEPRECATED HasAll "Use All from sop-core along with separate Has applications" #-}
 type HasAll :: [(Type -> Type) -> Type] -> (Type -> Type) -> Type -> Constraint
 type family HasAll rs_ m e where
   HasAll '[] m e = ()
