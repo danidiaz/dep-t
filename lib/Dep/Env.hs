@@ -741,12 +741,25 @@ fixEnvAccum env =
 -- components into functions that take their dependencies as separate
 -- positional parameters.
 --
--- > makeController :: (Monad m, Has Logger m env, Has Repository m env) => env -> Controller m
--- > makeController = undefined
--- > makeControllerPositional :: Monad m => Logger m -> Repository m -> Controller m
--- > makeControllerPositional a b = makeController $ addDep @Logger a $ addDep @Repository b $ emptyEnv
--- > makeController' :: (Monad m, Has Logger m env, Has Repository m env) => env -> Controller m
--- > makeController' env = makeControllerPositional (dep env) (dep env)
+-- >>> :{
+-- data Logger d = Logger { }
+-- data Repository d = Repository { }
+-- data Controller d = Controller  { }
+-- makeController :: (Monad m, Has Logger m deps, Has Repository m deps) => deps -> Controller m
+-- makeController = undefined
+-- makeControllerPositional :: Monad m => Logger m -> Repository m -> Controller m
+-- makeControllerPositional a b = makeController $ addDep @Logger a $ addDep @Repository b $ emptyEnv
+-- makeController' :: (Monad m, Has Logger m deps, Has Repository m deps) => deps -> Controller m
+-- makeController' deps = makeControllerPositional (dep deps) (dep deps)
+-- :}
+--
+-- Although, for small numbers of components, we can simply use a tuple as the environment:
+--
+-- >>> :{
+-- makeControllerPositional' :: Monad m => Logger m -> Repository m -> Controller m
+-- makeControllerPositional' a b = makeController (a,b)
+-- :}
+--
 data InductiveEnv (rs :: [(Type -> Type) -> Type]) (h :: Type -> Type) (m :: Type -> Type) where
   AddDep :: forall r_ m rs h. Typeable r_ => h (r_ m) -> InductiveEnv rs h m -> InductiveEnv (r_ : rs) h m
   EmptyEnv :: forall m h. InductiveEnv '[] h m

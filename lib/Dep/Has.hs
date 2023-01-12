@@ -2,20 +2,20 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
 -- which the components of the environment, instead of being bare functions,
@@ -51,13 +51,13 @@
 --  instance Has Repository m (Deps m)
 --  instance Has Controller m (Deps m)
 --  :}
---  
+--
 -- 'Has' can be used in combination with 'MonadDep', like this:
 --
 -- >>> :{
 --  mkController :: MonadDep [Has Logger, Has Repository] d env m => Controller m
 --  mkController =
---    Controller \url -> 
+--    Controller \url ->
 --      useEnv \(asCall -> call) -> do
 --        call log "I'm going to insert in the db!"
 --        call select "select * from ..."
@@ -78,29 +78,31 @@
 --      call insert [1, 2, 3, 4]
 --      return "view"
 -- :}
---
---
-module Dep.Has (
-      -- * A general-purpose Has
-      Has (..)
-    , HasAll
-      -- * call helpers
-    , asCall
-    , pattern Call
-    -- , pattern Dep
-      -- * Component defaults
-    , Dep (..)
-    ) where
+module Dep.Has
+  ( -- * A general-purpose Has
+    Has (..),
+    HasAll,
 
+    -- * call helpers
+    asCall,
+    pattern Call,
+    -- , pattern Dep
+
+    -- * Component defaults
+    Dep (..),
+  )
+where
+
+import Data.Coerce
 import Data.Kind
 import GHC.Records
 import GHC.TypeLits
-import Data.Coerce
+
 -- import Control.Monad.Reader
 -- import Control.Monad.Dep.Class
 
 -- | A generic \"Has\" class. When partially applied to a parametrizable
--- record-of-functions @r_@, produces a 2-place constraint 
+-- record-of-functions @r_@, produces a 2-place constraint
 -- saying that the environment @deps@ has the record @r_@ with effect monad @m@.
 --
 -- The constraint can be used on its own, or with "Control.Monad.Dep.Class".
@@ -116,25 +118,53 @@ class Has (r_ :: (Type -> Type) -> Type) (m :: Type -> Type) (deps :: Type) | de
   default dep :: (Dep r_, HasField (DefaultFieldName r_) deps u, Coercible u (r_ m)) => deps -> r_ m
   dep deps = coerce . getField @(DefaultFieldName r_) $ deps
 
--- | When partially applied to a type-level list @rs_@ of parametrizable records-of-functions, 
+-- | When partially applied to a type-level list @rs_@ of parametrizable records-of-functions,
 -- produces a 2-place constraint saying that the environment @e@ has all the
 -- records @rs_@ with effect monad @m@.
 {-# DEPRECATED HasAll "Use All from sop-core along with separate Has applications" #-}
+
 type HasAll :: [(Type -> Type) -> Type] -> (Type -> Type) -> Type -> Constraint
 type family HasAll rs_ m e where
   HasAll '[] m e = ()
   HasAll (r_ : rs_) m e = (Has r_ m e, HasAll rs_ m e)
+
+instance Has r_ m (r_ m, b) where
+  dep (r, _) = r
+
+instance Has r_ m (a, r_ m) where
+  dep (_, r) = r
+
+instance Has r_ m (r_ m, b, c) where
+  dep (r, _, _) = r
+
+instance Has r_ m (a, r_ m, c) where
+  dep (_, r, _) = r
+
+instance Has r_ m (a, b, r_ m) where
+  dep (_, _, r) = r
+
+instance Has r_ m (r_ m, b, c, d) where
+  dep (r, _, _, _) = r
+
+instance Has r_ m (a, r_ m, c, d) where
+  dep (_, r, _, _) = r
+
+instance Has r_ m (a, b, r_ m, d) where
+  dep (_, _, r, _) = r
+
+instance Has r_ m (a, b, c, r_ m) where
+  dep (_, _, _, r) = r
 
 -- | A record-of-functions @r_@ might play the role of a \"component\"
 -- taking part in dependency injection.
 --
 -- Each function field is then a \"method\". And the record field selectors are functions
 -- which take the component and return the method corresponding to that field.
--- 
+--
 -- Given a dependency injection context, 'asCall' produces a reusable helper
 -- that returns the the method corresponding to a field selector, on the condition that
 -- the required 'Has' instance exists for the selectors' record.
--- 
+--
 -- >>> :{
 --  data SomeRecord m = SomeRecord { someSelector :: String -> m () }
 --  data Deps m = Deps
@@ -148,11 +178,11 @@ type family HasAll rs_ m e where
 --   @someSelector (dep deps)@:
 --
 -- >>> :{
---    twoInvocations :: (IO (), IO ()) 
---    twoInvocations = 
+--    twoInvocations :: (IO (), IO ())
+--    twoInvocations =
 --      let deps :: Deps IO = Deps { someRecord = SomeRecord { someSelector = putStrLn } }
 --          call = asCall deps
---       in (someSelector (dep deps) "foo", call someSelector "foo")  
+--       in (someSelector (dep deps) "foo", call someSelector "foo")
 -- :}
 --
 --   Using 'asCall' in a view pattern avoids having to name the
@@ -163,14 +193,15 @@ type family HasAll rs_ m e where
 --    functionThatCalls :: Has SomeRecord m deps => deps -> m ()
 --    functionThatCalls (asCall -> call) = call someSelector "foo"
 -- :}
---
-asCall :: forall deps m . 
+asCall ::
+  forall deps m.
   -- | Dependency injection context that contains the components.
-  deps -> 
-  forall r_ method. Has r_ m deps => 
+  deps ->
+  forall r_ method.
+  Has r_ m deps =>
   -- | Field selector function that extracts a method from a component.
-  (r_ m -> method) -> 
-  method 
+  (r_ m -> method) ->
+  method
 asCall deps = \f -> f (dep deps)
 
 -- | Pattern synonym version of 'asCall'. Slightly more succinct and doesn't
@@ -187,15 +218,20 @@ asCall deps = \f -> f (dep deps)
 --  functionThatCalls :: Has SomeRecord m deps => deps -> m ()
 --  functionThatCalls (Call call) = call someSelector "foo"
 -- :}
---
-pattern Call :: 
-  forall deps m . (forall r_ method. Has r_ m deps => 
-  (r_ m -> method) -> method) -> 
+pattern Call ::
+  forall deps m.
+  ( forall r_ method.
+    Has r_ m deps =>
+    (r_ m -> method) ->
+    method
+  ) ->
   -- | The dependency injection context that we want to match.
   deps
 pattern Call call <- (asCall -> call)
+
 {-# COMPLETE Call #-}
-{-# INLINABLE Call #-}
+
+{-# INLINEABLE Call #-}
 
 -- The deprecated Dep typeclass causes trouble here.
 -- -- | The @δ@ should be the first argument of the functions we want to invoke.
@@ -204,7 +240,6 @@ pattern Call call <- (asCall -> call)
 -- {-# COMPLETE Dep #-}
 -- {-# INLINABLE Dep #-}
 
-
 -- | Parametrizable records-of-functions can be given an instance of this
 -- typeclass to specify the default field name 'Has' expects for the component
 -- in the environment record.
@@ -212,7 +247,9 @@ pattern Call call <- (asCall -> call)
 -- This allows defining 'Has' instances with empty bodies, thanks to
 -- @DefaultSignatures@.
 type Dep :: ((Type -> Type) -> Type) -> Constraint
+
 {-# DEPRECATED Dep "more intrusive than useful" #-}
+
 class Dep r_ where
   -- The Char kind would be useful here, to lowercase the first letter of the
   -- k type and use it as the default preferred field name.
@@ -238,5 +275,3 @@ class Dep r_ where
 -- >>> import Data.Kind
 -- >>> import Control.Monad.Dep
 -- >>> import GHC.Generics (Generic)
---
-

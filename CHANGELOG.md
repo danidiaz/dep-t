@@ -6,6 +6,8 @@
 
 * Added `Call` pattern synonym to `Dep.Has`.
 
+* Added tuple instances for `Has` and `Injects`.
+
 ## 0.6.6
 
 * Added `Dep.Phases`. 

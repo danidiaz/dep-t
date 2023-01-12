@@ -2,30 +2,31 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- | Inject values into accumulators.
-module Dep.Injects (
-    -- * General-purpose injector.
-    Injects (..)
-    ) where
+module Dep.Injects
+  ( -- * General-purpose injector.
+    Injects (..),
+  )
+where
 
+import Data.Coerce
 import Data.Kind
 import GHC.Records
 import GHC.TypeLits
-import Data.Coerce
 
 -- | Mirror image of 'Dep.Has.Has'.
 --
@@ -34,10 +35,33 @@ import Data.Coerce
 -- all components.
 type Injects :: ((Type -> Type) -> Type) -> (Type -> Type) -> Type -> Constraint
 class Injects r_ (m :: Type -> Type) (accum :: Type) | accum -> m where
-    -- | Given a value parameterized by the accumulator's effect monad @m@,
-    -- produce an accumulator.
-    inject :: r_ m -> accum
+  -- | Given a value parameterized by the accumulator's effect monad @m@,
+  -- produce an accumulator.
+  inject :: r_ m -> accum
 
+instance (Monoid b) => Injects r_ m (r_ m, b) where
+  inject r = (r, mempty)
 
+instance (Monoid a) => Injects r_ m (a, r_ m) where
+  inject r = (mempty, r)
 
+instance (Monoid b, Monoid c) => Injects r_ m (r_ m, b, c) where
+  inject r = (r, mempty, mempty)
 
+instance (Monoid a, Monoid c) => Injects r_ m (a, r_ m, c) where
+  inject r = (mempty, r, mempty)
+
+instance (Monoid a, Monoid b) => Injects r_ m (a, b, r_ m) where
+  inject r = (mempty, mempty, r)
+
+instance (Monoid b, Monoid c, Monoid d) => Injects r_ m (r_ m, b, c, d) where
+  inject r = (r, mempty, mempty, mempty)
+
+instance (Monoid a, Monoid c, Monoid d) => Injects r_ m (a, r_ m, c, d) where
+  inject r = (mempty, r, mempty, mempty)
+
+instance (Monoid a, Monoid b, Monoid d) => Injects r_ m (a, b, r_ m, d) where
+  inject r = (mempty, mempty, r, mempty)
+
+instance (Monoid a, Monoid b, Monoid c) => Injects r_ m (a, b, c, r_ m) where
+  inject r = (mempty, mempty, mempty, r)
