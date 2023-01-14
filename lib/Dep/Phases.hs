@@ -10,9 +10,57 @@ module Dep.Phases (
 import Data.Functor.Compose
 import Prelude (Functor, (<$>), (<$))
 
+-- | Without @-XQualifiedDo@:
+--
+-- >>> :{
+--  type Phases = IO `Compose` IO `Compose` Identity
+--  phased :: Phases Int
+--  phased =
+--      pure 1 Dep.Phases.>>= \i1 ->
+--      pure 2 Dep.Phases.>>= \i2 ->
+--      Identity (i1 + i2)
+-- :}
+--
+--
+-- With @-XQualifiedDo@:
+--
+-- >>> :{
+--  type Phases = IO `Compose` IO `Compose` Identity
+--  phased :: Phases Int
+--  phased = Dep.Phases.do
+--      i1 <- pure 1
+--      i2 <- pure 2
+--      Identity (i1 + i2)
+-- :}
+--
 (>>=) :: Functor f => f x -> (x -> g y) -> Compose f g y
 f >>= k = Compose (k <$> f)
 
+
+-- | Without @-XQualifiedDo@:
+--
+-- >>> :{
+--  type Phases = IO `Compose` IO `Compose` Identity
+--  phased :: Phases Int
+--  phased =
+--      pure () Dep.Phases.>>
+--      (pure () Dep.Phases.>>
+--       Identity 1)
+-- :}
+--
+--
+-- With @-XQualifiedDo@:
+--
+-- >>> :{
+--  type Phases = IO `Compose` IO `Compose` Identity
+--  phased :: Phases Int
+--  phased = Dep.Phases.do
+--      pure () 
+--      pure () 
+--      Identity 1
+-- :}
+--
+--
 (>>) :: Functor f => f x -> g y -> Compose f g y
 f >> g = Compose (g <$ f)
 

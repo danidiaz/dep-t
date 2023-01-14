@@ -498,6 +498,7 @@ instance
 
 -- | Class of 2-parameter environments for which it's possible to obtain the
 -- names of each field as values.
+{-# DEPRECATED DemotableFieldNames "using the field names directly is usually a bad idea" #-}
 type DemotableFieldNames :: ((Type -> Type) -> (Type -> Type) -> Type) -> Constraint
 class DemotableFieldNames env_ where
   demoteFieldNamesH :: (forall x. String -> h String x) -> env_ (h String) m
@@ -511,6 +512,7 @@ class DemotableFieldNames env_ where
 
 -- | Bring down the field names of the environment to the term level and store
 -- them in the accumulator of "Data.Functor.Constant".
+{-# DEPRECATED demoteFieldNames "using the field names directly is usually a bad idea" #-}
 demoteFieldNames :: forall env_ m. DemotableFieldNames env_ => env_ (Constant String) m
 demoteFieldNames = demoteFieldNamesH Constant
 
@@ -542,6 +544,7 @@ instance KnownSymbol name => GDemotableFieldNamesH h (G.S1 (G.MetaSel ('Just nam
 -- A typical usage is modifying a \"parsing the configuration\" phase so that
 -- each component looks into a different section of the global configuration
 -- field.
+{-# DEPRECATED mapPhaseWithFieldNames "using the field names directly is usually a bad idea" #-}
 mapPhaseWithFieldNames ::
   forall (f :: Type -> Type) (f' :: Type -> Type) (g :: Type -> Type) (m :: Type -> Type) env_.
   ( Phased env_,
@@ -581,6 +584,7 @@ mapPhaseWithFieldNames f env =
 --      pure 2 `bindPhase` \i2 ->
 --      Identity (i1 + i2)
 -- :}
+{-# DEPRECATED bindPhase "use Dep.Phases.>>=, preferably with QualifiedDo" #-}
 bindPhase :: forall f g a b. Functor f => f a -> (a -> g b) -> Compose f g b
 -- f as first type parameter to help annotate the current phase
 bindPhase f k = Compose (f <&> k)
@@ -595,6 +599,7 @@ bindPhase f k = Compose (f <&> k)
 --      skipPhase $
 --      Identity 1
 -- :}
+{-# DEPRECATED skipPhase "use pure () Dep.Phases.>>, preferably with QualifiedDo" #-}
 skipPhase :: forall f g a. Applicative f => g a -> Compose f g a
 -- f as first type parameter to help annotate the current phase
 skipPhase g = Compose (pure g)

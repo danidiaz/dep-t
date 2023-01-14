@@ -1,6 +1,12 @@
 # Revision history for dep-t
 
-## 0.6.7
+## 0.6.7.1
+
+- Deprecated `DemotableFieldNames` `demoteFieldNames` `mapPhaseWithFieldNames`
+
+- Deprecated `bindPhase` and `skipPhase`
+
+## 0.6.7.0
 
 * Deprecated `HasAll`.
 
@@ -8,13 +14,13 @@
 
 * Added tuple instances for `Has` and `Injects`.
 
-## 0.6.6
+## 0.6.6.0
 
 * Added `Dep.Phases`. 
 
 * Added `Dep.Injects`.
 
-## 0.6.5
+## 0.6.5.0
 
 * Deprecated `Constructor`, `fixEnv` and the `Accum-` counterparts from `Dep.Env`.
   
@@ -30,7 +36,7 @@
 
 * Shifted `DepT`-specific parts of the readme to `Control.Monad.Dep`.
 
-## 0.6.4
+## 0.6.4.0
 
 * Added AccumConstructor, a generalization of Constructor that threads a
   monoidal summary along with the environment record.
@@ -45,7 +51,7 @@
   TraversableT and ApplicativeT from the "barbies" library to implement Phased.
   But most of the time you would use Phased's own generic deriving anyway.
 
-## 0.6.3
+## 0.6.3.0
 
 * Now the Bare typeclass doesn't recurse inside Identity or Const.
 
@@ -60,7 +66,7 @@
   functions did not compile. This led to unnecessary code duplication. Stopping
   at Identity means Bare never touches the type variable and doesn't get stuck.
 
-## 0.6.2
+## 0.6.2.0
 
 * Moved `fromBare` and `toBare` from dep-t-dynamic.
 
