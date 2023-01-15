@@ -79,10 +79,11 @@ import Data.Coerce
 import Data.Function (fix)
 import Data.Kind
 import Data.Typeable
-import Dep.Env hiding (AccumConstructor, Constructor, accumConstructor, constructor, fixEnv, fixEnvAccum)
+import Dep.Phases
 import Control.Category (Category)
 import Control.Category qualified
 import Control.Arrow
+import Data.Functor.Identity
 
 -- | A phase with the effect of \"constructing each component by reading its
 -- dependencies from a completed environment\". It should be the final phase.

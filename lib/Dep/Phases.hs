@@ -29,7 +29,6 @@ module Dep.Phases (
     (>>=), 
     (>>),
     -- * Re-exports
-    Identity (..),
     Compose (..),
     ) where
 
@@ -145,7 +144,7 @@ class Phased (env_ :: (Type -> Type) -> (Type -> Type) -> Type) where
 liftAH ::
   forall deps_ phases phases' m.
   (Phased deps_, Typeable phases, Typeable phases', Typeable m) =>
-  -- | Function that changes the phase wrapping each component.
+  -- | Transform to be applied to each field.
   (forall x. Typeable x => phases x -> phases' x) ->
   deps_ phases m ->
   deps_ phases' m
@@ -345,7 +344,7 @@ f >> g = Compose (g <$ f)
 -- It would indeed be useful (it would allow pre-packaging and sharing initial
 -- phases as do-blocks) but it isn't supported.
 --
--- __BEWARE__ #2! Do not use 'return' in this do-notation.
+-- __BEWARE#2__! Do not use 'return' in this do-notation.
 --
 -- Some valid examples:
 --

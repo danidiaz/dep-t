@@ -42,7 +42,8 @@ constructor arguments](https://docs.spring.io/spring-framework/docs/current/refe
 ```mermaid
   graph TD;
       Dep.Env-->Dep.Has;
-      Dep.Constructor-->Dep.Env;
+      Dep.Env-->Dep.Phases;
+      Dep.Constructor-->Dep.Phases;
       Dep.Tagged;
       Control.Monad.Dep.Class-->Control.Monad.Reader;
       Control.Monad.Dep-->Control.Monad.Reader;

@@ -18,66 +18,51 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- | This module provides a general-purpose 'Has' class favoring a style in
--- which the components of the environment, instead of being bare functions,
--- are themselves records or newtypes containing functions.
---
--- In this style, the functions that are \"invoked\" from the environment are
--- actually record field selectors. These selectors guide the 'Has' class to
--- find the correct records in the environment.
+-- which the components of the dependency injection environment, instead of
+-- being bare functions, are themselves records or newtypes containing
+-- functions:
 --
 -- >>> :{
 --  newtype Logger d = Logger {log :: String -> d ()}
---  instance Dep Logger where
---    type DefaultFieldName Logger = "logger"
---  --
---  data Repository d = Repository
---    { select :: String -> d [Int],
---      insert :: [Int] -> d ()
---    }
---  instance Dep Repository where
---    type DefaultFieldName Repository = "repository"
---  --
+--  data Repository d = Repository { select :: String -> d [Int], insert :: [Int] -> d () }
 --  newtype Controller d = Controller {serve :: Int -> d String}
---  instance Dep Controller where
---    type DefaultFieldName Controller = "controller"
---  --
+--  -- A dependency injection environment that contains the components.
 --  type Deps :: (Type -> Type) -> Type
 --  data Deps m = Deps
 --    { logger :: Logger m,
 --      repository :: Repository m,
 --      controller :: Controller m
 --    }
---  instance Has Logger m (Deps m)
---  instance Has Repository m (Deps m)
---  instance Has Controller m (Deps m)
+--  instance Has Logger m (Deps m) where dep Deps {logger} = logger
+--  instance Has Repository m (Deps m) where dep Deps {repository} = repository
+--  instance Has Controller m (Deps m) where dep Deps {controller} = controller
 --  :}
 --
--- 'Has' can be used in combination with 'MonadDep', like this:
+--
+-- In this style, the functions that are \"invoked\" from the environment are
+-- actually record field selectors. These selectors guide the 'Has' class to
+-- find the correct components in the environment:
+--
 --
 -- >>> :{
---  mkController :: MonadDep [Has Logger, Has Repository] d env m => Controller m
---  mkController =
---    Controller \url ->
---      useEnv \(asCall -> call) -> do
---        call log "I'm going to insert in the db!"
---        call select "select * from ..."
---        call insert [1, 2, 3, 4]
---        return "view"
--- :}
---
--- 'Has' can also be used independently of 'MonadReader' or 'MonadDep'. Here
--- for example the environment is passed as a plain function argument, and @m@
--- doesn't have any constraint other than 'Monad':
---
--- >>> :{
---  mkController' :: (Monad m, Has Logger m deps, Has Repository m deps) => deps -> Controller m
---  mkController' (asCall -> call) =
+--  makeController :: (Has Logger m deps, Has Repository m deps, Monad m) => deps -> Controller m
+--  makeController (asCall -> call) =
 --    Controller \url -> do
 --      call log "I'm going to insert in the db!"
 --      call select "select * from ..."
 --      call insert [1, 2, 3, 4]
 --      return "view"
 -- :}
+--
+--
+-- By convention, the DI environment parameter is usually called @deps@. Notice
+-- also the use of the (optional) 'asCall' helper.
+--
+-- If we regard @makeController@ above as a component constructor, 'Has' lets us
+-- avoid having to define separate positional parameters for each dependency of the 
+-- constructor. Not only that: it also avoids us having to give names to those 
+-- parameters, and even having to mention their types (because they are
+-- implicit in the record field selectors).
 module Dep.Has
   ( -- * A general-purpose Has
     Has (..),
@@ -159,9 +144,9 @@ instance Has r_ m (a, b, c, r_ m) where
 -- Each function field is then a \"method\". And the record field selectors are functions
 -- which take the component and return the method corresponding to that field.
 --
--- Given a dependency injection context, 'asCall' produces a reusable helper
+-- Given a dependency injection environment, 'asCall' produces a reusable helper
 -- that returns the the method corresponding to a field selector, on the condition that
--- the required 'Has' instance exists for the selectors' record.
+-- the selector's record actually exists in the environment.
 --
 -- >>> :{
 --  data SomeRecord m = SomeRecord { someSelector :: String -> m () }
