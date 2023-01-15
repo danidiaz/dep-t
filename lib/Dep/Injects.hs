@@ -20,6 +20,7 @@
 module Dep.Injects
   ( -- * General-purpose injector.
     Injects (..),
+    InjectsAll
   )
 where
 
@@ -65,3 +66,10 @@ instance (Monoid a, Monoid b, Monoid d) => Injects r_ m (a, b, r_ m, d) where
 
 instance (Monoid a, Monoid b, Monoid c) => Injects r_ m (a, b, c, r_ m) where
   inject r = (mempty, mempty, mempty, r)
+
+
+-- | Mirror image of 'Dep.Has.HasAll'.
+type InjectsAll :: [(Type -> Type) -> Type] -> (Type -> Type) -> Type -> Constraint
+type family InjectsAll rs_ m e where
+  InjectsAll '[] m e = ()
+  InjectsAll (r_ : rs_) m e = (Injects r_ m e, InjectsAll rs_ m e)

@@ -2,11 +2,14 @@
 
 ## 0.6.8.0
 
-* Un-deprecated `HasAll`. Turns out that it's actually useful.
+* Un-deprecated `HasAll`. Turns out that it's actually useful :facepalm:
+
+* Added `InjectsAll`.
 
 * Deprecated `DemotableFieldNames` `demoteFieldNames` `mapPhaseWithFieldNames`
 
-* Deprecated `skipPhase`.
+* Deprecated `skipPhase`. Instead of using both  `skipPhase` and `bindPhase`, it's 
+  better to use only the latter, for consistency.
 
 * Moved main `Phased` definitions to `Dep.Phased`, re-exporting them from `Dep.Env`.
 

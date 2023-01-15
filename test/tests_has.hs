@@ -376,6 +376,12 @@ acc1 = inject (Activities [])
 acc2 :: Accumulator IO 
 acc2 = inject (Constant ())
 
+accAll :: (InjectsAll '[Activities, Constant ()] IO accum, Monoid accum) => accum
+accAll = inject (Activities []) <> inject (Constant ())
+
+acc3 :: Accumulator IO 
+acc3 = accAll
+
 --
 --
 --

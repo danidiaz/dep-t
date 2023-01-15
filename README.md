@@ -44,7 +44,6 @@ constructor arguments](https://docs.spring.io/spring-framework/docs/current/refe
       Dep.Env-->Dep.Has;
       Dep.Env-->Dep.Phases;
       Dep.Constructor-->Dep.Phases;
-      Dep.Tagged;
       Control.Monad.Dep.Class-->Control.Monad.Reader;
       Control.Monad.Dep-->Control.Monad.Reader;
       Control.Monad.Dep-->Control.Monad.Dep.Class;
@@ -53,8 +52,8 @@ constructor arguments](https://docs.spring.io/spring-framework/docs/current/refe
 - __Dep.Has__ provides a generic `Has` typeclass for locating dependencies in an
 environment. Usually, component implementations import this module.
 - __Dep.Env__ complements __Dep.Has__ with helpers for building dependency injection environments. Usually, only the [composition root](https://stackoverflow.com/questions/6277771/what-is-a-composition-root-in-the-context-of-dependency-injection) of the application imports this module.
-- __Dep.Tagged__ is a helper for disambiguating dependencies in __Dep.Env__ environments.
-- __Dep.Constructor__ enables fixpoint-based dependency injection in __Dep.Env__ environments. See [this thread in the Haskell Discourse](https://discourse.haskell.org/t/dependency-injection-fixed-points-and-monoidal-accumulators/5557) for an example.
+- __Dep.Phases__ provides a `Phased` typeclass for DI environments which go through a sequence of `Applicative` phases during construction. Also a special [`QualifiedDo`](https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/qualified_do.html#extension-QualifiedDo) notation for phases.
+- __Dep.Constructor__ enables fixpoint-based dependency injection in `Phased` environments. See [this thread in the Haskell Discourse](https://discourse.haskell.org/t/dependency-injection-fixed-points-and-monoidal-accumulators/5557) for an example.
 - __Control.Monad.Dep__ provides the `DepT` monad transformer, a variant of `ReaderT`. You either want to use this or __Dep.Constructor__ in your composition root, but not both.
 - __Control.Monad.Dep.Class__ is an extension of `MonadReader`, useful to program against both `ReaderT` and `DepT`.
 
