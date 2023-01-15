@@ -1,10 +1,14 @@
 # Revision history for dep-t
 
-## 0.6.7.1
+## 0.6.8.0
 
-- Deprecated `DemotableFieldNames` `demoteFieldNames` `mapPhaseWithFieldNames`
+* Un-deprecated `HasAll`. Turns out that it's actually useful.
 
-- Deprecated `bindPhase` and `skipPhase`
+* Deprecated `DemotableFieldNames` `demoteFieldNames` `mapPhaseWithFieldNames`
+
+* Deprecated `skipPhase`.
+
+* Moved main `Phased` definitions to `Dep.Phased`, re-exporting them from `Dep.Env`.
 
 ## 0.6.7.0
 
