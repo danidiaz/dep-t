@@ -1,7 +1,7 @@
 cabal-version:       3.0
 
 name:                dep-t
-version:             0.6.8.0
+version:             0.6.9.0
 synopsis:            Dependency injection for records-of-functions.
 description:         Put all your functions in the environment record! Let all
                      your functions read from the environment record! No favorites!

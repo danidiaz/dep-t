@@ -48,7 +48,7 @@
 --     repository :: h (Repository m),
 --     controller :: h (Controller m)
 --   } deriving stock Generic
---     deriving anyclass (FieldsFindableByType, DemotableFieldNames, Phased)
+--     deriving anyclass (FieldsFindableByType, Phased)
 -- deriving via Autowired (EnvHKD Identity m) instance Autowireable r_ m (EnvHKD Identity m) => Has r_ m (EnvHKD Identity m)
 -- :}
 --

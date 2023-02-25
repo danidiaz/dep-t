@@ -1,5 +1,9 @@
 # Revision history for dep-t
 
+## 0.6.9.0
+
+* Added `depRecord`.
+
 ## 0.6.8.0
 
 * Un-deprecated `HasAll`. Turns out that it's actually useful :facepalm:
