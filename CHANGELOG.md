@@ -4,6 +4,8 @@
 
 * Added `depRecord`.
 
+* Re-export `Has(dep)` from `Dep.Env`.
+
 ## 0.6.8.0
 
 * Un-deprecated `HasAll`. Turns out that it's actually useful :facepalm:

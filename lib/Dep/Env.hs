@@ -57,7 +57,11 @@
 -- injection, by means of 'fixEnv'.
 module Dep.Env
   ( -- * A general-purpose Has
-    Has,
+    Has (..),
+
+    -- ** Extracting records of dependencies
+
+    DepRecord,
 
     -- * Helpers for deriving Has
 
@@ -159,6 +163,11 @@ import Dep.Phases hiding ((>>=), (>>))
 -- >>> import Control.Monad.IO.Class
 -- >>> import Dep.Env
 -- >>> import GHC.Generics (Generic)
+
+-- TODO: maybe change this into a different way of deriving Has?
+-- like instance Has Dep.Logger.IO.Deps m (Deps m) via DepsRecord Dep.Logger.IO.Deps 
+class DepRecord (r_ :: (Type -> Type) -> Type) (m :: Type -> Type) (deps :: Type) | deps -> m where
+  depRecord :: deps -> r_ m
 
 -- via the default field name
 
